@@ -1,0 +1,215 @@
+/*
+ * components.css — styles for reusable pieces (header, banner, badge, ...).
+ * Uses only variables from tokens.css. More components are added in later phases.
+ */
+
+/* ---------- Site header ---------- */
+.site-header {
+  background: var(--color-surface);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.site-header__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: 3.5rem;
+}
+
+.site-header__name {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.01em;
+  color: var(--color-ink);
+  text-decoration: none;
+}
+
+/* ---------- Banner (info / simulation / stale / emergency) ---------- */
+.banner {
+  font-size: var(--text-sm);
+}
+
+.banner__inner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  padding-block: var(--space-1);
+}
+
+.banner--info {
+  background: var(--banner-info-bg);
+  color: var(--banner-info-fg);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.banner--sim {
+  background: var(--banner-sim-bg);
+  color: var(--banner-sim-fg);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.02em;
+}
+
+.banner .icon {
+  margin-top: 0.1em;
+}
+
+/* ---------- Status badge: icon + label + color, never color alone ---------- */
+.status-badge {
+  display: inline-flex;
+  justify-self: start; /* fit the text, even inside a grid cell */
+  align-items: center;
+  gap: var(--space-0);
+  min-height: 2rem;
+  padding: var(--space-0) var(--space-1);
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  line-height: 1;
+}
+
+.status-badge .icon {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.status-badge--normal {
+  background: var(--status-normal-bg);
+  color: var(--status-normal-fg);
+  border-color: var(--status-normal-border);
+}
+
+.status-badge--watch {
+  background: var(--status-watch-bg);
+  color: var(--status-watch-fg);
+  border-color: var(--status-watch-border);
+}
+
+.status-badge--warning {
+  background: var(--status-warning-bg);
+  color: var(--status-warning-fg);
+  border-color: var(--status-warning-border);
+}
+
+.status-badge--danger {
+  background: var(--status-danger-bg);
+  color: var(--status-danger-fg);
+  border-color: var(--status-danger-border);
+}
+
+/* ---------- Section and definition list used on the placeholder page ---------- */
+.section {
+  padding-block: var(--space-4);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.section:last-of-type {
+  border-bottom: 0;
+}
+
+.section__title {
+  font-size: var(--text-xl);
+  margin-bottom: var(--space-2);
+}
+
+.eyebrow {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+  margin-bottom: var(--space-1);
+}
+
+.page-title {
+  font-family: var(--font-serif);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-semibold);
+  letter-spacing: -0.01em;
+  max-width: 22ch;
+}
+
+@media (min-width: 48rem) {
+  .page-title {
+    font-size: var(--text-3xl);
+  }
+}
+
+.lede {
+  margin-top: var(--space-2);
+  font-size: var(--text-lg);
+  color: var(--color-ink-muted);
+}
+
+/* A two-column list of the four levels: badge on the left, meaning on the right. */
+.level-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  border-top: var(--border-width) solid var(--color-border);
+}
+
+.level-list li {
+  display: grid;
+  grid-template-columns: 8rem 1fr;
+  align-items: center;
+  gap: var(--space-2);
+  padding-block: var(--space-2);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.county-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 var(--space-3);
+  border-top: var(--border-width) solid var(--color-border);
+}
+
+@media (min-width: 48rem) {
+  .county-list {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.county-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-1);
+  padding-block: var(--space-1);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+/* ---------- Footer with the always-visible emergency line ---------- */
+.site-footer {
+  margin-top: var(--space-5);
+  padding-block: var(--space-4);
+  background: var(--color-surface);
+  border-top: var(--border-width) solid var(--color-border);
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+.site-footer p + p {
+  margin-top: var(--space-1);
+}
+
+.emergency-line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--color-ink);
+  font-weight: var(--weight-semibold);
+}
+
+.emergency-line a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-target);
+}
+
+.section__note {
+  margin-top: var(--space-1);
+}

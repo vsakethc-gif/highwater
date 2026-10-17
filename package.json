@@ -1,0 +1,25 @@
+{
+  "name": "sc5-ready",
+  "private": true,
+  "version": "0.1.0",
+  "description": "A free, public hazard readiness web app for South Carolina's 5th Congressional District.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.5"
+  },
+  "dependencies": {
+    "@fontsource-variable/public-sans": "^5.3.0",
+    "@fontsource-variable/source-serif-4": "^5.3.1",
+    "lucide": "^1.59.0"
+  }
+}

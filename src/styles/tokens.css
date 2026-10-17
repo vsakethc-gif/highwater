@@ -52,11 +52,24 @@
   --status-danger-fg: #ffffff;
   --status-danger-border: #7a0e2a;
 
+  /*
+   * Map scale for tract scores (0–100), light = low, dark = high.
+   * ColorBrewer YlGnBu: ordered by lightness, readable with color-vision differences,
+   * and distinct from the four status colors.
+   */
+  --ramp-1: #ffffcc;
+  --ramp-2: #a1dab4;
+  --ramp-3: #41b6c4;
+  --ramp-4: #2c7fb8;
+  --ramp-5: #253494;
+  --ramp-none: #d6dadf;           /* insufficient data */
+
   /* Banners that are not status levels */
   --banner-sim-bg: #14202b;       /* Scenario Mode: unmistakable dark bar */
   --banner-sim-fg: #ffffff;
   --banner-info-bg: var(--color-accent-tint);
   --banner-info-fg: var(--color-ink);
+  --color-backdrop: rgba(20, 32, 43, 0.45); /* dims the page behind dialogs */
 
   /* ---------- Typography ---------- */
   /* Public Sans: the U.S. government's open-source typeface. Very legible, has tabular numbers. */

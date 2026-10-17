@@ -1,14 +1,87 @@
 /**
- * main.ts — the app's starting point. The browser runs this file first.
- * It loads the styles (fonts, then tokens, then base, then components) and draws the page.
+ * main.ts — the app's starting point, and its "router".
+ *
+ * The part of the address after "#" picks the screen: "#/" is Status, "#/map" is the
+ * district map, and so on. Hash addresses work on GitHub Pages without any server setup.
+ * The map and text pages are loaded only when opened, so the main screen stays fast on phones.
  */
 import '@fontsource-variable/public-sans';
 import '@fontsource-variable/source-serif-4';
 import './styles/tokens.css';
 import './styles/base.css';
 import './styles/components.css';
-import { DEFAULT_COUNTY_FIPS } from './config';
-import { renderCounty } from './pages/county';
+import './styles/screens.css';
+import { APP_NAME } from './config';
+import { h } from './lib/dom';
+import { subscribe } from './lib/state';
+import { pageShell } from './components/layout';
+import { renderStatus } from './pages/status';
 
-const root = document.getElementById('app');
-if (root) renderCounty(root, DEFAULT_COUNTY_FIPS);
+type Cleanup = () => void;
+type Page = (root: HTMLElement) => Cleanup | void;
+
+const root = document.getElementById('app')!;
+let cleanup: Cleanup | void;
+
+function notFound(el: HTMLElement): void {
+  document.title = `Page not found · ${APP_NAME}`;
+  el.replaceChildren(
+    ...pageShell(
+      'none',
+      h(
+        'main',
+        { id: 'main', class: 'container text-page' },
+        h('h1', { class: 'page-title' }, 'Page not found'),
+        h('p', { class: 'lede' }, 'There’s no page at this address.'),
+        h('p', {}, h('a', { class: 'button button--primary', href: '#/' }, 'Go to hazard status')),
+      ),
+    ),
+  );
+}
+
+async function pageFor(path: string): Promise<Page> {
+  switch (path) {
+    case '':
+    case '/':
+      return renderStatus;
+    case '/map':
+      return (await import('./pages/map')).renderMap;
+    case '/methodology':
+      return (await import('./pages/textPages')).renderMethodology;
+    case '/about':
+      return (await import('./pages/textPages')).renderAbout;
+    default:
+      return notFound;
+  }
+}
+
+async function route(): Promise<void> {
+  const path = location.hash.replace(/^#/, '').split('?')[0];
+  if (cleanup) cleanup();
+  cleanup = undefined;
+  try {
+    const page = await pageFor(path);
+    cleanup = page(root);
+  } catch {
+    root.replaceChildren(
+      ...pageShell(
+        'none',
+        h(
+          'main',
+          { id: 'main', class: 'container text-page' },
+          h('h1', { class: 'page-title' }, 'This page didn’t load'),
+          h('p', { class: 'lede' }, 'Check your connection and try again. In an emergency, call 911.'),
+          h('p', {}, h('a', { class: 'button button--primary', href: location.hash || '#/' }, 'Try again')),
+        ),
+      ),
+    );
+  }
+  window.scrollTo(0, 0);
+}
+
+window.addEventListener('hashchange', () => void route());
+// Pages other than Status redraw their shell (header + banner) when Scenario Mode changes.
+subscribe(() => {
+  if (!['', '#', '#/'].includes(location.hash)) void route();
+});
+void route();

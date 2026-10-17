@@ -26,6 +26,19 @@ Evidence of my own work and a study guide for judging. Fill in "What I did" in y
 - A script that builds the list of 39 active gauges in SC-5 and links them to official flood stages.
 - The York County page with live alerts and river levels, with loading, empty, error, and stale states.
 
+### Saturday, October 17, 2026: Phase 2 (engine, all 8 counties, map, Scenario Mode)
+
+**What I did** *(edit this in your own words)*
+- Got a Census API key and activated it.
+- Decided to save explanations and quizzes for the end so the build could move faster.
+- _Add: what you tested in Scenario Mode, what you noticed on the map, anything you'd change._
+
+**What was built**
+- Data scripts for county and tract outlines, Census population data, FEMA flood-zone shares, and ZIP codes.
+- The hazard engine: an alert table for every NWS alert type, flood rules for gauges and rain, and the overall status.
+- Vulnerability, exposure, and priority scores; guidance text; the status screen with county/ZIP/location choice.
+- The district map, Scenario Mode with 4 scenarios, and the How it works and About pages.
+
 ## Concepts
 
 ### What is a web app made of?
@@ -83,3 +96,30 @@ The water height at a gauge where NWS says flooding begins. NOAA defines four: *
 
 ### Stale data
 If a reading is more than 2 hours old, the gauge may be offline. We show it with a clear "old reading" note and never treat it as an all-clear.
+
+### Rule-based engine
+A set of fixed "if this, then that" rules written in code: "if a gauge is at minor flood stage, flooding is at Warning." The same inputs always give the same answer, and every answer lists its reasons ("triggers"). That's what makes it explainable, unlike a black box.
+
+### Percentile rank
+Where a value falls compared with all others, from 0 to 100. If a tract's share of older adults is higher than 80% of SC-5 tracts, its percentile rank is 80. We average four ranks to get the vulnerability score.
+
+### Point in polygon
+How the app knows if a spot is inside a county or a warning area: draw an imaginary line from the point to the right and count how many edges of the shape it crosses. Odd = inside, even = outside. (`src/lib/geo.ts`)
+
+### Choropleth map
+A map where areas are shaded by a number (darker = higher). Our tract layers are choropleths. We use 5 bands and a color scale that stays readable with color-blindness.
+
+### Vector vs raster basemaps
+A raster basemap is pictures (tiles) of the map. A vector basemap sends the shapes and the browser draws them, which is sharper and lets us style it. We use a vector basemap from OpenFreeMap, drawn by MapLibre.
+
+### Lazy loading
+Download code only when it's needed. The big map library loads only when you open the map, so the main screen stays small and fast on phones.
+
+### Census tract
+A small area Census uses for statistics, usually 1,200 to 8,000 people. SC-5's 8 counties have 149.
+
+### Special Flood Hazard Area (SFHA)
+FEMA's high-risk flood zone: land with about a 1% chance of flooding in any year (about 26% over a 30-year mortgage). Zones that start with A or V.
+
+### Scenario Mode
+Pretend data run through the real rules, so we can show what happens in a flood or tornado without waiting for one. Always labeled "SIMULATION — not live data."

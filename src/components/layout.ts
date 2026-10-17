@@ -1,20 +1,127 @@
 /**
- * layout.ts — the header and footer shared by every page.
+ * layout.ts — the header, footer, and Scenario Mode banner shared by every page.
  * The footer always shows the 911 line and links to official sources.
  */
 import { APP_NAME, DISCLAIMER } from '../config';
 import { h } from '../lib/dom';
+import { findScenario, SCENARIOS } from '../lib/scenario/scenario';
+import { getState, setState } from '../lib/state';
 import { icon } from './icon';
+
+export type Route = 'status' | 'map' | 'methodology' | 'about' | 'none';
 
 export function skipLink(): HTMLAnchorElement {
   return h('a', { class: 'skip-link', href: '#main' }, 'Skip to main content');
 }
 
-export function siteHeader(): HTMLElement {
+const NAV: { route: Route; label: string; href: string }[] = [
+  { route: 'status', label: 'Status', href: '#/' },
+  { route: 'map', label: 'District map', href: '#/map' },
+  { route: 'methodology', label: 'How it works', href: '#/methodology' },
+  { route: 'about', label: 'About', href: '#/about' },
+];
+
+/** The Scenario Mode picker: a native <dialog>, which handles focus and the Escape key for us. */
+function scenarioDialog(): HTMLDialogElement {
+  const dialog = h('dialog', { class: 'dialog', 'aria-labelledby': 'scenario-title' });
+  const close = () => dialog.close();
+  const current = getState().scenario;
+
+  const options = SCENARIOS.map((s) => {
+    const button = h(
+      'button',
+      { class: `scenario-option${s.id === current ? ' is-current' : ''}`, type: 'button', 'aria-pressed': String(s.id === current) },
+      h('span', { class: 'scenario-option__title' }, s.title),
+      h('span', { class: 'scenario-option__summary' }, s.summary),
+    );
+    button.addEventListener('click', () => {
+      close();
+      setState({ scenario: s.id, place: { kind: 'county', fips: s.county } });
+    });
+    return h('li', {}, button);
+  });
+
+  const off = h('button', { class: 'button button--secondary', type: 'button' }, 'Turn off Scenario Mode');
+  off.addEventListener('click', () => {
+    close();
+    setState({ scenario: null });
+  });
+  const cancel = h('button', { class: 'button button--text', type: 'button' }, 'Cancel');
+  cancel.addEventListener('click', close);
+
+  dialog.append(
+    h('h2', { id: 'scenario-title', class: 'dialog__title' }, 'Scenario Mode'),
+    h(
+      'p',
+      { class: 'dialog__intro' },
+      'Replay a made-up emergency to see how the app responds. Everything shown is a simulation, clearly labeled, and nothing is saved or sent anywhere.',
+    ),
+    h('ul', { class: 'scenario-list' }, ...options),
+    h('div', { class: 'dialog__actions' }, current ? off : null, cancel),
+  );
+  dialog.addEventListener('close', () => dialog.remove());
+  return dialog;
+}
+
+export function openScenarioPicker(): void {
+  const dialog = scenarioDialog();
+  document.body.append(dialog);
+  dialog.showModal();
+}
+
+export function siteHeader(active: Route): HTMLElement {
+  const scenarioOn = getState().scenario !== null;
+  const scenarioButton = h(
+    'button',
+    { class: `header-button${scenarioOn ? ' is-on' : ''}`, type: 'button', 'aria-haspopup': 'dialog' },
+    icon('FlaskConical'),
+    scenarioOn ? 'Scenario on' : 'Scenario mode',
+  );
+  scenarioButton.addEventListener('click', openScenarioPicker);
+
   return h(
     'header',
     { class: 'site-header' },
-    h('div', { class: 'container site-header__inner' }, h('a', { class: 'site-header__name', href: './' }, APP_NAME)),
+    h(
+      'div',
+      { class: 'container site-header__inner' },
+      h('a', { class: 'site-header__name', href: '#/' }, APP_NAME),
+      scenarioButton,
+    ),
+    h(
+      'nav',
+      { class: 'container site-nav', 'aria-label': 'Main' },
+      h(
+        'ul',
+        {},
+        ...NAV.map((item) =>
+          h(
+            'li',
+            {},
+            h('a', { href: item.href, 'aria-current': item.route === active ? 'page' : null }, item.label),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+/** Persistent banner on every screen while Scenario Mode is on (brief 12.8). */
+export function simulationBanner(): HTMLElement | null {
+  const scenario = findScenario(getState().scenario);
+  if (!scenario) return null;
+  const off = h('button', { class: 'banner__action', type: 'button' }, 'Turn off');
+  off.addEventListener('click', () => setState({ scenario: null }));
+  return h(
+    'div',
+    { class: 'banner banner--sim', role: 'status' },
+    h(
+      'div',
+      { class: 'container banner__inner' },
+      icon('FlaskConical'),
+      h('span', {}, h('strong', {}, 'SIMULATION — not live data. '), scenario.title),
+      off,
+    ),
   );
 }
 
@@ -37,4 +144,9 @@ export function siteFooter(): HTMLElement {
       ),
     ),
   );
+}
+
+/** Wrap a page's main content with the shared header, banner, and footer. */
+export function pageShell(active: Route, main: HTMLElement): HTMLElement[] {
+  return [skipLink(), siteHeader(active), simulationBanner(), main, siteFooter()].filter(Boolean) as HTMLElement[];
 }

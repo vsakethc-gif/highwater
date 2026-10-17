@@ -22,6 +22,8 @@ Every source below was checked with a real request on **Saturday, October 17, 20
 | 9b | OSRM demo server | Yes | Yes | No | Fallback route (no avoidance) | 4 |
 | 10 | FEMA Open Shelters | Yes | Yes | No | Open shelters | 4 |
 | 11 | SC 511 road closures | **No public feed found** | — | — | Skipped | — |
+| 14 | OpenFreeMap basemap | Yes | Yes | No | Map background | 2 |
+| 15 | Census ZCTA Gazetteer | Yes | n/a (script only) | No | ZIP code centers | 2 |
 | 12 | Supabase | Not set up yet | Yes | Public anon key | Community reports database | 5 |
 | 13 | Cloudflare Turnstile | Not set up yet | Yes | Site key (public) + secret (Worker) | Spam protection | 5 |
 
@@ -171,6 +173,28 @@ No documented public developer feed was found. There is an SCDOT map service, bu
 ## 13. Cloudflare Turnstile ([plans](https://developers.cloudflare.com/turnstile/plans/))
 
 Free: up to 20 widgets, 10 hostnames each, unlimited challenges.
+
+## 14. OpenFreeMap basemap (added in Phase 2)
+
+- **Style:** `https://tiles.openfreemap.org/styles/positron`. Browser OK (`*`). Uses fonts "Noto Sans Regular/Bold/Italic" from the same server.
+- **Terms** ([openfreemap.org](https://openfreemap.org/)): free, no registration, no API keys, no cookies; no limits on normal map views; websites and commercial use allowed. **Attribution required** (MapLibre shows it automatically): OpenFreeMap, OpenMapTiles, © OpenStreetMap contributors.
+- **Why not CARTO:** CARTO basemaps now require an API key (free for non-commercial up to 5M tile requests/month) and show a watermark without one ([CARTO basemap-styles README](https://github.com/CartoDB/basemap-styles)).
+
+## 15. Census ZCTA Gazetteer (added in Phase 2)
+
+- `https://www2.census.gov/geo/docs/maps-data/data/gazetteer/2024_Gazetteer/2024_Gaz_zcta_national.zip` (1 MB, no key). Tab-separated: `GEOID`, `INTPTLAT`, `INTPTLONG`.
+- 47 ZIP codes have their center inside an SC-5 county. Spot checks: 29730 Rock Hill → York, 29720 Lancaster → Lancaster, 29020 Camden → Kershaw, 29010 Bishopville → Lee.
+
+## Built data files (Phase 2)
+
+| File | Size | Made by | Contents |
+|---|---|---|---|
+| `public/data/gauges.json` | 9.5 KB | build-gauges.mjs | 39 active gauges, 17 with official flood stages |
+| `public/data/counties.geojson` | 14 KB | build-boundaries.mjs | 8 county outlines (simplified 20%) |
+| `public/data/tracts.geojson` | 131 KB | build-boundaries + build-tracts | 149 tracts with ACS 2024 measures and SFHA share |
+| `public/data/zips.json` | 1.6 KB | build-zips.mjs | 47 ZIP centers |
+
+**ACS check:** total population across the 149 tracts is 618,892, consistent with the 8 counties' published totals.
 
 ## P2 sources (not checked yet; only if time allows)
 AirNow, USGS earthquake feeds, NASA FIRMS.

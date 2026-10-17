@@ -1,9 +1,8 @@
 /**
- * gauges.ts — loads the static gauge list (made by scripts/build-gauges.mjs)
- * and combines it with live USGS readings.
+ * gauges.ts — loads the static gauge list (made by scripts/build-gauges.mjs).
+ * Live readings are added in conditions.ts.
  */
-import type { Gauge, GaugeSite, Loaded } from './types';
-import { buildGauge, fetchGaugeReadings } from './usgs';
+import type { GaugeSite } from './types';
 
 interface GaugeFile {
   generated_at: string;
@@ -27,14 +26,3 @@ export function loadGaugeSites(): Promise<GaugeSite[]> {
   return siteList;
 }
 
-/** Live gauges for one county. Gauges that sent no reading in 6 hours are kept, with latest = null. */
-export async function loadCountyGauges(fips: string, signal?: AbortSignal): Promise<Loaded<Gauge[]>> {
-  const sites = (await loadGaugeSites()).filter((s) => s.county_fips === fips);
-  if (sites.length === 0) return { data: [], fetched_at: new Date().toISOString(), source: 'USGS' };
-  const { readings, source } = await fetchGaugeReadings(
-    sites.map((s) => s.site_id),
-    signal,
-  );
-  const gauges = sites.map((s) => buildGauge(s, readings.get(s.site_id) ?? []));
-  return { data: gauges, fetched_at: new Date().toISOString(), source };
-}

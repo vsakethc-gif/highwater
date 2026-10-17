@@ -17,22 +17,24 @@ export const APP_TAGLINE =
 export interface County {
   fips: string;
   name: string;
+  /** County seat: used for the county's rain forecast. */
+  seat: { name: string; lat: number; lon: number };
 }
 
 /**
  * The 8 counties fully inside SC-5.
- * NOTE: these FIPS codes still need to be checked against Census data in Phase 1.
+ * FIPS codes verified against Census TIGERweb on 2026-10-17.
  * Spartanburg (45083) and Sumter (45085) are only partly in SC-5, so they are a stretch goal.
  */
 export const COUNTIES: readonly County[] = [
-  { fips: '45021', name: 'Cherokee' },
-  { fips: '45023', name: 'Chester' },
-  { fips: '45039', name: 'Fairfield' },
-  { fips: '45055', name: 'Kershaw' },
-  { fips: '45057', name: 'Lancaster' },
-  { fips: '45061', name: 'Lee' },
-  { fips: '45087', name: 'Union' },
-  { fips: '45091', name: 'York' },
+  { fips: '45021', name: 'Cherokee', seat: { name: 'Gaffney', lat: 35.0718, lon: -81.6498 } },
+  { fips: '45023', name: 'Chester', seat: { name: 'Chester', lat: 34.7049, lon: -81.2142 } },
+  { fips: '45039', name: 'Fairfield', seat: { name: 'Winnsboro', lat: 34.3807, lon: -81.0865 } },
+  { fips: '45055', name: 'Kershaw', seat: { name: 'Camden', lat: 34.2465, lon: -80.607 } },
+  { fips: '45057', name: 'Lancaster', seat: { name: 'Lancaster', lat: 34.7204, lon: -80.7709 } },
+  { fips: '45061', name: 'Lee', seat: { name: 'Bishopville', lat: 34.2185, lon: -80.2484 } },
+  { fips: '45087', name: 'Union', seat: { name: 'Union', lat: 34.7154, lon: -81.6237 } },
+  { fips: '45091', name: 'York', seat: { name: 'York', lat: 34.9943, lon: -81.242 } },
 ];
 
 /** The county shown first, before the person chooses their own. */
@@ -59,6 +61,10 @@ export const THRESHOLDS = {
   rainWatchInches24h: 2,
   /** Live data older than this is labeled stale and never shown as an "all clear". */
   staleAfterMinutes: 120,
+  /** Guidance adds transportation advice when at least this share of households has no vehicle (about 2x the SC-5 tract median of 3.5%). */
+  highNoVehiclePct: 7,
+  /** Guidance strengthens the 'check on others' line at or above this vulnerability score. */
+  highVulnerabilityScore: 60,
 } as const;
 
 /** Text that must appear at the end of every guidance block (brief, section 9). */

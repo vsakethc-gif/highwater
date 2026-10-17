@@ -6,7 +6,11 @@ Working log for SC-5 Ready. "Problems and fixes" becomes the answer to the judge
 
 - **County FIPS codes** are verified against Census TIGERweb (Phase 1). All 8 match the brief.
 - **"Active gauge"** means it reported gage height in the last 7 days when `scripts/build-gauges.mjs` last ran. That gives 39 gauges across SC-5, 17 with official flood stages.
-- **Trend rule:** compare the newest reading with the oldest one inside the last 3 hours. A change of 0.1 ft or more is "rising" or "falling"; less is "steady."
+- **County rain forecast** uses the county seat's forecast point (e.g. York for York County). A spot (GPS or ZIP) uses its own point.
+- **ZIP codes** are placed at their Census center point and assigned to the county that point falls in.
+- **"Insufficient data" tracts:** fewer than 200 people or 50 households. That catches Winthrop University's dorm tract (York 606: 1,471 people, all in group housing, 0 households) and a state prison tract in Lee County (9203.01), plus one 190-person tract in Lancaster.
+- **Map county statuses** use alerts and gauges only (no rain forecast), and the map says so.
+- - **Trend rule:** compare the newest reading with the oldest one inside the last 3 hours. A change of 0.1 ft or more is "rising" or "falling"; less is "steady."
 - **Live site:** https://vsakethc-gif.github.io/sc5-ready/ (repo: https://github.com/vsakethc-gif/sc5-ready).
 - **The repo must be public:** GitHub Pages is free only for public repositories, and the judges may want to read the code anyway.
 
@@ -22,7 +26,16 @@ Working log for SC-5 Ready. "Problems and fixes" becomes the answer to the judge
 - **Gauge list is pre-built** by a script into `public/data/gauges.json` (9.5 KB). Visitors don't re-ask USGS which gauges exist on every page load.
 - **Each live section loads on its own**, so if one agency is down, the other's data still shows.
 - **Address search will go through the Worker** (the Census Geocoder blocks browsers). ZIP search will use a static ZIP center list.
-- **Map library (Phase 2): leaning Leaflet.** It is simpler and much smaller than MapLibre, which is enough for drawing our data on top of a basemap.
+- **Map: MapLibre GL + OpenFreeMap "Positron" basemap.** CARTO's free tiles now need an API key (and show a watermark without one); OpenFreeMap is free, keyless, has no request limits, allows public sites, and has the same light style. It's a vector basemap, which needs MapLibre instead of Leaflet. MapLibre is large (287 KB compressed), so the map page loads only when opened; the main screen is 22 KB.
+- **The engine maps ALL NWS alert types now** (not just floods). The table is cheap, and showing "Normal" during a Tornado Warning because we only checked floods would be misleading and unsafe. Detailed guidance for flood, tornado, and severe storms is done; other hazards get careful generic guidance ("follow the official alert") until P1a.
+- **Information-only alerts** (Hazardous Weather Outlook, Frost Advisory) are listed but never raise the status. The outlook is issued almost daily, and the app would otherwise sit at "Watch" all the time.
+- **Scores are percentile ranks within SC-5** (0–100), so vulnerability and exposure use the same scale and can be averaged into priority. The real percentages are always shown next to the scores.
+- **Scores are computed in the browser** from raw percentages, by tested code (`src/lib/hazards/vulnerability.ts`), not inside the data script. One place for the rule, and it's tested.
+- **"Can't confirm" instead of "Normal"** when any key source fails or gauge readings are stale (brief 5.6).
+- **Exact locations are never saved or put in the URL.** Only the chosen county is remembered in the browser.
+- **A tornado or severe storm Warning blocks the route button even during a flood**: never suggest driving into a tornado.
+- **Methodology page renders METHODOLOGY.md directly**, so the app and the repo can't disagree.
+- ~~Map library: leaning Leaflet.~~ Replaced by MapLibre (see above). It is simpler and much smaller than MapLibre, which is enough for drawing our data on top of a basemap.
 
 ## Problems and fixes
 
@@ -40,6 +53,13 @@ Working log for SC-5 Ready. "Problems and fixes" becomes the answer to the judge
 - **USGS box searches pulled in North Carolina gauges and dead gauges** (one last reported in 2021). Fix: build the gauge list per county and keep only gauges with a reading in the last 7 days.
 - **NOAA writes missing numbers as -9999 or -999.** Treating those as real heights would be a bug. Fix: convert them to "no value" in the build script.
 
+- **CARTO basemap tiles now require an API key.** Found by reading their current docs before building. Fix: switched to OpenFreeMap (free, keyless) and MapLibre GL to draw it.
+- **Census numbers for some tracts were misleading** (one showed 100% poverty). Diagnosed by printing every outlier: it was Winthrop's dorms, where Census could measure poverty for only 3 of 1,471 residents, and a prison tract with no households at all. Fix: a documented "insufficient data" rule (fewer than 200 people or 50 households), tested.
+- **Our first alert table had names NWS doesn't use anymore.** Checked every name against NWS's official list (`/alerts/types`): found "Tropical Cyclone Statement" should be "Tropical Cyclone Local Statement", confirmed the 2025 heat/cold renames, and found missing events (Snow Squall Warning, Freeze Warning, Extreme Fire Danger...). Fixed and tested.
+- **Measuring flood-zone share took real geometry work.** FEMA returns 10,898 high-risk flood polygons for SC-5, 1,000 at a time. The script pages through them, has FEMA simplify them to about 20 m, skips quick non-overlaps with bounding boxes, and computes the overlap area with Turf.js. One broken FEMA polygon is skipped safely. Runs in about 90 seconds.
+- **A brand-new library version changed its import style** (MapLibre 6 has no "default export"). Found by the TypeScript check, fixed by importing it as a namespace.
+- **Unverified claim caught before publishing.** A draft of METHODOLOGY cited specific flash-flood numbers I hadn't checked; I replaced them with a fact I could verify (SC averages about 48 in of rain a year) and labeled the 2-inch rule as this app's own cautious choice.
+
 ## Open questions for me
 
 - Do you want to keep the name "SC-5 Ready"? (Change it in `src/config.ts` → `APP_NAME`.)
@@ -49,6 +69,9 @@ Working log for SC-5 Ready. "Problems and fixes" becomes the answer to the judge
 ## Later (ideas outside current scope)
 
 - Add a scheduled GitHub Action (Phase 5) that touches Supabase every few days, so the free project doesn't pause after 7 days with no activity during judging.
+- Historical Hurricane Helene replay (late Sept 2024) for Scenario Mode, using archived USGS gauge data. Synthetic scenarios cover the demo for now.
+- Address search (needs the Cloudflare Worker, Phase 4).
+- Alert popups on the map; tap a spot on the map to check it.
 - Re-run `node scripts/build-gauges.mjs` before submission, in case gauges went offline or came back.
 - Update the GitHub Actions versions in `deploy.yml`: GitHub warns that the current ones use Node 20, which is being retired. They still work today.
 
@@ -68,3 +91,19 @@ Working log for SC-5 Ready. "Problems and fixes" becomes the answer to the judge
 4. Compare one reading with waterdata.usgs.gov for the same gauge. The numbers should match.
 5. Click Refresh: the button disables briefly, then the times update.
 6. Turn off Wi-Fi and click Refresh: each section shows its own "Couldn't load …" message with a "Try again" button.
+
+### Phase 2
+1. **Status:** York County loads with a status card (Normal today), "Why this status?", "What to do", rain forecast, alerts, and gauges.
+2. **County picker:** choose Lancaster. Everything reloads for Lancaster. Its "Why this status?" says it has no gauges with official flood stages.
+3. **ZIP:** type 29730 and Go. The heading becomes "ZIP 29730" in York County, with a FEMA flood zone and neighborhood facts. Type 90210: "isn't in the 8 SC-5 counties."
+4. **Use my location:** allow it. Outside SC-5 you'll see a message; inside you'll see "Your location."
+5. **Scenario Mode** (header button): pick each scenario.
+   - Flood Watch → Watch (yellow, eye icon), rain 2.6 in.
+   - River flood warning → Warning (orange, triangle), Catawba River near Rock Hill rising to 16.40 ft "Minor flooding."
+   - Flash flood emergency → Danger (crimson, octagon), "damage threat: catastrophic."
+   - Tornado warning (Lancaster) → Warning, tornado icon, "Stay where you are and take shelter," no route button.
+   - A black "SIMULATION — not live data" banner is on every screen, and the card says "Simulated." "Turn off" returns to live data.
+6. **District map:** the map shows tracts colored by vulnerability, county lines and names, gauges as shapes. Switch to Flood exposure and Priority; the legend changes. Click a tract: the detail panel shows each measure next to the SC-5 average. Uncheck "River gauges": they hide.
+7. **Map text version:** below the map, "Counties at a glance" table and "Show all 149 tracts"; choosing a tract opens its panel.
+8. **How it works:** shows the full methodology with tables. **About** shows the privacy note.
+9. Turn off Wi-Fi and refresh the status: the card says "Can't confirm" with the reasons, not "Normal."

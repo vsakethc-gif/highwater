@@ -33,6 +33,7 @@ Working log for SC-5 Ready. "Problems and fixes" becomes the answer to the judge
 - **The main USGS API is being retired during judging.** USGS's own notice says WaterServices degrades from November 2026 and shuts down in early 2027, after our submission but while judges test the app. Fix: use the new Water Data API as the main source and keep the old one only as an automatic fallback. Both are tested with saved real responses.
 - **NWS blocked requests with no "User-Agent" (403 error).** Browsers always send one, so the live page works. Our scripts send a descriptive one, as NWS asks.
 - **The alert feed includes "cancelled" and "expired" messages.** A cancelled Flood Warning still has the event name "Flood Warning". Without care, the app would warn people about something that's over. Fix: read the VTEC action code (NEW, CON, CAN, EXP, ...) and drop CAN/EXP. Tested with a real cancelled warning.
+- **A brand-new Census key was rejected as "invalid"** for a few minutes after activation. Fix: wait and retry; it worked shortly after.
 - **Census now requires an API key for every request** (it redirects to a "Missing Key" page). Fix: you request a free key; it's used only by the build script, never in the browser.
 - **The Census Geocoder doesn't allow browsers (no CORS header).** Fix: route address search through our Worker; ZIP codes use a static list.
 - **FEMA returned a generic 400 error** because we asked for a field (`EFF_DATE`) that this layer doesn't have. Fix: read the layer's field list first and request only real fields.
@@ -42,7 +43,6 @@ Working log for SC-5 Ready. "Problems and fixes" becomes the answer to the judge
 ## Open questions for me
 
 - Do you want to keep the name "SC-5 Ready"? (Change it in `src/config.ts` → `APP_NAME`.)
-- **Census API key (needed for Phase 2):** request one at https://api.census.gov/data/key_signup.html, then paste it into a file named `.env` as `CENSUS_API_KEY=...` (never into chat or code).
 - **OpenRouteService key (needed for Phase 4):** sign up at https://openrouteservice.org/dev/#/signup.
 - **ORS avoid polygons are limited to 20 km across and 200 km².** Many warning polygons are bigger, so in Phase 4 we'll trim avoid areas to the part near the route. This could limit how well the route planner works; we'll know by the Wednesday cut-rule check.
 

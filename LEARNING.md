@@ -9,6 +9,7 @@ Evidence of my own work and a study guide for judging. Fill in "What I did" in y
 **What I did** *(edit this in your own words)*
 - Chose the problem and wrote the project brief (`CLAUDE.md`).
 - Reviewed the Phase 0 plan, the color and font choices, and the placeholder page.
+- Created my GitHub account login and approved the app's access, so the site could be published at https://vsakethc-gif.github.io/sc5-ready/
 - _Add: anything you tested, changed, or decided yourself._
 
 **What was built**

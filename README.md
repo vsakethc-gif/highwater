@@ -6,6 +6,8 @@ A free, public, mobile-first web app that helps residents of South Carolina's 5t
 
 Built for the 2026 Congressional App Challenge (SC-5) by a high school student in York County. AI assistance is disclosed in [AI_DISCLOSURE.md](AI_DISCLOSURE.md).
 
+**Live site:** https://vsakethc-gif.github.io/sc5-ready/
+
 **Status:** Phase 0 (setup). Live data arrives in Phase 1.
 
 ## Running it on your computer

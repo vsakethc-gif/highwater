@@ -5,7 +5,7 @@ Working log for SC-5 Ready. "Problems and fixes" becomes the answer to the judge
 ## Assumptions
 
 - **County FIPS codes** in `src/config.ts` come from the brief and have not been checked against Census data yet. They get checked in Phase 1.
-- **Repo name** will be `sc5-ready`, so the site URL will be `https://<your-username>.github.io/sc5-ready/`.
+- **Live site:** https://vsakethc-gif.github.io/sc5-ready/ (repo: https://github.com/vsakethc-gif/sc5-ready).
 - **The repo must be public:** GitHub Pages is free only for public repositories, and the judges may want to read the code anyway.
 
 ## Decisions
@@ -21,14 +21,16 @@ Working log for SC-5 Ready. "Problems and fixes" becomes the answer to the judge
 
 - **A gray failed the contrast check.** The first "subtle" gray (`#6b7680`) was 4.37:1 on the page background, under the 4.5:1 WCAG AA minimum. I found it with a small script that computes contrast ratios, then darkened it to `#606b75` (5.13:1). The Normal and Watch badge borders were also too faint, so I darkened them past 3:1.
 
+- **GitHub login didn't stick.** The first `gh auth login` waited for a keyboard answer in a terminal tab that never received it. Fix: run the login in a mode that asks no questions and only prints a one-time code, then approve that code on github.com/login/device in the browser.
+- **GitHub refused to upload the deploy workflow.** The error said the login needed the `workflow` permission. GitHub treats workflow files as extra sensitive because they run code on GitHub's computers. Fix: `gh auth refresh -s workflow` and approve once more.
+
 ## Open questions for me
 
-- What GitHub username will the repo live under?
 - Do you want to keep the name "SC-5 Ready"? (Change it in `src/config.ts` → `APP_NAME`.)
 
 ## Later (ideas outside current scope)
 
-- (none yet)
+- Update the GitHub Actions versions in `deploy.yml`: GitHub warns that the current ones use Node 20, which is being retired. They still work today.
 
 ## Manual test script
 

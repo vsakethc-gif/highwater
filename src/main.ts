@@ -7,7 +7,8 @@ import '@fontsource-variable/source-serif-4';
 import './styles/tokens.css';
 import './styles/base.css';
 import './styles/components.css';
-import { renderHome } from './pages/home';
+import { DEFAULT_COUNTY_FIPS } from './config';
+import { renderCounty } from './pages/county';
 
 const root = document.getElementById('app');
-if (root) renderHome(root);
+if (root) renderCounty(root, DEFAULT_COUNTY_FIPS);

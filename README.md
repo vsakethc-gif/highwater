@@ -8,7 +8,7 @@ Built for the 2026 Congressional App Challenge (SC-5) by a high school student i
 
 **Live site:** https://vsakethc-gif.github.io/sc5-ready/
 
-**Status:** Phase 0 (setup). Live data arrives in Phase 1.
+**Status:** Phase 1. Live alerts and river levels for York County.
 
 ## Running it on your computer
 
@@ -19,6 +19,7 @@ npm install        # download the libraries listed in package.json
 npm run dev        # start a local preview at http://localhost:5173
 npm test           # run the automated tests
 npm run build      # check types and build the final site into /dist
+node scripts/build-gauges.mjs   # rebuild the SC-5 gauge list (public/data/gauges.json)
 ```
 
 ## How the code is organized
@@ -46,10 +47,13 @@ npm run build      # check types and build the final site into /dist
 | [Vite](https://vitejs.dev/) | Runs the local preview and bundles the code into a fast website | MIT |
 | [TypeScript](https://www.typescriptlang.org/) | JavaScript with types, which catches mistakes before the code runs | Apache-2.0 |
 | [Vitest](https://vitest.dev/) | Runs the automated tests | MIT |
+| [@types/geojson](https://www.npmjs.com/package/@types/geojson) | Type definitions for map data (GeoJSON) | MIT |
 | [Lucide](https://lucide.dev/) | Open-source icon set | ISC |
 | [Public Sans](https://public-sans.digital.gov/) (via Fontsource) | Main typeface, made by the U.S. government | OFL-1.1 |
 | [Source Serif 4](https://github.com/adobe-fonts/source-serif) (via Fontsource) | Serif typeface for page headings | OFL-1.1 |
 | [GitHub Pages](https://pages.github.com/) | Free hosting for the website | — |
 | GitHub Actions | Builds and deploys the site automatically on every push | — |
 
-Data sources are listed in [DATA_SOURCES.md](DATA_SOURCES.md). How the app decides each status is explained in [METHODOLOGY.md](METHODOLOGY.md).
+## Data sources
+
+Live: USGS Water Data API (river levels), NOAA National Water Prediction Service (flood stages), National Weather Service API (alerts). Full details, limits, and test results are in [DATA_SOURCES.md](DATA_SOURCES.md). How the app decides each status is explained in [METHODOLOGY.md](METHODOLOGY.md).

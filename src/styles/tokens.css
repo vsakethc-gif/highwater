@@ -23,6 +23,7 @@
   --color-accent: #0b4f7c;
   --color-accent-hover: #083d61;
   --color-accent-tint: #e5eef5;
+  --color-on-accent: #ffffff;     /* text on accent-colored buttons */
   --color-focus: #0b4f7c;         /* focus rings */
 
   /*

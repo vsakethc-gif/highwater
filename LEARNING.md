@@ -15,6 +15,17 @@ Evidence of my own work and a study guide for judging. Fill in "What I did" in y
 **What was built**
 - The project skeleton (folders, config, tooling), the design tokens, a placeholder page, the first tests, and automatic deployment to GitHub Pages.
 
+### Saturday, October 17, 2026: Phase 1 (verify data, first live page)
+
+**What I did** *(edit this in your own words)*
+- Reviewed which data sources work, which don't, and the replacements (DATA_SOURCES.md).
+- _Add: e.g. compared a gauge reading on the app with waterdata.usgs.gov, requested the Census API key._
+
+**What was built**
+- Every data source tested with real requests; results in DATA_SOURCES.md, saved samples in tests/fixtures.
+- A script that builds the list of 39 active gauges in SC-5 and links them to official flood stages.
+- The York County page with live alerts and river levels, with loading, empty, error, and stale states.
+
 ## Concepts
 
 ### What is a web app made of?
@@ -48,3 +59,27 @@ Small programs that check our code gives the right answers, for example "the ove
 
 ### XSS (cross-site scripting)
 An attack where someone sneaks code into text that a site displays. Our `h()` helper always inserts text as plain text, never as HTML, which blocks this.
+
+### API
+An **API** (Application Programming Interface) is a way for one program to ask another for data. We send a web address with our question in it (e.g. "gage height for these gauges, last 6 hours"), and the agency's server answers with data instead of a web page.
+
+### JSON and GeoJSON
+**JSON** is a plain-text format for data: `{"value": 5.11, "unit": "ft"}`. **GeoJSON** is JSON for map data: each "Feature" has properties plus a geometry (a point, line, or polygon) with longitude/latitude coordinates. USGS, NWS, and FEMA all answer in GeoJSON.
+
+### CORS
+A browser safety rule. A web page may read data from another website only if that site says "browsers may read me" (the `Access-Control-Allow-Origin` header). USGS, NWS, NOAA, and FEMA allow it; the Census Geocoder doesn't, so we need a helper (our Worker) for it.
+
+### Parsing
+Each agency formats data differently. A **parser** converts each one into our own simple shape (`Gauge`, `Alert`), so the rest of the app doesn't care where data came from. Parsers are tested on **fixtures**, real responses we saved, so we know they handle what agencies actually send.
+
+### Provisional data
+USGS live readings haven't been checked by a person yet and may be corrected later. We label them "provisional."
+
+### VTEC codes
+Every NWS warning carries a code like `/O.NEW.KGSP.FF.W.0024.../`. The part after `O.` says what the message does: **NEW**, **CON** (continues), **EXT** (extended), **CAN** (cancelled), **EXP** (expired). We drop CAN/EXP so a finished warning never raises a status.
+
+### Flood stage
+The water height at a gauge where NWS says flooding begins. NOAA defines four: **action** (get ready), **minor**, **moderate**, and **major** flooding. Small creeks often have none; we never make one up.
+
+### Stale data
+If a reading is more than 2 hours old, the gauge may be offline. We show it with a clear "old reading" note and never treat it as an all-clear.

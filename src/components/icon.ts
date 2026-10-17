@@ -4,9 +4,44 @@
  * Only the icons listed here are included in the app, so unused icons
  * don't make the download bigger. Add new icons to ICONS as needed.
  */
-import { createElement, CircleCheck, Eye, TriangleAlert, OctagonAlert, Phone, Info } from 'lucide';
+import {
+  createElement,
+  ArrowRight,
+  CircleAlert,
+  CircleCheck,
+  Clock,
+  CloudOff,
+  ExternalLink,
+  Eye,
+  Info,
+  MapPin,
+  OctagonAlert,
+  Phone,
+  RefreshCw,
+  TrendingDown,
+  TrendingUp,
+  TriangleAlert,
+  Waves,
+} from 'lucide';
 
-const ICONS = { CircleCheck, Eye, TriangleAlert, OctagonAlert, Phone, Info };
+const ICONS = {
+  ArrowRight,
+  CircleAlert,
+  CircleCheck,
+  Clock,
+  CloudOff,
+  ExternalLink,
+  Eye,
+  Info,
+  MapPin,
+  OctagonAlert,
+  Phone,
+  RefreshCw,
+  TrendingDown,
+  TrendingUp,
+  TriangleAlert,
+  Waves,
+};
 
 export type IconName = keyof typeof ICONS;
 

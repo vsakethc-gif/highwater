@@ -99,7 +99,7 @@ The full rulebook (METHODOLOGY.md) shown inside the app, with an "On this page" 
 What it is, who built it, what it can't do (8 limitations), privacy, and data credits.
 
 ### Scenario Mode (button in the top corner)
-Replays one of 6 made-up emergencies through the **same rules** as live data: Flood Watch, river Flood Warning, flash flood emergency, tornado warning, extreme heat warning, and a tropical storm. While it's on, every screen shows **"SIMULATION — not live data,"** the status says "Simulated," and nothing is sent or saved (reports stay in that browser tab).
+Replays an emergency through the **same rules** as live data. **Two replays of Hurricane Helene use only real data:** the real NWS alerts in effect and real USGS river readings at 7:30 AM on Sept 27, 2024 (York, Cherokee, Chester, and Union reach Danger from Flash Flood Warnings NWS tagged "considerable") and at 2:30 AM on Sept 29, 2024 (rivers crest; York, Kershaw, Fairfield, and Union reach Danger from gauges in moderate or major flood). Six made-up scenarios cover each hazard type: Flood Watch, river Flood Warning, flash flood emergency, tornado warning, extreme heat warning, and a tropical storm. While it's on, every screen shows **"SIMULATION — not live data,"** the status says "Simulated," and nothing is sent or saved (reports stay in that browser tab).
 
 ### Offline / install
 You can add the app to your phone's home screen. A **service worker** (a small script the browser keeps for this site) saves the app's own files, so it opens with no signal and still shows guidance and checklists. After each successful live load, the app saves that county's alerts, gauges, and rain on the phone. If the next load fails, it shows **"Offline: showing info from [time]"** and treats the status as incomplete, so it can never show a stale all-clear.
@@ -129,6 +129,7 @@ Every section has a designed message for loading (gray placeholder boxes the sam
 | **OSRM demo server** | Backup routes (can't avoid anything) | Browser, only if OpenRouteService fails; the app then shows "This route does not avoid hazard areas" |
 | **Supabase** | The community reports database | Reading: browser, directly (with a public key). Writing: only through our Worker |
 | **OpenFreeMap** | The light gray background map | Browser; free, no key; © OpenStreetMap contributors |
+| **USGS archive + Iowa Environmental Mesonet** | Past river readings and past NWS alerts for the Helene replays | Built in by a script (`build-helene`); the app never calls them |
 
 Full details (exact addresses, limits, test results, quirks) are in DATA_SOURCES.md. Every source was tested with real requests before we built on it, and real saved responses are used in the tests (`tests/fixtures`).
 
@@ -247,7 +248,7 @@ Languages: **TypeScript, HTML, CSS, SQL**, and JavaScript for scripts.
 ## 10. Quality
 
 - **159 automated tests pass.**
-- **Lighthouse (mobile):** accessibility **100** and best practices **100** on every page. Performance: Status 98 (live), Report 99, Get ready 100, How it works 99, About 99, Route 76, District map 50. The map library (about 1 MB) is the bottleneck on those two pages, which is an honest limitation.
+- **Lighthouse (mobile):** accessibility **100** and best practices **100** on every page. Performance: Status 97, Report 100, Get ready 100, How it works 99, About 99, Route 96, District map 50. The route page went from 76 to 96 by loading its map only when needed. The district map page is held back by the map library (about 1 MB), which is an honest limitation.
 - **Accessibility:** WCAG 2.2 AA contrast (checked with a script), full keyboard use (tested: setting a report location with a ZIP and Enter, switching map layers with Space), visible focus rings, a "Skip to main content" link, labeled controls, screen-reader announcements when the status changes, text versions of the maps, tap targets of at least 44 px, and no color-only information.
 - **Screens tested** at 360, 390, 768, 1024, and 1440 px wide with no sideways scrolling.
 - **Failure testing:** each data source was blocked on purpose to confirm the app says "couldn't load" instead of looking like an all-clear.
@@ -267,6 +268,8 @@ Languages: **TypeScript, HTML, CSS, SQL**, and JavaScript for scripts.
 7. **OpenRouteService hung** (didn't even error) → time limits plus the OSRM backup with a clear banner. (It works again as of October 18.)
 8. **Error states that looked like answers** → "No active reports nearby" when the database was down; fixed to say "couldn't load."
 9. **Pages jumping while loading** (layout shift) → placeholder boxes the same size as the real content; Status performance went from 89 to 96+.
+10. **A real tornado watch missing from the Helene replay** → one NWS message cancelled one watch and extended another; the script now matches the exact alert number.
+11. **A slow route page** → the map library loads only when needed (76 → 96).
 
 ---
 
@@ -279,7 +282,7 @@ Languages: **TypeScript, HTML, CSS, SQL**, and JavaScript for scripts.
 - No road-closure data (SC 511 has no public feed). Routes can't see every closed or flooded road. Free routing can be slow or out of requests.
 - Shelters are only as current as FEMA/Red Cross data.
 - Community reports are unverified and not sent to any agency.
-- Map and route pages load slowly on old phones (Lighthouse performance 50 and 76).
+- The district map page loads slowly on old phones (Lighthouse performance 50).
 
 ---
 
@@ -341,8 +344,11 @@ GitHub Pages hosts the site, and every data source is free. The Worker, Supabase
 **Q: How do you know the data is right?**
 Every source was tested with real requests before building on it, and saved real responses are used in the tests. Gauge readings are labeled provisional, as USGS says. Each number shows its source and time.
 
+**Q: Is the Helene replay real?**
+Yes. A script downloads the USGS river readings and the NWS alerts that were actually in effect at that minute (from Iowa State's archive of every NWS alert), and the app runs them through the same rules. Only the clock is shifted, so the app treats that moment as "now."
+
 **Q: What would you add next?**
-Ideas: a replay of Hurricane Helene from real 2024 gauge data, a lighter map so it loads faster on old phones, road closures if SC ever publishes a feed, and the parts of Spartanburg and Sumter counties that are in SC-5.
+Ideas: a lighter map so the district map loads faster on old phones, road closures if SC ever publishes a feed, and the parts of Spartanburg and Sumter counties that are in SC-5.
 
 **Q: Can people rely on it in an emergency?**
 It's a helper, not an official warning system, and it says so on every screen. Official alerts, local officials, and 911 come first.

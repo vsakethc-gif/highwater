@@ -90,7 +90,7 @@ export function renderAbout(root: HTMLElement): void {
           ),
           h('h2', {}, 'Data credits'),
           p(
-            'U.S. Geological Survey (river levels), NOAA National Water Prediction Service (flood stages), National Weather Service (alerts and rain forecast), FEMA National Flood Hazard Layer (flood zones), FEMA and American Red Cross National Shelter System (open shelters), U.S. Census Bureau (population data, boundaries, and address search), openrouteservice by HeiGIT and OSRM (routes). Map © OpenStreetMap contributors, OpenMapTiles, OpenFreeMap.',
+            'U.S. Geological Survey (river levels), NOAA National Water Prediction Service (flood stages), National Weather Service (alerts and rain forecast), FEMA National Flood Hazard Layer (flood zones), FEMA and American Red Cross National Shelter System (open shelters), U.S. Census Bureau (population data, boundaries, and address search), openrouteservice by HeiGIT and OSRM (routes), Iowa Environmental Mesonet at Iowa State University (past alerts for the Helene replay). Map © OpenStreetMap contributors, OpenMapTiles, OpenFreeMap.',
           ),
           h('p', {}, h('a', { href: 'https://github.com/vsakethc-gif/highwater' }, 'Source code on GitHub')),
         ),

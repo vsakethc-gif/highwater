@@ -203,7 +203,25 @@ The app can be installed on a phone's home screen. A service worker (a small scr
 
 ## Scenario Mode
 
-Scenario Mode replays a made-up emergency to show how the rules respond. There are six scenarios: a Flood Watch, a river Flood Warning, a flash flood emergency, a tornado warning, an extreme heat warning, and a tropical storm with a Flood Watch. Scenarios are small data files in the source code (fake alerts, gauge readings, and rain) run through the exact same rules as live data. While a scenario is on, every screen shows **"SIMULATION — not live data,"** the status card says "Simulated," and nothing is saved or sent anywhere.
+Scenario Mode replays an emergency to show how the rules respond. Every scenario runs through the exact same rules as live data.
+
+**Two replays of Hurricane Helene use only real data.** They were built by `scripts/build-helene.mjs` from archives:
+
+- **"Hurricane Helene arrives"**: 7:30 AM on Friday, Sept 27, 2024.
+- **"Helene: rivers crest"**: 2:30 AM on Sunday, Sept 29, 2024.
+
+For each moment the script keeps:
+- every NWS alert that was actually in effect for SC-5 at that minute, using the latest update NWS had sent by then (its text, warning area, and damage threat tag), from the Iowa Environmental Mesonet's archive of NWS alerts;
+- the 12 hours of real USGS river readings before that moment, from the USGS archive. A gauge with no archived reading shows as offline, never a made-up value;
+- for rain, what a USGS rain gauge in Chester County actually measured in the next 24 and 48 hours. Forecasts from that time aren't archived in a form the app can use.
+
+The replay is shown "as if now": every time is shifted so that moment is the present, so the freshness rules work the same way. Each alert's headline keeps its real issue time.
+
+What the rules decide, using real data:
+- **Sept 27, 7:30 AM:** York, Cherokee, Chester, and Union are **Danger**, because NWS tagged both of their Flash Flood Warnings' damage threat "considerable." The other four counties are at Warning.
+- **Sept 29, 2:30 AM:** York, Kershaw, Fairfield, and Union are **Danger** from river gauges in moderate or major flood (for example, the Wateree River near Camden in major flood, and Big Dutchman Creek in Rock Hill in moderate flood).
+
+**Six made-up scenarios** show each hazard type: a Flood Watch, a river Flood Warning, a flash flood emergency, a tornado warning, an extreme heat warning, and a tropical storm with a Flood Watch. They are small data files with fake alerts, gauge readings, and rain, and each fake alert starts with "SIMULATED." While a scenario is on, every screen shows **"SIMULATION — not live data,"** the status card says "Simulated," and nothing is saved or sent anywhere.
 
 ## Limitations
 

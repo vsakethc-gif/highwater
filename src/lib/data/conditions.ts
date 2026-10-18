@@ -9,7 +9,7 @@
  */
 import { COUNTIES } from '../../config';
 import type { Place, RainForecast } from '../hazards/types';
-import { findScenario, scenarioAlerts, scenarioGauges, scenarioRain } from '../scenario/scenario';
+import { loadScenario, scenarioAlerts, scenarioGauges, scenarioRain } from '../scenario/scenario';
 import { loadGaugeSites } from './gauges';
 import { fetchActiveAlerts } from './nws';
 import { fetchRain } from './rain';
@@ -52,12 +52,12 @@ export async function loadConditions(
   options: { allCounties?: boolean; skipRain?: boolean; signal?: AbortSignal } = {},
 ): Promise<Conditions> {
   const counties = options.allCounties ? null : [place.fips];
-  const scenario = findScenario(scenarioId);
+  const scenario = await loadScenario(scenarioId);
 
   if (scenario) {
     const now = Date.now();
     const sites = (await loadGaugeSites()).filter((s) => !counties || counties.includes(s.county_fips));
-    const source = 'Scenario Mode (simulated)';
+    const source = scenario.replay ? 'Scenario Mode (replay of real archived data)' : 'Scenario Mode (simulated)';
     return {
       alerts: stamp(scenarioAlerts(scenario, now), source),
       gauges: stamp(scenarioGauges(scenario, sites, now), source),

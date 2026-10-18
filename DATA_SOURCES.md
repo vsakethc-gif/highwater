@@ -245,5 +245,14 @@ Free: up to 20 widgets, 10 hostnames each, unlimited challenges.
 
 **ACS check:** total population across the 149 tracts is 618,892, consistent with the 8 counties' published totals.
 
+## 16. Hurricane Helene replay data (added Oct 18, 2026)
+
+Used only by `scripts/build-helene.mjs` to build the two Helene replays in Scenario Mode. The app never calls these sources itself.
+
+- **USGS archive of river readings:** `https://nwis.waterservices.usgs.gov/nwis/iv/?format=json&sites=...&parameterCd=00065,00045&startDT=2024-09-25T00:00-04:00&endDT=2024-10-01T00:00-04:00&siteStatus=all`. No key. Historical requests to `waterservices.usgs.gov` answer with a **301 redirect** to `nwis.waterservices.usgs.gov`, so the script calls that address directly. 37 of 39 gauges had readings on Sept 27, 2024 (36 of 39 on Sept 29). USGS writes missing values as -999999. Parameter 00045 is rainfall (inches per interval); we use Rocky Creek at SC 901 (021474750), Chester County.
+- **Iowa Environmental Mesonet (IEM), Iowa State University: NWS alert archive.** `https://mesonet.agron.iastate.edu/json/vtec_events_bystate.py?state=SC&year=2024` lists every alert issued for SC in 2024 (1,538 events). `https://mesonet.agron.iastate.edu/json/vtec_event.py?wfo=GSP&year=2024&phenomena=FF&significance=W&etn=82` returns the full text of one alert and every update NWS sent. No key, free. Times are UTC. Credit: Iowa Environmental Mesonet.
+- **Quirks:** one NWS product can cover several alerts (for example, it can cancel Tornado Watch 684 and extend 687 in the same message), so the script matches the exact alert number. Tropical storm products have one section per area; the script uses the section for an SC-5 county.
+- **Checked against the real record:** for example, the Flash Flood Warning for Cherokee and York (GSP #82) was issued at 3:02 AM on Sept 27, 2024, extended four times, and tagged "damage threat: considerable" at 6:19 AM.
+
 ## P2 sources (not checked yet; only if time allows)
 AirNow, USGS earthquake feeds, NASA FIRMS.

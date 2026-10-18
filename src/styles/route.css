@@ -285,3 +285,16 @@
     min-height: 0;
   }
 }
+
+/* Before the map loads: a calm message and a button, the same size as the map (no jump). */
+.route-map__placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: 100%;
+  padding: var(--space-3);
+  text-align: center;
+  color: var(--color-ink-muted);
+}

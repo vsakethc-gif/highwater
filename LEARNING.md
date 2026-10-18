@@ -79,6 +79,17 @@ Evidence of my own work and a study guide for judging. Fill in "What I did" in y
 - A design pass at 5 screen widths, honest error messages when each data source fails, a table of contents for How it works, a fuller About page, a link-preview image, and keyboard access for setting a report location.
 - Lighthouse (mobile): accessibility 100 and best practices 100 on every page; performance 97–100 except the map (50) and route (76) pages, where the map library is the bottleneck.
 
+### Sunday, October 18, 2026: Helene replay and speed
+
+**What I did** *(edit this in your own words)*
+- Chose which improvements to make (Helene replay, faster pages, deploy updates).
+- _Add: what you noticed comparing the replay with what you remember from Helene._
+
+**What was built**
+- Two Scenario Mode replays of Hurricane Helene using real archived NWS alerts and USGS river readings.
+- The route planner's map now loads only when needed; the route page went from 76 to 96 on Lighthouse.
+- Refreshed the gauge list (still 39 gauges), and updated and pinned the deploy setup.
+
 ## Concepts
 
 ### Lighthouse and layout shift
@@ -86,6 +97,12 @@ Lighthouse is Google's built-in page checker. It scores speed, accessibility, be
 
 ### Media queries vs. container queries
 A media query changes the layout based on the screen's width. A container query changes it based on the width of the box the element sits in. The river gauge list uses a container query, so it looks right both full-width on a phone and in the narrow side column on a laptop.
+
+### Archives and replays
+Government data services usually show what's happening now. Archives keep the past. USGS keeps every river reading, and Iowa State's mesonet keeps every NWS alert with each update. A replay picks one past minute, keeps only what was true then, and shifts the times so the app treats it as "now."
+
+### Lazy loading
+Download big pieces only when someone needs them. The route map library is about 300 KB compressed, so it loads when you tap "Show map" or get routes. The page opens much faster on a slow phone.
 
 ### Failure testing
 To see what people get when a service is down, a test browser blocked one source at a time (weather alerts, river levels, the report database, map data). The rule: a failure must say "couldn't load," never look like "all clear."

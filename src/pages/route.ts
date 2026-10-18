@@ -16,7 +16,7 @@ import { featureAt } from '../lib/geo';
 import { guidanceFor } from '../lib/guidance/guidance';
 import { alertAppliesTo, evaluate } from '../lib/hazards/engine';
 import { HAZARDS } from '../lib/hazards/hazards';
-import { buildAvoidPlan, type LonLat } from '../lib/routing/avoid';
+import { buildAvoidPlan, type LonLat, type PolygonCoords } from '../lib/routing/avoid';
 import { awayFromWarning, byDistance, fetchOpenShelters, type Shelter, type Town } from '../lib/routing/destinations';
 import { appleMapsLink, googleMapsLink } from '../lib/routing/links';
 import { planRoutes, type RoutePlan, type RouteResult } from '../lib/routing/plan';
@@ -172,6 +172,48 @@ export function renderRoute(root: HTMLElement): () => void {
   const planButton = h('button', { class: 'button button--primary', type: 'button' }, 'Plan routes');
   const mapEl = h('div', { class: 'route-map', role: 'region', 'aria-label': 'Route map. Route details are listed below the map.' });
   const tapHint = h('p', { class: 'meta' });
+
+  // The map library is large (about 300 KB compressed), so the map loads only when it's needed:
+  // when someone taps "Show map", chooses to tap the map, or gets routes. This keeps the page fast on slow phones.
+  let avoidPolygons: PolygonCoords[] = [];
+  // routeMap is filled in later by ensureMap(); reading it through this helper keeps TypeScript from assuming it is still null.
+  const mapNow = (): RouteMap | null => routeMap;
+  let mapLoading: Promise<RouteMap | null> | null = null;
+  const showMap = h('button', { class: 'button button--secondary', type: 'button' }, icon('Map'), 'Show map');
+  showMap.addEventListener('click', () => void ensureMap());
+  mapEl.append(
+    h('div', { class: 'route-map__placeholder' }, h('p', {}, 'The map loads when you need it, to save data on slow connections.'), showMap),
+  );
+
+  function ensureMap(): Promise<RouteMap | null> {
+    mapLoading ??= (async () => {
+      showMap.setAttribute('disabled', '');
+      showMap.lastChild!.textContent = 'Loading map…';
+      const { createRouteMap } = await import('../components/routeMap');
+      if (cancelled) return null;
+      mapEl.replaceChildren();
+      const m = createRouteMap(mapEl);
+      m.setAvoid(avoidPolygons);
+      m.onTap(onMapTap);
+      if (Array.isArray(shelters)) m.setShelters(shelters);
+      if (plan) m.setRoutes(plan.routes, selected);
+      routeMap = m;
+      refreshLabels(); // draws the start and destination pins
+      return m;
+    })();
+    return mapLoading;
+  }
+
+  async function onMapTap(point: [number, number]): Promise<void> {
+    const county = featureAt(await loadCounties(), point[0], point[1]);
+    const label = `Map point${county ? ` in ${county.properties.name} County` : ''}`;
+    if (tapTarget === 'start') setStart({ point, label });
+    else {
+      choice = 'place';
+      renderDestOptions();
+      setDestination({ point, label });
+    }
+  }
 
   function refreshLabels(): void {
     startLabel.textContent = start ? `Start: ${start.label}` : 'Start: not set yet';
@@ -336,7 +378,8 @@ export function renderRoute(root: HTMLElement): () => void {
     try {
       plan = await planRoutes(start.point, destination.point, alerts, controller.signal, { reports: communityReports, avoidFlooded: avoidFloodedBox.checked });
       selected = plan.routes[0]?.id ?? null;
-      routeMap?.setRoutes(plan.routes, selected);
+      if (routeMap) routeMap.setRoutes(plan.routes, selected);
+      else if (plan.routes.length) void ensureMap();
       say(plan.routes.length ? `${plan.routes.length} route${plan.routes.length > 1 ? 's' : ''} found.` : 'No route found.');
       renderResults();
     } catch (err) {
@@ -373,6 +416,7 @@ export function renderRoute(root: HTMLElement): () => void {
   tapStart.addEventListener('click', () => {
     tapTarget = 'start';
     refreshLabels();
+    void ensureMap();
     mapEl.scrollIntoView({ block: 'center' });
   });
 
@@ -457,22 +501,9 @@ export function renderRoute(root: HTMLElement): () => void {
     refreshLabels();
     renderDestOptions();
 
-    const { createRouteMap } = await import('../components/routeMap');
-    if (cancelled) return;
-    routeMap = createRouteMap(mapEl);
     const here = alerts.filter((a) => alertAppliesTo(a, { kind: 'county', fips: place.fips }) || buildAvoidPlan([a]).sources.length);
-    routeMap.setAvoid(buildAvoidPlan(here).sources.flatMap((s) => s.polygons));
-    routeMap.onTap(async (point) => {
-      const county = featureAt(await loadCounties(), point[0], point[1]);
-      const label = `Map point${county ? ` in ${county.properties.name} County` : ''}`;
-      if (tapTarget === 'start') setStart({ point, label });
-      else {
-        choice = 'place';
-        renderDestOptions();
-        setDestination({ point, label });
-      }
-    });
-    refreshLabels();
+    avoidPolygons = buildAvoidPlan(here).sources.flatMap((s) => s.polygons);
+    mapNow()?.setAvoid(avoidPolygons);
 
     // Community reports load in the background; routes work without them.
     if (FEATURES.reports) {
@@ -492,7 +523,7 @@ export function renderRoute(root: HTMLElement): () => void {
       () => new Error('FEMA’s shelter list didn’t respond. Check with your county emergency management office.'),
     );
     if (cancelled) return;
-    if (Array.isArray(shelters)) routeMap.setShelters(shelters);
+    if (Array.isArray(shelters)) mapNow()?.setShelters(shelters);
     // Prefer the nearest open shelter when there is one, unless the person already picked something.
     if (!userChose) {
       if (Array.isArray(shelters) && shelters.length) chooseDestination('shelter');

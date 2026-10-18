@@ -16,7 +16,7 @@ Built for the 2026 Congressional App Challenge (SC-5) by a high school student i
 - **District map** of live river gauges, active warning areas, and who lives where (older adults, households without a car, poverty, disability) compared with FEMA flood zones.
 - **Lower-exposure route planner** that steers around active flood and evacuation warning areas, to an open shelter or a nearby town. Turned off during tornado and other shelter-in-place warnings.
 - **Community reports** (streetlight out, flooded road, downed tree...), public and unverified, with the official place to get each one fixed.
-- **Get ready** checklists for 12 hazards, **Scenario Mode** for demos, and **offline** use as an installable app.
+- **Get ready** checklists for 12 hazards, **offline** use as an installable app, and **Scenario Mode** for demos, including two replays of Hurricane Helene (Sept 2024) built entirely from real archived alerts and river readings.
 
 Everything is free, there are no accounts, and the "analysis" is a set of written rules ([METHODOLOGY.md](METHODOLOGY.md)), not AI.
 
@@ -34,6 +34,7 @@ node scripts/build-boundaries.mjs   # county + tract outlines (public/data/count
 node scripts/build-tracts.mjs       # Census + FEMA numbers per tract (needs CENSUS_API_KEY in .env)
 node scripts/build-zips.mjs         # ZIP code centers (public/data/zips.json)
 node scripts/build-towns.mjs        # SC-5 town centers for "Away from the warning area"
+node scripts/build-helene.mjs       # Hurricane Helene replays from archived USGS readings and NWS alerts
 node scripts/build-icons.mjs        # app icons for installing on phones (public/icons)
 ```
 
@@ -58,7 +59,7 @@ Run `supabase/schema.sql` once in the Supabase SQL Editor. It creates the tables
 |---|---|
 | `src/config.ts` | App name, county list, feature flags, thresholds: everything you might want to change |
 | `src/sw/` | The service worker (offline support); the build fills in its file list |
-| `src/lib/scenario/` | Scenario Mode and its six scenario files |
+| `src/lib/scenario/` | Scenario Mode: six made-up scenarios and two real-data Helene replays |
 | `src/styles/` | `tokens.css` (named colors, sizes, spacing), `base.css` (page defaults), `components.css` |
 | `src/components/` | Reusable UI pieces (status card, icons, maps, search box, ...) |
 | `src/pages/` | One file per screen |
@@ -103,6 +104,7 @@ Run `supabase/schema.sql` once in the Supabase SQL Editor. It creates the tables
 | GitHub Actions | Builds and deploys the site on every push; pings the database every 3 days so it stays awake | — |
 | [U.S. Census Geocoder](https://geocoding.geo.census.gov/) | Turns a typed street address into a map point (through the Worker) | Free, no key |
 | [FEMA Open Shelters](https://gis.fema.gov/) | Shelters that FEMA and the American Red Cross list as open | Free, no key |
+| [Iowa Environmental Mesonet](https://mesonet.agron.iastate.edu/) (Iowa State University) | Archive of past NWS alerts, used to build the Helene replays | Free, no key |
 | [puppeteer-core](https://pptr.dev/) and [Lighthouse](https://developer.chrome.com/docs/lighthouse) | Testing only (not in the repo): screenshots at 5 screen widths, keyboard tests, failure-state tests, and performance scores | Apache-2.0 |
 
 ## Data sources
@@ -118,5 +120,5 @@ Did you mean this?
   npm test # Test a package
 To see a list of supported npm commands, run:
   npm help).
-- Lighthouse, mobile: **accessibility 100 and best practices 100 on every page.** Performance: Status 98 (live site), Report 99, Get ready 100, How it works 99, About 99, Route 76, District map 50. The map and route pages are slowed by the map library (MapLibre); see NOTES.md.
+- Lighthouse, mobile: **accessibility 100 and best practices 100 on every page.** Performance: Status 97, Report 100, Get ready 100, About 99, How it works 99, Route 96, District map 50. The district map page is slowed by the map library (MapLibre, about 1 MB); see NOTES.md.
 - Checked at 360, 390, 768, 1024, and 1440 px wide with no sideways scrolling; keyboard-only use tested; each data source tested while blocked, to confirm the app says "couldn't load" instead of showing an all-clear.

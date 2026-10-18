@@ -6,6 +6,9 @@
  * through the same engine, so the demo shows exactly how the real rules respond.
  * Times are relative to "now" so a scenario always looks current.
  * Nothing from Scenario Mode is ever sent anywhere or saved.
+ *
+ * Two scenarios are REPLAYS of Hurricane Helene (Sept 2024) built from real archived data by
+ * scripts/build-helene.mjs. They're larger, so they download only when someone picks them.
  */
 import type { Alert, Gauge, GaugeSite, Reading } from '../data/types';
 import { buildGauge } from '../data/usgs';
@@ -29,21 +32,62 @@ interface ScenarioAlert {
   endOffsetMin: number;
 }
 
-export interface ScenarioFile {
+/** What the picker and banner need to know about a scenario. */
+export interface ScenarioInfo {
   id: string;
   title: string;
   summary: string;
   county: string;
-  alerts: ScenarioAlert[];
-  /** USGS site id → water rises (or falls) in a straight line from `from` to `to` over 6 hours. */
-  gauges: Record<string, { from: number; to: number }>;
-  rain: { next24h_in: number; next48h_in: number };
 }
 
-export const SCENARIOS: ScenarioFile[] = [floodWatch, floodWarning, flashFlood, tornado, heat, tropical] as ScenarioFile[];
+export interface ScenarioFile extends ScenarioInfo {
+  alerts: ScenarioAlert[];
+  /**
+   * USGS site id → either a made-up straight-line rise from `from` to `to` over 6 hours,
+   * or (replays) real `readings` as [minutes before the moment, feet].
+   */
+  gauges: Record<string, { from: number; to: number } | { readings: [number, number][] }>;
+  rain: { next24h_in: number; next48h_in: number };
+  /** Set only on replays of a real event. */
+  replay?: { moment: string; note: string };
+}
 
-export function findScenario(id: string | null): ScenarioFile | null {
+const SYNTHETIC = [floodWatch, floodWarning, flashFlood, tornado, heat, tropical] as ScenarioFile[];
+
+/** Real-data replays: downloaded only when someone picks one (each file is about 80 KB). */
+const REPLAYS: Record<string, { info: ScenarioInfo; load: () => Promise<ScenarioFile> }> = {
+  'helene-arrives': {
+    info: {
+      id: 'helene-arrives',
+      title: 'Hurricane Helene arrives (real data, Sept 27, 2024)',
+      summary: 'Real alerts and river readings from 7:30 AM on Sept 27, 2024, as Helene’s remnants crossed SC-5.',
+      county: '45091',
+    },
+    load: () => import('./scenarios/helene-arrives.json').then((m) => m.default as unknown as ScenarioFile),
+  },
+  'helene-rivers-crest': {
+    info: {
+      id: 'helene-rivers-crest',
+      title: 'Helene: rivers crest (real data, Sept 29, 2024)',
+      summary: 'Real alerts and river readings from 2:30 AM on Sept 29, 2024, as the Broad, Catawba, and Wateree rivers crested.',
+      county: '45091',
+    },
+    load: () => import('./scenarios/helene-rivers-crest.json').then((m) => m.default as unknown as ScenarioFile),
+  },
+};
+
+/** Every scenario for the picker: the two real-data replays first. */
+export const SCENARIOS: ScenarioInfo[] = [...Object.values(REPLAYS).map((r) => r.info), ...SYNTHETIC];
+
+export function findScenario(id: string | null): ScenarioInfo | null {
   return SCENARIOS.find((s) => s.id === id) ?? null;
+}
+
+/** The full scenario (alerts, gauges, rain). Replays are downloaded the first time they're used. */
+export async function loadScenario(id: string | null): Promise<ScenarioFile | null> {
+  if (id === null) return null;
+  if (id in REPLAYS) return REPLAYS[id].load();
+  return SYNTHETIC.find((s) => s.id === id) ?? null;
 }
 
 const minutes = (now: number, offset: number) => new Date(now + offset * 60_000).toISOString();
@@ -79,12 +123,18 @@ function ramp(from: number, to: number, now: number): Reading[] {
 }
 
 /**
- * Simulated gauges: listed sites follow their scenario ramp; every other gauge
+ * Simulated gauges. Made-up scenarios: listed sites follow their ramp; every other gauge
  * gets a steady, ordinary level (35% of its action stage, or 2 ft with no stage).
+ * Replays: every gauge uses its real archived readings, shifted so the moment is "now".
+ * A gauge with no archived reading gets none (it shows as offline), never a made-up value.
  */
 export function scenarioGauges(s: ScenarioFile, sites: GaugeSite[], now: number): Gauge[] {
   return sites.map((site) => {
     const plan = s.gauges[site.site_id];
+    if (plan && 'readings' in plan) {
+      return buildGauge(site, plan.readings.map(([offsetMin, value]) => ({ time: new Date(now + offsetMin * 60_000).toISOString(), value })));
+    }
+    if (s.replay) return buildGauge(site, []);
     const normal = site.stages?.action ? Math.round(site.stages.action * 0.35 * 100) / 100 : 2;
     const series = plan ? ramp(plan.from, plan.to, now) : ramp(normal, normal, now);
     return buildGauge(site, series);

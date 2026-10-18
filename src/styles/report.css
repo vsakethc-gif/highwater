@@ -305,3 +305,15 @@
 .admin-table tr.is-flagged td:first-child {
   box-shadow: inset 4px 0 0 var(--status-warning-bg);
 }
+
+/* A problem to fix before sending: impossible to miss. */
+.route-message.form-error {
+  padding: var(--space-1) var(--space-2);
+  border: var(--border-width) solid var(--status-danger-bg);
+  border-left-width: 6px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+}

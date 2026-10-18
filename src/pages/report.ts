@@ -128,8 +128,17 @@ export function renderReport(root: HTMLElement): () => void {
   const formSlot = h('div', {});
   const nearSlot = h('div', {});
   const message = h('p', { class: 'route-message', 'aria-live': 'polite' });
+  /** Status text (e.g. "Finding your location…"). */
   const say = (t: string): void => {
+    message.classList.remove('form-error');
     message.textContent = t;
+  };
+  /** Something must be fixed before sending: shown in a clear box and scrolled into view. */
+  const problem = (t: string): void => {
+    message.textContent = t;
+    message.classList.add('form-error');
+    message.setAttribute('role', 'alert');
+    message.scrollIntoView({ block: 'center' });
   };
   const spotLabel = h('p', { class: 'spot-label' }, 'Location: not set yet');
   const mapEl = h('div', { class: 'pick-map', role: 'region', 'aria-label': 'Map: tap to set the location of the problem, or drag the pin.', hidden: true });
@@ -269,10 +278,10 @@ export function renderReport(root: HTMLElement): () => void {
   }
 
   async function send(): Promise<void> {
-    if (!category) return say('Choose what the problem is.');
-    if (!spot) return say('Set the location: use your location or tap the map.');
+    if (!category) return problem('Choose what the problem is.');
+    if (!spot) return problem('Set the location: use your location or tap the map.');
     const text = description.value.trim();
-    if (text && looksPersonal(text)) return say('Please remove phone numbers or email addresses from the note.');
+    if (text && looksPersonal(text)) return problem('Please remove phone numbers or email addresses from the note.');
     const report = { category, lat: spot.lat, lon: spot.lon, county_fips: spot.fips, description: text || null };
     sendButton.setAttribute('disabled', '');
     try {
@@ -280,13 +289,13 @@ export function renderReport(root: HTMLElement): () => void {
       else {
         if (!token) {
           sendButton.removeAttribute('disabled');
-          return say('Please complete the “I’m human” check first.');
+          return problem('Please complete the “I’m human” check first.');
         }
         await submitReport(report, token);
       }
       showConfirmation(categoryInfo(category), spot.fips);
     } catch (err) {
-      say(err instanceof Error ? err.message : 'The report couldn’t be sent. Please try again.');
+      problem(err instanceof Error ? err.message : 'The report couldn’t be sent. Please try again.');
       window.turnstile?.reset();
       token = '';
       sendButton.removeAttribute('disabled');

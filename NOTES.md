@@ -10,7 +10,7 @@ Working log for Highwater (originally called SC-5 Ready). "Problems and fixes" b
 - **ZIP codes** are placed at their Census center point and assigned to the county that point falls in.
 - **"Insufficient data" tracts:** fewer than 200 people or 50 households. That catches Winthrop University's dorm tract (York 606: 1,471 people, all in group housing, 0 households) and a state prison tract in Lee County (9203.01), plus one 190-person tract in Lancaster.
 - **Map county statuses** use alerts and gauges only (no rain forecast), and the map says so.
-- - **Trend rule:** compare the newest reading with the oldest one inside the last 3 hours. A change of 0.1 ft or more is "rising" or "falling"; less is "steady."
+- **Trend rule:** compare the newest reading with the oldest one inside the last 3 hours. A change of 0.1 ft or more is "rising" or "falling"; less is "steady."
 - **Live site:** https://vsakethc-gif.github.io/highwater/ (repo: https://github.com/vsakethc-gif/highwater). Renamed from SC-5 Ready on 2026-10-18; the Cloudflare Worker and Turnstile widget kept their original sc5-ready names.
 - **The repo must be public:** GitHub Pages is free only for public repositories, and the judges may want to read the code anyway.
 
@@ -44,7 +44,7 @@ Working log for Highwater (originally called SC-5 Ready). "Problems and fixes" b
 - **Reports are written only through the Worker; reads come straight from Supabase.** Writes need the Turnstile check and validation; reads are safe because Row Level Security only exposes active reports and safe columns.
 - **No accounts for reporters.** A random device ID (hashed with a secret in the Worker) is enough to limit spam without collecting identity.
 - **Expiry is in the read rule**, not a scheduled cleanup job: flooded-road reports stop showing after 48 hours, others after 30 days, with nothing to run.
-- **Six scenarios** now, covering four hazard types (flood, tornado, heat, tropical) and all of Watch, Warning, and Danger. It is simpler and much smaller than MapLibre, which is enough for drawing our data on top of a basemap.
+- **Six scenarios** now, covering four hazard types (flood, tornado, heat, tropical) and all of Watch, Warning, and Danger.
 
 ## Problems and fixes
 
@@ -98,7 +98,7 @@ Working log for Highwater (originally called SC-5 Ready). "Problems and fixes" b
 ## Open questions for me
 
 - ~~App name~~ Decided: **Highwater** (2026-10-18).
-- **OpenRouteService:** check your daily quota at account.heigit.org, and whether requests are working again. If ORS stays down, the app still works with the backup router (no hazard avoidance).
+- ~~OpenRouteService hanging~~ Working again (tested 2026-10-18: a York County route came back in under 1 second). If it stops again, the app still works with the backup router (no hazard avoidance).
 - **Your ORS key was pasted into the chat.** It's low risk (it only spends routing quota and is now stored safely in Cloudflare), but you can make a new key at account.heigit.org; then put it in `worker/.dev.vars` and I'll re-upload it.
 
 ## Later (ideas outside current scope)

@@ -12,6 +12,7 @@ import './styles/base.css';
 import './styles/components.css';
 import './styles/screens.css';
 import './styles/prepare.css';
+import './styles/motion.css';
 import { APP_NAME, FEATURES } from './config';
 import { h } from './lib/dom';
 import { subscribe } from './lib/state';

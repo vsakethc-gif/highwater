@@ -6,7 +6,7 @@
  */
 import { h } from '../lib/dom';
 import { HAZARDS } from '../lib/hazards/hazards';
-import { LEVELS } from '../lib/hazards/levels';
+import { LEVELS, type Level } from '../lib/hazards/levels';
 import type { HazardStatus, OverallStatus, Trigger } from '../lib/hazards/types';
 import type { GuidanceBlock } from '../lib/guidance/types';
 import { clockTime, dateTime, relativeTime } from '../lib/time';
@@ -19,12 +19,41 @@ export interface StatusCardProps {
   placeName: string;
   updatedAt: string;
   simulated: boolean;
+  /** True only for fresh, complete live data (not simulated, not a saved offline copy). */
+  live: boolean;
+}
+
+/**
+ * The four-step level scale (Normal, Watch, Warning, Danger) with the current level marked,
+ * so people see where they are on the scale at a glance. The badge above already says the
+ * level in words, so screen readers skip this picture to avoid repeating it.
+ */
+function levelMeter(level: Level): HTMLElement {
+  return h(
+    'div',
+    { class: 'level-meter', 'aria-hidden': 'true' },
+    ...([0, 1, 2, 3] as Level[]).map((l) =>
+      h(
+        'div',
+        { class: `level-meter__step level-meter__step--${LEVELS[l].key}${l <= level ? ' is-on' : ''}${l === level ? ' is-current' : ''}` },
+        h('span', { class: 'level-meter__bar' }),
+        h('span', { class: 'level-meter__label' }, LEVELS[l].name),
+      ),
+    ),
+  );
 }
 
 export function statusCard(p: StatusCardProps): HTMLElement {
   const unconfirmed = !p.overall.complete && p.overall.level === 0;
   const simTag = p.simulated ? h('span', { class: 'sim-tag' }, icon('FlaskConical'), 'Simulated') : null;
-  const updated = h('p', { class: 'meta' }, `Updated ${relativeTime(p.updatedAt)}, at ${clockTime(p.updatedAt)}`);
+  // A softly pulsing dot marks live data; simulated or saved data never gets it.
+  const updated = h(
+    'p',
+    { class: 'meta status-card__updated' },
+    p.live ? h('span', { class: 'live-dot' }) : null,
+    p.live ? h('strong', {}, 'Live · ') : null,
+    `Updated ${relativeTime(p.updatedAt)}, at ${clockTime(p.updatedAt)}`,
+  );
 
   if (unconfirmed) {
     return h(
@@ -58,6 +87,7 @@ export function statusCard(p: StatusCardProps): HTMLElement {
     ),
     h('h2', { id: 'status-heading', class: 'status-card__headline' }, p.top.whatsHappening),
     h('p', { class: 'status-card__meaning' }, info.meaning),
+    levelMeter(p.overall.level),
     p.overall.gaps.length
       ? h(
           'div',

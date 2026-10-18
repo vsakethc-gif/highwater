@@ -42,6 +42,7 @@ export function sparkline(series: Reading[]): SVGSVGElement {
   if (points) {
     const line = document.createElementNS(SVG_NS, 'polyline');
     line.setAttribute('points', points);
+    line.setAttribute('pathLength', '1'); // lets CSS "draw" the line from left to right
     svg.appendChild(line);
     const last = points.split(' ').pop()!.split(',');
     const dot = document.createElementNS(SVG_NS, 'circle');

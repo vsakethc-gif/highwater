@@ -98,6 +98,9 @@ Lighthouse is Google's built-in page checker. It scores speed, accessibility, be
 ### Media queries vs. container queries
 A media query changes the layout based on the screen's width. A container query changes it based on the width of the box the element sits in. The river gauge list uses a container query, so it looks right both full-width on a phone and in the narrow side column on a laptop.
 
+### Animation and reduced motion
+CSS can animate an element from one state to another ("keyframes"). We only animate opacity (see-through) and transform (move or scale), because those don't push other things around. Some people get dizzy from motion, so phones have a "reduce motion" setting; our CSS checks it and turns every animation off.
+
 ### Archives and replays
 Government data services usually show what's happening now. Archives keep the past. USGS keeps every river reading, and Iowa State's mesonet keeps every NWS alert with each update. A replay picks one past minute, keeps only what was true then, and shifts the times so the app treats it as "now."
 

@@ -51,6 +51,8 @@ Working log for Highwater (originally called SC-5 Ready). "Problems and fixes" b
 - **The Helene files load only when picked** (about 10–14 KB compressed each), so they don't slow the Status page.
 - **The route planner's map loads only when needed** ("Show map", tapping the map, or when routes are ready). The route page's performance went from 76 to 96.
 - **Deploy pinned to Ubuntu 24.04** and actions updated to their Node 24 versions, so GitHub's runner change on Oct 19 can't break the deploy during judging.
+- **Animations (Oct 18), at your request:** purposeful and short. New content rises in, river sparklines draw themselves, a "Live" dot pulses only for fresh live data, loading boxes shimmer, expanders and dialogs ease open, and buttons press in. All of it lives in `src/styles/motion.css`, only opacity and transform move (so nothing shifts), and it all switches off when a phone asks for reduced motion. This relaxes the brief's "under 200ms" rule slightly (most are about 250ms, sparklines 900ms) because you asked for more motion.
+- **Level meter on the status card:** a four-step Normal → Watch → Warning → Danger scale with the current step marked, so people see how serious it is at a glance. It is hidden from screen readers because the badge already says the level in words.
 
 ## Problems and fixes
 

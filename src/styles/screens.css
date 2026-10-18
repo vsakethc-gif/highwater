@@ -456,6 +456,73 @@ body {
   margin-top: var(--space-2);
 }
 
+/* Four-step level scale: filled up to the current level, current step thicker and labeled in bold. */
+.level-meter {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-0);
+  margin-top: var(--space-3);
+  max-width: 32rem;
+}
+
+.level-meter__step {
+  display: grid;
+  gap: var(--space-0);
+  align-content: end;
+}
+
+.level-meter__bar {
+  display: block;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--color-border);
+}
+
+.level-meter__step.is-current .level-meter__bar {
+  height: 12px;
+}
+
+.level-meter__step--normal.is-on .level-meter__bar { background: var(--status-normal-border); }
+.level-meter__step--watch.is-on .level-meter__bar { background: var(--status-watch-border); }
+.level-meter__step--warning.is-on .level-meter__bar { background: var(--status-warning-bg); }
+.level-meter__step--danger.is-on .level-meter__bar { background: var(--status-danger-bg); }
+
+.level-meter__label {
+  font-size: var(--text-xs);
+  color: var(--color-ink-subtle);
+}
+
+.level-meter__step.is-current .level-meter__label {
+  color: var(--color-ink);
+  font-weight: var(--weight-bold);
+}
+
+/* "Live" marker next to the update time. */
+.status-card__updated {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0 var(--space-0);
+}
+
+.live-dot {
+  position: relative;
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: var(--space-0);
+  border-radius: 50%;
+  background: var(--color-accent);
+}
+
+.live-dot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--color-accent);
+}
+
 .status-badge--unknown {
   background: var(--color-surface-sunken);
   color: var(--color-ink);
@@ -752,13 +819,13 @@ body {
 
 /* Same size as the real status card + "Why this status?" (measured), so nothing jumps when data arrives. */
 .skeleton--tall {
-  height: 24rem;
+  height: 26.5rem;
   margin-top: var(--space-3);
 }
 
 @media (min-width: 48rem) {
   .skeleton--tall {
-    height: 17rem;
+    height: 25.5rem;
   }
 }
 

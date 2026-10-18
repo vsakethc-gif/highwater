@@ -293,7 +293,7 @@ export function renderStatus(root: HTMLElement): () => void {
         : null;
       statusSlot.replaceChildren(
         offlineNote ?? '',
-        statusCard({ overall, top, placeName: label, updatedAt, simulated: c.simulated }),
+        statusCard({ overall, top, placeName: label, updatedAt, simulated: c.simulated, live: !c.simulated && !c.savedAt && overall.complete }),
         otherHazards(overall.active) ?? '',
         whyStatus(overall, checksList(place, c, alertsHere)),
       );

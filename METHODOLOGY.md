@@ -110,7 +110,17 @@ Guidance is fixed text chosen by hazard and level, written at about an 8th grade
 - **Flooding:** [NWS: Turn Around Don't Drown](https://www.weather.gov/safety/flood-turn-around-dont-drown), [Ready.gov: Floods](https://www.ready.gov/floods), [SC Emergency Management: Floods](https://www.scemd.org/prepare/types-of-disasters/floods/), [Red Cross: Flood safety](https://www.redcross.org/get-help/how-to-prepare-for-emergencies/types-of-emergencies/flood.html)
 - **Tornado:** [NWS: During a tornado](https://www.weather.gov/safety/tornado-during), [Ready.gov: Tornadoes](https://www.ready.gov/tornadoes)
 - **Severe storms:** [NWS: Thunderstorm safety](https://www.weather.gov/safety/thunderstorm), [Ready.gov: Severe weather](https://www.ready.gov/severe-weather)
-- **Other hazards:** follow the official alert's own instructions ([NWS weather safety](https://www.weather.gov/safety/), [Ready.gov alerts](https://www.ready.gov/alerts)). Detailed guidance for these hazards is being added.
+- **Tropical storm or hurricane:** [Ready.gov: Hurricanes](https://www.ready.gov/hurricanes), [SC Emergency Management: Hurricanes](https://www.scemd.org/prepare/types-of-disasters/hurricanes/), [NWS: Hurricane safety](https://www.weather.gov/safety/hurricane)
+- **Winter storm and extreme cold:** [Ready.gov: Winter weather](https://www.ready.gov/winter-weather) (generators at least 20 feet from windows and doors; never heat with a gas stove or oven; a body temperature below 95°F is an emergency), [NWS: Winter safety](https://www.weather.gov/safety/winter), [NWS: Cold safety](https://www.weather.gov/safety/cold)
+- **Extreme heat:** [Ready.gov: Extreme heat](https://www.ready.gov/heat) (never leave people or pets in a closed car; heat stroke vs. heat exhaustion), [NWS: Heat safety](https://www.weather.gov/safety/heat)
+- **High wind:** [NWS: During high winds](https://www.weather.gov/safety/wind-during)
+- **Fire weather:** [NWS: Fire weather alerts](https://www.weather.gov/safety/wildfire-ww) ("be extremely careful with open flames"), [Ready.gov: Wildfires](https://www.ready.gov/wildfires)
+- **Fog:** [NWS: Driving in fog](https://www.weather.gov/safety/fog-driving)
+- **Air quality:** [AirNow: AQI basics](https://www.airnow.gov/aqi/aqi-basics/)
+- **Evacuation orders:** [Ready.gov: Evacuation](https://www.ready.gov/evacuation)
+- **Any other alert:** follow the official alert's own instructions ([NWS weather safety](https://www.weather.gov/safety/), [Ready.gov alerts](https://www.ready.gov/alerts)).
+
+For each hazard, a Watch-level alert shows "get ready" steps and a Warning- or Danger-level alert shows "act now" steps.
 
 Context rules that change the advice:
 
@@ -118,13 +128,27 @@ Context rules that change the advice:
 - **In a FEMA high-risk flood zone** (when you use your location) with a flood Watch or higher: adds "be ready to leave, and know your way to higher ground."
 - **Where 7% or more of households have no car** (about twice the SC-5 tract median of 3.5%): adds advice to ask a neighbor, family member, or county emergency management about a ride before roads flood.
 - **Where the vulnerability score is 60 or higher, or many households have no car:** strengthens "Check on others."
-- **Tornado and severe storm:** "stay where you are and take shelter" (lowest floor, interior room, away from windows). The app **never** suggests driving away, and never shows a route button for these hazards, even if a flood is also happening.
+- **Shelter-in-place hazards** (tornado, severe storm, winter storm, extreme heat or cold, high wind, and the extreme wind of a hurricane): "stay where you are and take shelter." The app **never** suggests driving away and never shows a route button for these, even if a flood is also happening.
+- **Leaving can make sense** only for flooding (Warning or Danger), a Tropical Storm or Hurricane Warning, and official evacuation orders. Even then, the advice is to follow local officials first.
 
 Every guidance block ends with: *This app is not an official warning system. Follow instructions from local officials. In an emergency, call 911.* The app never calls a place or route "safe."
 
+## Get ready page
+
+"Get ready" lists the steps for every hazard on one printable page, using the same guidance rules as the status screen.
+
+## Offline use
+
+The app can be installed on a phone's home screen. A service worker (a small script the browser keeps for this site) saves the app's own files, so it opens and shows guidance and the "Get ready" checklists without a signal.
+
+- **Live government data is never answered from that saved copy.** Instead, after each successful live load, the app saves that county's alerts, gauge readings, and rain forecast in the browser.
+- If a live load fails, the app shows that saved copy with **"Offline: showing info from [time]"** and every source labeled "(saved copy)."
+- A status built from a saved copy is always marked incomplete, so it can never show as an all-clear. Alerts that ended after the copy was saved are dropped, and gauge readings older than 2 hours are still treated as stale.
+- No exact location is ever saved. Copies are kept per county.
+
 ## Scenario Mode
 
-Scenario Mode replays a made-up emergency to show how the rules respond. Scenarios are small data files in the source code (fake alerts, gauge readings, and rain) run through the exact same rules as live data. While a scenario is on, every screen shows **"SIMULATION — not live data,"** the status card says "Simulated," and nothing is saved or sent anywhere.
+Scenario Mode replays a made-up emergency to show how the rules respond. There are six scenarios: a Flood Watch, a river Flood Warning, a flash flood emergency, a tornado warning, an extreme heat warning, and a tropical storm with a Flood Watch. Scenarios are small data files in the source code (fake alerts, gauge readings, and rain) run through the exact same rules as live data. While a scenario is on, every screen shows **"SIMULATION — not live data,"** the status card says "Simulated," and nothing is saved or sent anywhere.
 
 ## Limitations
 

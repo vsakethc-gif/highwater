@@ -46,8 +46,8 @@ export const DEFAULT_COUNTY_FIPS = '45091'; // York
  * P0 features (flood status, map, scenario mode) are always on and have no flag.
  */
 export const FEATURES = {
-  multiHazard: false, // P1a: all NWS alert types, not just flooding
-  offline: false, // P1a: installable app that works with weak signal
+  multiHazard: true, // P1a: detailed guidance for every NWS hazard type (off = generic "follow the alert")
+  offline: true, // P1a: installable app (service worker) + "last loaded" copy when offline
   routePlanner: false, // P1b: lower-exposure route map + shelters
   reports: false, // P1c: community issue reporting
   airQuality: false, // P2

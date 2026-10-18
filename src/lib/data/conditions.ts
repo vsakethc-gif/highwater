@@ -13,6 +13,7 @@ import { findScenario, scenarioAlerts, scenarioGauges, scenarioRain } from '../s
 import { loadGaugeSites } from './gauges';
 import { fetchActiveAlerts } from './nws';
 import { fetchRain } from './rain';
+import { loadSnapshot, makeSnapshot, saveSnapshot } from './snapshot';
 import type { Alert, Gauge, Loaded } from './types';
 import { buildGauge, fetchGaugeReadings } from './usgs';
 
@@ -23,6 +24,8 @@ export interface Conditions {
   gauges: Loaded<Gauge[]> | Error;
   rain: Loaded<RainForecast> | Error;
   simulated: boolean;
+  /** Set when some data came from the saved "last loaded" copy because the network failed. */
+  savedAt?: string;
 }
 
 const stamp = <T>(data: T, source: string): Loaded<T> => ({ data, fetched_at: new Date().toISOString(), source });
@@ -71,6 +74,26 @@ export async function loadConditions(
       ? Promise.resolve(new Error('Rain forecast not requested'))
       : fetchRain(lat, lon, options.signal).then((r) => stamp(r, 'National Weather Service forecast'), asError),
   ]);
+
+  // Single-county views: save a "last loaded" copy when live data arrives,
+  // or fill in any failed source from that copy (clearly marked as saved).
+  if (!options.allCounties) {
+    if (!(alerts instanceof Error) && !(gauges instanceof Error)) {
+      saveSnapshot(makeSnapshot(place.fips, alerts.data, gauges.data, rain instanceof Error ? null : rain.data));
+      return { alerts, gauges, rain, simulated: false };
+    }
+    const saved = loadSnapshot(place.fips);
+    if (saved) {
+      const fromCopy = <T>(data: T, source: string): Loaded<T> => ({ data, fetched_at: saved.saved_at, source, saved: true });
+      return {
+        alerts: alerts instanceof Error ? fromCopy(saved.alerts, 'National Weather Service (saved copy)') : alerts,
+        gauges: gauges instanceof Error ? fromCopy(saved.gauges, 'USGS (saved copy)') : gauges,
+        rain: rain instanceof Error && saved.rain ? fromCopy(saved.rain, 'National Weather Service forecast (saved copy)') : rain,
+        simulated: false,
+        savedAt: saved.saved_at,
+      };
+    }
+  }
   return { alerts, gauges, rain, simulated: false };
 }
 

@@ -8,7 +8,7 @@ import { findScenario, SCENARIOS } from '../lib/scenario/scenario';
 import { getState, setState } from '../lib/state';
 import { icon } from './icon';
 
-export type Route = 'status' | 'map' | 'methodology' | 'about' | 'none';
+export type Route = 'status' | 'map' | 'prepare' | 'methodology' | 'about' | 'none';
 
 export function skipLink(): HTMLAnchorElement {
   return h('a', { class: 'skip-link', href: '#main' }, 'Skip to main content');
@@ -17,6 +17,7 @@ export function skipLink(): HTMLAnchorElement {
 const NAV: { route: Route; label: string; href: string }[] = [
   { route: 'status', label: 'Status', href: '#/' },
   { route: 'map', label: 'District map', href: '#/map' },
+  { route: 'prepare', label: 'Get ready', href: '#/prepare' },
   { route: 'methodology', label: 'How it works', href: '#/methodology' },
   { route: 'about', label: 'About', href: '#/about' },
 ];
@@ -146,7 +147,22 @@ export function siteFooter(): HTMLElement {
   );
 }
 
-/** Wrap a page's main content with the shared header, banner, and footer. */
+/** Shown on every page while the device has no connection (brief P1a). */
+export function offlineBanner(): HTMLElement | null {
+  if (navigator.onLine !== false) return null;
+  return h(
+    'div',
+    { class: 'banner banner--offline', role: 'status' },
+    h(
+      'div',
+      { class: 'container banner__inner' },
+      icon('CloudOff'),
+      h('span', {}, h('strong', {}, 'You’re offline. '), 'Guidance and the “Get ready” checklists still work. Live data will update when you reconnect.'),
+    ),
+  );
+}
+
+/** Wrap a page's main content with the shared header, banners, and footer. */
 export function pageShell(active: Route, main: HTMLElement): HTMLElement[] {
-  return [skipLink(), siteHeader(active), simulationBanner(), main, siteFooter()].filter(Boolean) as HTMLElement[];
+  return [skipLink(), siteHeader(active), offlineBanner(), simulationBanner(), main, siteFooter()].filter(Boolean) as HTMLElement[];
 }

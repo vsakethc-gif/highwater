@@ -36,6 +36,8 @@ describe('Scenario Mode (brief 12.8)', () => {
     ['york-flood-warning', 2, 'flood'],
     ['york-flash-flood-emergency', 3, 'flood'],
     ['lancaster-tornado-warning', 2, 'tornado'],
+    ['cherokee-extreme-heat', 2, 'heat'],
+    ['kershaw-tropical-storm', 2, 'tropical'],
   ] as [string, number, HazardId][])('%s → level %i, top hazard %s', (id, level, hazard) => {
     const { status } = run(id);
     expect(status.level).toBe(level);
@@ -43,10 +45,10 @@ describe('Scenario Mode (brief 12.8)', () => {
     expect(status.complete).toBe(true);
   });
 
-  it('shows all four levels across scenarios plus live Normal, and at least two hazard types', () => {
+  it('shows all four levels across scenarios plus live Normal, and at least three hazard types', () => {
     const levels = new Set(SCENARIOS.map((s) => run(s.id).status.level));
     expect([...levels].sort()).toEqual([1, 2, 3]);
-    expect(new Set(SCENARIOS.map((s) => run(s.id).status.active[0].hazard)).size).toBeGreaterThanOrEqual(2);
+    expect(new Set(SCENARIOS.map((s) => run(s.id).status.active[0].hazard)).size).toBeGreaterThanOrEqual(3);
   });
 
   it('the river flood warning comes from both the NWS alert and a gauge in minor flood', () => {
@@ -65,5 +67,20 @@ describe('Scenario Mode (brief 12.8)', () => {
     expect(g.latest?.time).toBe(new Date(NOW).toISOString());
     expect(g.latest?.value).toBe(16.4);
     expect(g.trend).toBe('rising');
+  });
+});
+
+describe('multi-hazard scenarios', () => {
+  it('tropical storm scenario shows two hazards: tropical first, then flooding (rain + Flood Watch)', () => {
+    const { status } = run('kershaw-tropical-storm');
+    expect(status.active.map((a) => a.hazard)).toEqual(['tropical', 'flood']);
+    expect(status.active[1].level).toBe(1);
+  });
+
+  it('heat scenario: shelter in place, no route button, heat stroke advice', () => {
+    const { blocks } = run('cherokee-extreme-heat');
+    expect(blocks[0].shelterInPlace).toBe(true);
+    expect(routeAllowed(blocks)).toBe(false);
+    expect(blocks[0].ifWorse.join(' ')).toMatch(/Heat stroke is an emergency/);
   });
 });

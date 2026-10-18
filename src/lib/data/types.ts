@@ -77,4 +77,6 @@ export interface Loaded<T> {
   data: T;
   fetched_at: string;
   source: string;
+  /** true when this came from the saved offline copy, not a live request. */
+  saved?: boolean;
 }

@@ -35,7 +35,11 @@ Working log for SC-5 Ready. "Problems and fixes" becomes the answer to the judge
 - **Exact locations are never saved or put in the URL.** Only the chosen county is remembered in the browser.
 - **A tornado or severe storm Warning blocks the route button even during a flood**: never suggest driving into a tornado.
 - **Methodology page renders METHODOLOGY.md directly**, so the app and the repo can't disagree.
-- ~~Map library: leaning Leaflet.~~ Replaced by MapLibre (see above). It is simpler and much smaller than MapLibre, which is enough for drawing our data on top of a basemap.
+- ~~Map library: leaning Leaflet.~~ Replaced by MapLibre (see above).
+- **Hand-written service worker instead of a plugin (Workbox).** It's about 70 lines, so every line can be explained; a tiny build step fills in the file list and a version number.
+- **The service worker never caches government API data.** The app keeps its own labeled "last loaded" copy per county instead, so old data can't be mistaken for live data.
+- **Guidance tables for 9 more hazards** (tropical, winter, cold, heat, wind, fire weather, fog, air quality, evacuation), each line taken from an official page. A Watch shows "get ready" steps; a Warning shows "act now" steps.
+- **Six scenarios** now, covering four hazard types (flood, tornado, heat, tropical) and all of Watch, Warning, and Danger. It is simpler and much smaller than MapLibre, which is enough for drawing our data on top of a basemap.
 
 ## Problems and fixes
 
@@ -59,6 +63,12 @@ Working log for SC-5 Ready. "Problems and fixes" becomes the answer to the judge
 - **Measuring flood-zone share took real geometry work.** FEMA returns 10,898 high-risk flood polygons for SC-5, 1,000 at a time. The script pages through them, has FEMA simplify them to about 20 m, skips quick non-overlaps with bounding boxes, and computes the overlap area with Turf.js. One broken FEMA polygon is skipped safely. Runs in about 90 seconds.
 - **A brand-new library version changed its import style** (MapLibre 6 has no "default export"). Found by the TypeScript check, fixed by importing it as a namespace.
 - **Unverified claim caught before publishing.** A draft of METHODOLOGY cited specific flash-flood numbers I hadn't checked; I replaced them with a fact I could verify (SC averages about 48 in of rain a year) and labeled the 2-inch rule as this app's own cautious choice.
+
+- **Offline mode broke in a way that would also have hit the live site.** With the server shut down, the app shell loaded but the "Get ready" page code failed, even though it was in the cache. Diagnosed by listing the cache (the file was there) and checking response headers: servers (including GitHub Pages) send `Vary: Accept-Encoding`, and the browser's request for a code module didn't match the saved request exactly. Fix: match cached files by address only (`ignoreVary: true`). Re-tested with the server off: all 12 hazard checklists loaded.
+- **Phones would never have seen updates to the offline script itself.** The cache version only counted the app's files, not the service worker's own code. Fix: include the worker's code in the version number.
+- **A build placeholder was replaced in the wrong place.** The text `__PRECACHE__` also appeared in a comment, and the build replaced the comment's copy. Fix: replace the exact line of code instead.
+- **Some official safety pages were thin.** The NWS fog and fire-weather pages and AirNow's AQI page didn't list the specific steps; I found the detailed official pages (fog-driving, wildfire-ww) instead, and dropped two tips I couldn't source (low-beam headlights, bring pets inside for cold).
+- **MapLibre's background worker logs an error in development mode only** (not in the production build, where the console is clean). Noted, not worth fixing.
 
 ## Open questions for me
 
@@ -107,3 +117,10 @@ Working log for SC-5 Ready. "Problems and fixes" becomes the answer to the judge
 7. **Map text version:** below the map, "Counties at a glance" table and "Show all 149 tracts"; choosing a tract opens its panel.
 8. **How it works:** shows the full methodology with tables. **About** shows the privacy note.
 9. Turn off Wi-Fi and refresh the status: the card says "Can't confirm" with the reasons, not "Normal."
+
+### Phase 3
+1. **Get ready** (in the menu): 12 hazards, each with "Get ready" and "Act now" steps and official source links. "Print this page" shows a clean printout with no menus or buttons.
+2. **Scenario Mode → Extreme heat warning (Cherokee):** Warning with a thermometer icon; steps mention air conditioning and "never leave people or pets in a closed car"; "If it gets worse" explains heat stroke; "Stay where you are and take shelter," no route button.
+3. **Scenario Mode → Tropical storm (Kershaw):** Warning with the rain-and-wind icon; "Also active here: Flooding, Watch."
+4. **Install:** on Android Chrome, the menu offers "Install app" or "Add to Home screen"; on iPhone Safari, Share → "Add to Home Screen." The icon is the blue water and gauge symbol.
+5. **Offline:** open the app once with signal, then turn on airplane mode and reopen it. The app opens, a "You're offline" banner shows on every page, Get ready works, and the status shows "Offline: showing info from [time]" with "Can't confirm," never "Normal."

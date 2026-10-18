@@ -19,7 +19,7 @@ import type { OverallStatus, Place } from '../lib/hazards/types';
 import { districtAverage, scoreBand, type Tract } from '../lib/hazards/vulnerability';
 import { findScenario } from '../lib/scenario/scenario';
 import { countyName, getState, placeLabel, subscribe } from '../lib/state';
-import { clockTime } from '../lib/time';
+import { clockTime, dateTime, relativeTime } from '../lib/time';
 import { alertRow } from '../components/alertRow';
 import { gaugeRow } from '../components/gaugeRow';
 import { guidanceBlock } from '../components/guidanceBlock';
@@ -262,7 +262,15 @@ export function renderStatus(root: HTMLElement): () => void {
 
     const alerts = dataOrNull(c.alerts);
     const alertsHere = alerts ? alerts.filter((a) => alertAppliesTo(a, place)) : null;
-    const overall: OverallStatus = evaluate({ alerts, gauges: dataOrNull(c.gauges), rain: dataOrNull(c.rain), now: Date.now() }, place);
+    const evaluated: OverallStatus = evaluate({ alerts, gauges: dataOrNull(c.gauges), rain: dataOrNull(c.rain), now: Date.now() }, place);
+    // A status built from the saved offline copy is never complete, so it can never be an all-clear.
+    const overall: OverallStatus = c.savedAt
+      ? {
+          ...evaluated,
+          complete: false,
+          gaps: [`Offline: showing info saved ${relativeTime(c.savedAt)} (${dateTime(c.savedAt)}). It may be out of date.`, ...evaluated.gaps],
+        }
+      : evaluated;
     const updatedAt = new Date().toISOString();
     const seat = COUNTIES.find((x) => x.fips === place.fips)?.seat.name ?? 'the county seat';
 
@@ -274,7 +282,16 @@ export function renderStatus(root: HTMLElement): () => void {
       const blocks = statuses.map((s) => guidanceFor(s, ctx));
       const top = blocks[0];
 
+      const offlineNote = c.savedAt
+        ? h(
+            'div',
+            { class: 'offline-note', role: 'status' },
+            icon('CloudOff'),
+            h('p', {}, h('strong', {}, `Offline: showing info from ${dateTime(c.savedAt)}. `), 'Live data can’t update right now. Check again when you have signal.'),
+          )
+        : null;
       statusSlot.replaceChildren(
+        offlineNote ?? '',
         statusCard({ overall, top, placeName: label, updatedAt, simulated: c.simulated }),
         otherHazards(overall.active) ?? '',
         whyStatus(overall, checksList(place, c, alertsHere)),

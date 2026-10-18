@@ -678,3 +678,25 @@
   border-left: 4px solid var(--color-accent);
   background: var(--color-accent-tint);
 }
+
+/* ---------- Offline ---------- */
+.banner--offline {
+  background: var(--status-watch-bg);
+  color: var(--status-watch-fg);
+  border-bottom: var(--border-width) solid var(--status-watch-border);
+}
+
+.offline-note {
+  display: flex;
+  gap: var(--space-1);
+  margin-top: var(--space-3);
+  padding: var(--space-2);
+  border: var(--border-width) solid var(--status-watch-border);
+  border-radius: var(--radius-md);
+  background: var(--status-watch-bg);
+  color: var(--status-watch-fg);
+}
+
+.offline-note .icon {
+  margin-top: 0.15em;
+}

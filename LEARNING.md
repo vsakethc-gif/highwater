@@ -39,6 +39,16 @@ Evidence of my own work and a study guide for judging. Fill in "What I did" in y
 - Vulnerability, exposure, and priority scores; guidance text; the status screen with county/ZIP/location choice.
 - The district map, Scenario Mode with 4 scenarios, and the How it works and About pages.
 
+### Saturday, October 17, 2026: Phase 3 (all hazards, offline, installable)
+
+**What I did** *(edit this in your own words)*
+- _Add: which scenarios you tried, whether you installed it on your phone, what you'd change in the guidance wording._
+
+**What was built**
+- Guidance for 9 more hazards from official sources; two new scenarios (extreme heat, tropical storm).
+- A printable "Get ready" page with steps for every hazard.
+- The app can be installed and opens offline; the last loaded data is shown, clearly labeled, when there's no signal.
+
 ## Concepts
 
 ### What is a web app made of?
@@ -123,3 +133,18 @@ FEMA's high-risk flood zone: land with about a 1% chance of flooding in any year
 
 ### Scenario Mode
 Pretend data run through the real rules, so we can show what happens in a flood or tornado without waiting for one. Always labeled "SIMULATION — not live data."
+
+### Progressive Web App (PWA)
+A website that can be installed like an app: it gets a home-screen icon, opens full-screen, and can work offline. It needs a **manifest** (name, icon, colors) and a **service worker**.
+
+### Service worker
+A small script the browser keeps for one website. It sits between the app and the internet. Ours saves the app's own files when you first visit, then hands them back instantly, even with no signal. It never saves live government data; the app labels its own saved copy instead.
+
+### Cache
+A saved copy of something so it can be reused without downloading it again. "Cache-first" means use the saved copy if there is one; "network-first" means try the internet first and fall back to the saved copy.
+
+### localStorage and sessionStorage
+Small storage spaces inside your browser for this one website. localStorage keeps things until you clear it (we save your chosen county and the last loaded data). sessionStorage is cleared when the tab closes (we keep Scenario Mode there, so a demo never "sticks").
+
+### Shelter in place
+For some hazards (tornado, severe storm, extreme heat or cold, winter storm, high wind) going outside or driving is more dangerous than staying put. The app tells people to take shelter where they are and never offers a route out for those.

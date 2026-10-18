@@ -14,6 +14,8 @@ import floodWarning from './scenarios/york-flood-warning.json';
 import flashFlood from './scenarios/york-flash-flood-emergency.json';
 import floodWatch from './scenarios/york-flood-watch.json';
 import tornado from './scenarios/lancaster-tornado-warning.json';
+import heat from './scenarios/cherokee-extreme-heat.json';
+import tropical from './scenarios/kershaw-tropical-storm.json';
 
 interface ScenarioAlert {
   event: string;
@@ -38,7 +40,7 @@ export interface ScenarioFile {
   rain: { next24h_in: number; next48h_in: number };
 }
 
-export const SCENARIOS: ScenarioFile[] = [floodWatch, floodWarning, flashFlood, tornado] as ScenarioFile[];
+export const SCENARIOS: ScenarioFile[] = [floodWatch, floodWarning, flashFlood, tornado, heat, tropical] as ScenarioFile[];
 
 export function findScenario(id: string | null): ScenarioFile | null {
   return SCENARIOS.find((s) => s.id === id) ?? null;

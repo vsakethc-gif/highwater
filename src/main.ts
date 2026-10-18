@@ -11,7 +11,8 @@ import './styles/tokens.css';
 import './styles/base.css';
 import './styles/components.css';
 import './styles/screens.css';
-import { APP_NAME } from './config';
+import './styles/prepare.css';
+import { APP_NAME, FEATURES } from './config';
 import { h } from './lib/dom';
 import { subscribe } from './lib/state';
 import { pageShell } from './components/layout';
@@ -46,6 +47,8 @@ async function pageFor(path: string): Promise<Page> {
       return renderStatus;
     case '/map':
       return (await import('./pages/map')).renderMap;
+    case '/prepare':
+      return (await import('./pages/prepare')).renderPrepare;
     case '/methodology':
       return (await import('./pages/textPages')).renderMethodology;
     case '/about':
@@ -80,6 +83,18 @@ async function route(): Promise<void> {
 }
 
 window.addEventListener('hashchange', () => void route());
+// Redraw when the connection drops or comes back, so the offline banner and data stay honest.
+window.addEventListener('online', () => void route());
+window.addEventListener('offline', () => void route());
+
+// Offline support: register the service worker (production builds only; see src/sw/sw-template.js).
+if (FEATURES.offline && import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {
+      /* the app still works without offline support */
+    });
+  });
+}
 // Pages other than Status redraw their shell (header + banner) when Scenario Mode changes.
 subscribe(() => {
   if (!['', '#', '#/'].includes(location.hash)) void route();

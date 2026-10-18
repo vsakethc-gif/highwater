@@ -89,3 +89,54 @@ describe('guidance selection (brief 9)', () => {
     }
   });
 });
+
+describe('multi-hazard guidance (P1a)', () => {
+  const ALL: HazardId[] = ['tropical', 'winter', 'cold', 'heat', 'wind', 'fire_weather', 'fog', 'air_quality', 'evacuation'];
+
+  it('every hazard has 3–6 steps, official links, and no "safe" at every level', () => {
+    for (const h of ALL) {
+      for (const level of [1, 2, 3] as Level[]) {
+        const g = guidanceFor(status(h, level, 'Test alert'), ctx);
+        expect(g.doNow.length, `${h} ${level}`).toBeGreaterThanOrEqual(3);
+        expect(g.doNow.length, `${h} ${level}`).toBeLessThanOrEqual(6);
+        expect(g.links.length, `${h} links`).toBeGreaterThan(0);
+        for (const l of g.links) expect(l.url).toMatch(/^https:\/\/(www\.)?(weather\.gov|ready\.gov|scemd\.org|airnow\.gov)\//);
+        const text = [g.whatsHappening, ...g.doNow, ...g.ifWorse].join(' ');
+        expect(text, `${h} ${level}`).not.toMatch(/\bsafe(ly|ty)?\b/i);
+        expect(text, `${h} ${level}`).not.toContain('{');
+      }
+    }
+  });
+
+  it('Watch gives "get ready" steps and Warning gives "act now" steps', () => {
+    expect(guidanceFor(status('winter', 1), ctx).doNow[0]).toMatch(/food, water, and medicine/);
+    expect(guidanceFor(status('winter', 2), ctx).doNow[0]).toMatch(/Stay off the roads/);
+  });
+
+  it('Extreme Wind Warning (tropical Danger) means take shelter now, no route', () => {
+    const g = guidanceFor(status('tropical', 3, 'Extreme Wind Warning'), ctx);
+    expect(g.shelterInPlace).toBe(true);
+    expect(g.canRoute).toBe(false);
+    expect(g.doNow[0]).toMatch(/interior room on the lowest floor/);
+  });
+
+  it('a hurricane warning can offer a route; heat, cold, winter, and wind never do', () => {
+    expect(guidanceFor(status('tropical', 2), ctx).canRoute).toBe(true);
+    for (const h of ['heat', 'cold', 'winter', 'wind'] as HazardId[]) expect(guidanceFor(status(h, 2), ctx).canRoute).toBe(false);
+  });
+
+  it('an evacuation order says leave now and can offer a route', () => {
+    const g = guidanceFor(status('evacuation', 3, 'Evacuation Immediate'), ctx);
+    expect(g.doNow[0]).toMatch(/^Leave now/);
+    expect(g.canRoute).toBe(true);
+  });
+
+  it('heat guidance says never leave people or pets in a closed car', () => {
+    expect(guidanceFor(status('heat', 2), ctx).doNow.join(' ')).toMatch(/Never leave people or pets in a closed car/);
+  });
+
+  it('builds "What’s happening" from the trigger and the place', () => {
+    const g = guidanceFor(status('heat', 2, 'Extreme Heat Warning'), ctx);
+    expect(g.whatsHappening).toBe('Dangerous heat is happening or about to happen in York County: Extreme Heat Warning.');
+  });
+});

@@ -7,10 +7,11 @@
  *   Storms:  NWS Thunderstorm Safety, Ready.gov Severe Weather
  * Sources for each are listed in METHODOLOGY.md. We never call a place or route "safe".
  */
-import { THRESHOLDS } from '../../config';
+import { FEATURES, THRESHOLDS } from '../../config';
 import { HAZARDS } from '../hazards/hazards';
 import type { Level } from '../hazards/levels';
 import type { HazardStatus } from '../hazards/types';
+import { fill, MORE_HAZARDS } from './moreHazards';
 import type { GuidanceBlock, GuidanceContext, Link } from './types';
 
 export const TURN_AROUND =
@@ -200,7 +201,32 @@ function severeStorm(status: HazardStatus, ctx: GuidanceContext): GuidanceBlock 
   };
 }
 
-// ---------- Every other hazard: follow the official alert (detailed copy comes in P1a) ----------
+// ---------- Tropical, winter, cold, heat, wind, fire weather, fog, air quality, evacuation (P1a) ----------
+
+function fromTable(status: HazardStatus, ctx: GuidanceContext): GuidanceBlock | null {
+  const copy = MORE_HAZARDS[status.hazard];
+  if (!copy) return null;
+  const level = status.level;
+  const info = HAZARDS[status.hazard];
+  // Watch-level alerts get the "get ready" steps; Warning and Danger get the "act now" steps.
+  const base = level <= 1 ? (copy.prepare.length ? copy.prepare : copy.act) : copy.act.length ? copy.act : copy.prepare;
+  const doNow = (level === 3 && copy.danger ? [copy.danger, ...base] : base).slice(0, 6);
+  const template = copy.happening[level] ?? copy.happening[1] ?? copy.happening[3] ?? '{reason} in {place}.';
+  const shelter = typeof copy.shelterInPlace === 'boolean' ? copy.shelterInPlace : (copy.shelterInPlace[level] ?? false);
+  return {
+    hazard: status.hazard,
+    level,
+    whatsHappening: fill(template, status, ctx, info.label),
+    doNow,
+    ifWorse: copy.ifWorse,
+    checkOnOthers: checkOnOthers(ctx, level),
+    links: copy.links,
+    shelterInPlace: shelter,
+    canRoute: copy.routeLevels.includes(level),
+  };
+}
+
+// ---------- Anything else: follow the official alert ----------
 
 function generic(status: HazardStatus, ctx: GuidanceContext): GuidanceBlock {
   const info = HAZARDS[status.hazard];
@@ -232,7 +258,7 @@ export function guidanceFor(status: HazardStatus, ctx: GuidanceContext): Guidanc
     case 'severe_storm':
       return severeStorm(status, ctx);
     default:
-      return generic(status, ctx);
+      return (FEATURES.multiHazard ? fromTable(status, ctx) : null) ?? generic(status, ctx);
   }
 }
 

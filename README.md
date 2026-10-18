@@ -8,7 +8,7 @@ Built for the 2026 Congressional App Challenge (SC-5) by a high school student i
 
 **Live site:** https://vsakethc-gif.github.io/sc5-ready/
 
-**Status:** Phase 2. Hazard status for all 8 counties, guidance, district map, and Scenario Mode.
+**Status:** Phase 3. All NWS hazard types with guidance, a printable "Get ready" page, and an installable app that works offline.
 
 ## Running it on your computer
 
@@ -23,6 +23,7 @@ node scripts/build-gauges.mjs       # SC-5 gauge list + official flood stages (p
 node scripts/build-boundaries.mjs   # county + tract outlines (public/data/counties.geojson)
 node scripts/build-tracts.mjs       # Census + FEMA numbers per tract (needs CENSUS_API_KEY in .env)
 node scripts/build-zips.mjs         # ZIP code centers (public/data/zips.json)
+node scripts/build-icons.mjs        # app icons for installing on phones (public/icons)
 ```
 
 ## How the code is organized
@@ -30,6 +31,8 @@ node scripts/build-zips.mjs         # ZIP code centers (public/data/zips.json)
 | Folder | What lives there |
 |---|---|
 | `src/config.ts` | App name, county list, feature flags, thresholds: everything you might want to change |
+| `src/sw/` | The service worker (offline support); the build fills in its file list |
+| `src/lib/scenario/` | Scenario Mode and its six scenario files |
 | `src/styles/` | `tokens.css` (named colors, sizes, spacing), `base.css` (page defaults), `components.css` |
 | `src/components/` | Reusable UI pieces (status badge, icons, ...) |
 | `src/pages/` | One file per screen |
@@ -57,6 +60,7 @@ node scripts/build-zips.mjs         # ZIP code centers (public/data/zips.json)
 | [mapshaper](https://github.com/mbloch/mapshaper) | Script-only: filters and simplifies Census boundary files | MPL-2.0 |
 | [Turf.js](https://turfjs.org/) | Script-only: measures flood-zone overlap and finds ZIP counties | MIT |
 | [fflate](https://github.com/101arrowz/fflate) | Script-only: unzips Census files | MIT |
+| [resvg-js](https://github.com/yisibl/resvg-js) | Script-only: draws the PNG app icons from the SVG logo | MPL-2.0 |
 | [Lucide](https://lucide.dev/) | Open-source icon set | ISC |
 | [Public Sans](https://public-sans.digital.gov/) (via Fontsource) | Main typeface, made by the U.S. government | OFL-1.1 |
 | [Source Serif 4](https://github.com/adobe-fonts/source-serif) (via Fontsource) | Serif typeface for page headings | OFL-1.1 |

@@ -24,8 +24,8 @@ Every source below was checked with a real request on **Saturday, October 17, 20
 | 11 | SC 511 road closures | **No public feed found** | — | — | Skipped | — |
 | 14 | OpenFreeMap basemap | Yes | Yes | No | Map background | 2 |
 | 15 | Census ZCTA Gazetteer | Yes | n/a (script only) | No | ZIP code centers | 2 |
-| 12 | Supabase | Not set up yet | Yes | Public anon key | Community reports database | 5 |
-| 13 | Cloudflare Turnstile | Not set up yet | Yes | Site key (public) + secret (Worker) | Spam protection | 5 |
+| 12 | Supabase | Yes (project `nywkprgdvishxicumtvx`) | Yes | Publishable key (public) + secret key (Worker only) | Community reports database | 5 |
+| 13 | Cloudflare Turnstile | Yes (widget `sc5-ready`) | Yes | Site key (public) + secret (Worker) | Spam protection | 5 |
 
 \* NWS rejects requests that send **no** `User-Agent` header (we got `403`). Browsers always send their own, and that is accepted (`200`).
 
@@ -193,7 +193,33 @@ No documented public developer feed was found. There is an SCDOT map service, bu
 - 500 MB database, 5 GB egress, 500,000 Edge Function calls, 2 active projects.
 - **Paused after 1 week of inactivity.** Judging happens after submission, so we'll add a scheduled GitHub Action that touches the database every few days. A paused project can be restored from the Supabase dashboard.
 
+### Setup and tests (Oct 18, 2026)
+
+- **Keys:** Supabase now uses *publishable* (`sb_publishable_…`, safe in browsers) and *secret* (`sb_secret_…`, bypasses Row Level Security, Worker only) keys; the older `anon`/`service_role` keys are being retired by the end of 2026 ([Supabase API keys](https://supabase.com/docs/guides/api/api-keys)). Keys go in the `apikey` header.
+- **Schema:** `supabase/schema.sql` (run in the SQL Editor). Admin: `supabase/make-admin.sql`.
+- **Security tests with the publishable key:** reading active reports → `200`; reading `device_hash` → `401 permission denied`; direct insert → `401`; calling `submit_report` directly → `401`.
+- **End to end:** a real report sent from the live site at 5:24 PM went page → Turnstile → Worker → database and was visible publicly. Votes through the Worker counted, and a second vote from the same device returned `already_voted`. Test reports were then set to `hidden`.
+- **Keep-alive:** `.github/workflows/keepalive.yml` reads one public row every 3 days. To un-pause a paused project: Supabase dashboard → the project → **Restore**.
+
 ## 13. Cloudflare Turnstile ([plans](https://developers.cloudflare.com/turnstile/plans/))
+
+- Widget `sc5-ready` (Managed mode), created through the Cloudflare API; allowed hostnames `vsakethc-gif.github.io` and `localhost`. Site key `0x4AAAAAAFagqhq5XFjVLuGy` (public); the secret is a Worker secret. The Worker verifies tokens at `https://challenges.cloudflare.com/turnstile/v0/siteverify`; a fake token is rejected.
+- **Quirk:** the check runs in an iframe; moving that iframe in the page reloads it and breaks the check (red "Troubleshoot"). The app removes and re-renders the widget whenever the form is rebuilt. Ad blockers, VPNs, and strict privacy settings can also block it; the app explains that when it happens.
+
+### Official channels for reports (checked Oct 18, 2026)
+
+| Problem | Where to report | Check |
+|---|---|---|
+| State roads (potholes, signs, debris, signals, flooding) | SCDOT Maintenance Work Request `https://apps.scdot.org/MWRO/` (also shows the responsible office for local roads); phone 855-467-2368 | Loads (200, "SCDOT - MWRO"); the old `scdot.org/pothole` page is gone (404) |
+| Duke streetlights | `https://www.duke-energy.com/customer-service/request-light-repair` → Duke's Street & Area Light Repair Map | Loads |
+| Duke downed lines/outages | 800-769-3766 (Duke Energy Carolinas) | From Duke's own safety material |
+| Dominion Energy SC | `https://www.dominionenergy.com/South-Carolina/Report-Outage-or-Emergency`; downed lines 888-333-4465 | Loads; same page says stay 30 ft away |
+| County roads and drains | County homepages (all 8 load; York and Kershaw block scripts, checked in a real browser) | — |
+| Cooperatives and city utilities | Not linked (varies by address): "call the number on your power bill" | — |
+
+**Downed power line distance:** the brief suggested 35 ft; Duke Energy and Dominion Energy SC both say **30 ft**, so the app uses 30 ft.
+
+## 13b. Cloudflare Turnstile plan limits
 
 Free: up to 20 widgets, 10 hostnames each, unlimited challenges.
 

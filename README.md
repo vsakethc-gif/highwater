@@ -8,7 +8,7 @@ Built for the 2026 Congressional App Challenge (SC-5) by a high school student i
 
 **Live site:** https://vsakethc-gif.github.io/sc5-ready/
 
-**Status:** Phase 4. Adds the lower-exposure route planner, open shelters, and address search through one small Cloudflare Worker.
+**Status:** Phase 5. Adds community issue reporting (Supabase + Cloudflare Turnstile), with official "get it fixed" links.
 
 ## Running it on your computer
 
@@ -36,6 +36,10 @@ npx wrangler login              # one time: connect to your Cloudflare account
 npx wrangler secret bulk .dev.vars   # upload ORS_API_KEY from the git-ignored .dev.vars file
 npx wrangler deploy             # publish https://sc5-ready.sc5ready.workers.dev
 ```
+
+## The database (`/supabase`)
+
+Run `supabase/schema.sql` once in the Supabase SQL Editor. It creates the tables, security rules, and the two functions the Worker calls. `supabase/make-admin.sql` makes your account an admin for the private `#/admin` page. The Worker needs these secrets in `worker/.dev.vars` (git-ignored), uploaded with `npx wrangler secret bulk .dev.vars`: `ORS_API_KEY`, `SUPABASE_SECRET_KEY`, `TURNSTILE_SECRET`, `DEVICE_SALT`.
 
 ## How the code is organized
 
@@ -80,6 +84,8 @@ npx wrangler deploy             # publish https://sc5-ready.sc5ready.workers.dev
 | [Cloudflare Workers](https://workers.cloudflare.com/) | Free hosting for the one small server function | — |
 | [OpenRouteService](https://openrouteservice.org/) (HeiGIT) | Driving directions that can avoid areas | Free plan, key required |
 | [OSRM demo server](https://project-osrm.org/) | Backup directions when ORS is down (no avoidance) | Light use only |
+| [Supabase](https://supabase.com/) | Free Postgres database for community reports, with Row Level Security | Free plan |
+| [Cloudflare Turnstile](https://www.cloudflare.com/products/turnstile/) | Free "I'm human" check on the report form | Free plan |
 | [GitHub Pages](https://pages.github.com/) | Free hosting for the website | — |
 | GitHub Actions | Builds and deploys the site automatically on every push | — |
 

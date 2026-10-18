@@ -164,6 +164,30 @@ Entering a warning area "costs" as much as half an hour of extra driving because
 
 "Open in Google Maps / Apple Maps" opens the same start and end in those apps, which don't know about our avoid areas; the screen says so.
 
+## Community reports
+
+People can report a streetlight out, traffic signal out, downed tree or debris, flooded road, blocked storm drain, pothole or road damage, damaged sign, downed power line, or something else. **Reports are unverified, public, and are NOT sent to any government agency.** After sending, the app shows the official place to report each problem so it actually gets fixed: SCDOT's Maintenance Work Request form for roads (it also shows who's responsible for local roads), Duke Energy's Street & Area Light Repair or Dominion Energy SC for streetlights and power, or the county's website.
+
+**Downed power line:** before anything else, a full-screen notice says to stay at least **30 feet** away and call 911 and the power company (tap-to-call buttons). That distance comes from both utilities serving SC-5: Duke Energy and Dominion Energy SC.
+
+**Privacy:** no name, email, phone, account, or IP address is stored. Locations are rounded to about 1 meter. Notes are limited to 280 characters, and notes containing phone numbers or email addresses are refused. A random ID stored in your browser (not tied to who you are) is hashed with a secret and used only to limit how many reports one device can send.
+
+**How a report is checked:** Cloudflare Turnstile ("I'm human" check) → our Worker checks the category, location (inside SC-5), note length, personal info, and a short list of offensive words → the database checks it all again and allows at most 5 reports per device per hour.
+
+**Community signals:**
+
+| Action | Effect |
+|---|---|
+| "Still there" | Keeps the report visible longer (resets its expiry clock) |
+| "Fixed" by 3 different devices | Report is closed as resolved |
+| "Flag" by 3 different devices | Report is hidden until the app's owner reviews it |
+
+Each device can do each action once per report. **Expiry:** flooded-road reports disappear 48 hours after the last "Still there"; all others after 30 days.
+
+**On routes:** route cards count unverified flooded-road, downed-tree, and power-line reports within about 100 m of the route. "Avoid community-reported flooded roads" (on by default) adds a small area around each reported flooded road to the avoid areas.
+
+**Security:** reports live in a Supabase (Postgres) database protected by Row Level Security. The public can only read active, non-expired reports and safe columns; it can't add, change, or delete anything directly. Only our Worker, using a secret key that never reaches the browser, can save reports and votes. In Scenario Mode, reports stay in the browser tab and are never sent.
+
 ## Get ready page
 
 "Get ready" lists the steps for every hazard on one printable page, using the same guidance rules as the status screen.

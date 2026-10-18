@@ -41,6 +41,9 @@ Working log for SC-5 Ready. "Problems and fixes" becomes the answer to the judge
 - **Guidance tables for 9 more hazards** (tropical, winter, cold, heat, wind, fire weather, fog, air quality, evacuation), each line taken from an official page. A Watch shows "get ready" steps; a Warning shows "act now" steps.
 - **One Cloudflare Worker** (`/worker`) for routing and address search, so the ORS key never reaches the browser. Only this app's pages may call it.
 - **Route scoring formula:** minutes + 30 per warning area entered + 5 per mile inside one + 3 per FEMA flood zone crossed. Transparent and shown on every card.
+- **Reports are written only through the Worker; reads come straight from Supabase.** Writes need the Turnstile check and validation; reads are safe because Row Level Security only exposes active reports and safe columns.
+- **No accounts for reporters.** A random device ID (hashed with a secret in the Worker) is enough to limit spam without collecting identity.
+- **Expiry is in the read rule**, not a scheduled cleanup job: flooded-road reports stop showing after 48 hours, others after 30 days, with nothing to run.
 - **Six scenarios** now, covering four hazard types (flood, tornado, heat, tropical) and all of Watch, Warning, and Danger. It is simpler and much smaller than MapLibre, which is enough for drawing our data on top of a basemap.
 
 ## Problems and fixes
@@ -79,6 +82,14 @@ Working log for SC-5 Ready. "Problems and fixes" becomes the answer to the judge
 - **OpenRouteService stopped answering requests that used our key** (it hung instead of erroring) a few minutes after working fine. Diagnosed by comparing requests with and without the key, on both ORS addresses: no-key requests got an instant "401," keyed ones hung. Fix on our side: the Worker gives up after 20 seconds, the app after 25, and the app switches to the OSRM backup with its "does not avoid hazard areas" banner. Verified in the browser.
 - **Account setup snags:** keyboard input never reached the terminal tabs (GitHub login, Cloudflare secret prompt), so we used approval links in the browser and a git-ignored `.dev.vars` file instead; Cloudflare needed a workers.dev subdomain, which we registered through Cloudflare's API after the dashboard didn't create one.
 
+- **The brief's "35 feet" for downed power lines didn't match the local utilities.** Both Duke Energy and Dominion Energy SC say 30 feet, so the app uses their number and cites them.
+- **SCDOT's pothole page moved** (old link: 404). Found the current Maintenance Work Request app on SCDOT's own help pages and verified it loads.
+- **The "I'm human" check broke after picking a category.** Diagnosed by reading the code after it failed in every browser: rebuilding the form *moved* Cloudflare's iframe, and browsers reload a moved iframe, which breaks the check. Fix: remove the old widget and render a fresh one each time the form is rebuilt. After that, a real report went through end to end.
+- **Send problems were too easy to miss.** "Set the location" and similar messages were small gray text under the button. Fix: a clear red alert box that scrolls into view.
+- **An open tab broke after an update.** It asked for a page file that a new build had replaced. Fix: if a page file fails to load, reload once to get the new version (a flag prevents a reload loop).
+- **Saving a secret key from Notepad didn't work, and a Desktop note was empty.** Fix: the key went from the clipboard straight into the git-ignored file with a small script, which checked it started with `sb_secret_` and cleared the clipboard. It never appeared in chat.
+- **Supabase's default permissions let anyone call database functions.** Fix: `schema.sql` explicitly revokes function access from the public roles and grants it only to the secret-key role. Tested: a direct call with the public key is denied.
+
 ## Open questions for me
 
 - Do you want to keep the name "SC-5 Ready"? (Change it in `src/config.ts` → `APP_NAME`.)
@@ -87,7 +98,7 @@ Working log for SC-5 Ready. "Problems and fixes" becomes the answer to the judge
 
 ## Later (ideas outside current scope)
 
-- Add a scheduled GitHub Action (Phase 5) that touches Supabase every few days, so the free project doesn't pause after 7 days with no activity during judging.
+- **Admin login:** create your user in Supabase (Authentication → Users → Add user, with a password you type), then run `supabase/make-admin.sql` with your email. The moderation page is at `#/admin` (not linked anywhere).
 - Historical Hurricane Helene replay (late Sept 2024) for Scenario Mode, using archived USGS gauge data. Synthetic scenarios cover the demo for now.
 - Address search (needs the Cloudflare Worker, Phase 4).
 - Alert popups on the map; tap a spot on the map to check it.
@@ -141,3 +152,12 @@ Working log for SC-5 Ready. "Problems and fixes" becomes the answer to the judge
 4. **Plan routes:** within about 25 seconds you see route cards (time, miles, minutes vs fastest, warning areas entered, miles inside warning areas, FEMA flood zones crossed), steps, and Google/Apple Maps links. If ORS is down, a red "This route does not avoid hazard areas" banner shows.
 5. **Scenario Mode → Tornado warning (Lancaster)**, then go to the route page: it says "Stay where you are and take shelter" and shows no planner.
 6. **Print or save these directions** prints the route cards with all steps.
+
+### Phase 5
+1. **Report a problem** (menu): choose a category; the map appears. Tap the map: "Location: … County." Add a note (try a phone number: you get a red message). Check "Verify you are human," then **Send report**: "Thanks. Your report is posted." with official links (SCDOT, county, utility).
+2. Choose **Downed power line**: a full-screen notice says to stay at least 30 feet away, with Call 911 / Duke / Dominion buttons.
+3. **Reports near you** lists the report with "Unverified," and Still there / Fixed / Flag. Tap "Still there" twice: the second says you already did that.
+4. **District map:** "Community reports (unverified)" toggle shows report dots; click one for its category.
+5. **Route planner:** route cards show "Unverified reports nearby"; "Avoid community-reported flooded roads" is checked by default.
+6. **Scenario Mode on:** sending says "Saved in this tab (simulation)… Nothing was sent."
+7. **#/admin** (after you're set up as admin): sign in, then Hide / Restore / Resolve reports.

@@ -59,6 +59,16 @@ Evidence of my own work and a study guide for judging. Fill in "What I did" in y
 - A Cloudflare Worker that keeps the routing key secret and handles address search.
 - The lower-exposure route planner: shelters, "away from the warning area," route cards with a scoring formula, a backup router, and the shelter-in-place block.
 
+### Sunday, October 18, 2026: Phase 5 (community reports)
+
+**What I did** *(edit this in your own words)*
+- Created the Supabase project, ran the database setup, and handled the secret key.
+- Tested the report flow on the live site: worked through the failed human check with Claude, and sent the first real report.
+- _Add: what you think of the categories and wording._
+
+**What was built**
+- A public reporting form with spam protection and no personal data, official "get it fixed" links, community votes, automatic expiry, a map layer, route warnings, and a private admin page.
+
 ## Concepts
 
 ### What is a web app made of?
@@ -170,3 +180,18 @@ Free services are sometimes slow or down. A **timeout** means "stop waiting afte
 
 ### Rate limiting
 Capping how many requests one visitor can make in a period (20 routes per 10 minutes), so nobody can use up the free quota.
+
+### Database and SQL
+A **database** stores rows in tables (like a spreadsheet with rules). **SQL** is the language for creating tables and rules. Our `schema.sql` creates the reports table and its security rules.
+
+### Row Level Security (RLS)
+Rules inside the database that decide which rows each kind of user can see or change. Our rule: the public may *read* active reports only; nobody can write directly. The Worker uses a secret key to save reports after checking them.
+
+### Publishable vs. secret keys
+The publishable key is meant to be public: it can only do what RLS allows. The secret key skips RLS, so it lives only in the Worker, never in the website.
+
+### CAPTCHA / Turnstile
+A check that a real person, not a bot, is using the page. Cloudflare Turnstile usually passes people automatically or with one click. The Worker double-checks each token with Cloudflare.
+
+### Hashing
+Turning text into a scrambled fingerprint that can't be turned back. We store a hash of a random device ID (mixed with a secret "salt"), so we can count reports per device without knowing whose device it is.

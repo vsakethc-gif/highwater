@@ -30,7 +30,7 @@ Working log for Highwater (originally called SC-5 Ready). "Problems and fixes" b
 - **The engine maps ALL NWS alert types now** (not just floods). The table is cheap, and showing "Normal" during a Tornado Warning because we only checked floods would be misleading and unsafe. Detailed guidance for flood, tornado, and severe storms is done; other hazards get careful generic guidance ("follow the official alert") until P1a.
 - **Information-only alerts** (Hazardous Weather Outlook, Frost Advisory) are listed but never raise the status. The outlook is issued almost daily, and the app would otherwise sit at "Watch" all the time.
 - **Scores are percentile ranks within SC-5** (0–100), so vulnerability and exposure use the same scale and can be averaged into priority. The real percentages are always shown next to the scores.
-- **Scores are computed in the browser** from raw percentages, by tested code (`src/lib/hazards/vulnerability.ts`), not inside the data script. One place for the rule, and it's tested.
+- **Scores are computed in the browser** from raw percentages, by tested code (`shared/hazards/vulnerability.ts`), not inside the data script. One place for the rule, and it's tested.
 - **"Can't confirm" instead of "Normal"** when any key source fails or gauge readings are stale (brief 5.6).
 - **Exact locations are never saved or put in the URL.** Only the chosen county is remembered in the browser.
 - **A tornado or severe storm Warning blocks the route button even during a flood**: never suggest driving into a tornado.

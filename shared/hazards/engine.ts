@@ -8,7 +8,7 @@
  * Everything here is a pure function: same inputs, same answer, no internet.
  * Every rule is listed in METHODOLOGY.md.
  */
-import { THRESHOLDS } from '../../config';
+import { THRESHOLDS } from '../config';
 import type { Alert, FloodCategory } from '../data/types';
 import { gaugeName, feet } from '../format';
 import { pointInGeometry } from '../geo';

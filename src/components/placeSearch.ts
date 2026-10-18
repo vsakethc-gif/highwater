@@ -7,10 +7,10 @@
  * It's a plain group, not a <form>, so it can sit inside another form (the report form).
  * Pressing Enter in the box searches, just like clicking Find.
  */
-import { WORKER_URL } from '../config';
+import { WORKER_URL } from '../../shared/config';
 import { h } from '../lib/dom';
-import { loadZips } from '../lib/data/static';
-import { searchAddress } from '../lib/routing/plan';
+import { loadZips } from '../../shared/data/static';
+import { searchAddress } from '../../shared/routing/plan';
 import { icon } from './icon';
 
 export interface FoundPlace {

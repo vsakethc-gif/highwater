@@ -5,8 +5,8 @@
  * full official text. Phase 2 adds our status level and guidance next to it.
  */
 import { h } from '../lib/dom';
-import type { Alert } from '../lib/data/types';
-import { dateTime } from '../lib/time';
+import type { Alert } from '../../shared/data/types';
+import { dateTime } from '../../shared/time';
 import { icon } from './icon';
 
 /** NWS alert links point to JSON data, so we send people to the readable official alerts page. */

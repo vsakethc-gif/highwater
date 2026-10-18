@@ -55,19 +55,20 @@ Run `supabase/schema.sql` once in the Supabase SQL Editor. It creates the tables
 
 ## How the code is organized
 
+The app has **one shared brain and two front ends**: the rules and data code live in `/shared` and are used by both the website (`/src`) and the phone app (`/mobile`). Each front end plugs in how it loads files and saves things (`shared/platform.ts`).
+
 | Folder | What lives there |
 |---|---|
-| `src/config.ts` | App name, county list, feature flags, thresholds: everything you might want to change |
-| `src/sw/` | The service worker (offline support); the build fills in its file list |
-| `src/lib/scenario/` | Scenario Mode: six made-up scenarios and two real-data Helene replays |
-| `src/styles/` | `tokens.css` (named colors, sizes, spacing), `base.css` (page defaults), `components.css` |
-| `src/components/` | Reusable UI pieces (status card, icons, maps, search box, ...) |
-| `src/pages/` | One file per screen |
-| `src/lib/hazards/` | The rule-based hazard engine (status levels and rules) |
-| `src/lib/data/` | Code that calls public data sources and cleans up their responses |
-| `src/lib/guidance/` | Plain-language "what to do" rules and text |
-| `src/lib/routing/` | Route planner: avoid areas, scoring, map links, destinations |
-| `src/lib/reports/` | Community report categories, official links, and the database client |
+| `shared/config.ts` | App name, county list, feature flags, thresholds: everything you might want to change |
+| `shared/hazards/` | The rule-based hazard engine (status levels, alert table, vulnerability scores) |
+| `shared/data/` | Code that calls public data sources and cleans up their responses |
+| `shared/guidance/` | Plain-language "what to do" rules and text |
+| `shared/routing/` | Route planner: avoid areas, scoring, elevation, map links, destinations |
+| `shared/reports/` | Community report categories, official links, and the database client |
+| `shared/scenario/` | Scenario Mode: six made-up scenarios and two real-data Helene replays |
+| `shared/platform.ts` | The "plug" each app fills in: how to load data files and save things |
+| `src/` | The website: pages, components, styles, service worker (`src/sw/`), and its platform plug |
+| `mobile/` | The phone app (React Native + Expo), for testing and the demo; not published |
 | `public/data/` | Pre-processed static data (Census, FEMA, boundaries) |
 | `scripts/` | Scripts that download and prepare static data |
 | `worker/` | The one small Cloudflare Worker (routing, address search, reports) |

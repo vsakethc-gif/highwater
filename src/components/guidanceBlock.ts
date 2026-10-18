@@ -2,9 +2,9 @@
  * guidanceBlock.ts — "What to do": plain-language steps for the top hazard.
  * Every block ends with the disclaimer (brief 9).
  */
-import { DISCLAIMER } from '../config';
+import { DISCLAIMER } from '../../shared/config';
 import { h } from '../lib/dom';
-import type { GuidanceBlock } from '../lib/guidance/types';
+import type { GuidanceBlock } from '../../shared/guidance/types';
 import { icon } from './icon';
 
 export function guidanceBlock(g: GuidanceBlock): HTMLElement {

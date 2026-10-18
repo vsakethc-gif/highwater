@@ -10,7 +10,7 @@
  * If the Worker or OpenRouteService is down, fall back to the public OSRM demo server,
  * which can't avoid anything, and say so plainly.
  */
-import { WORKER_URL } from '../../config';
+import { WORKER_URL } from '../config';
 import type { Alert } from '../data/types';
 import { buildAvoidPlan, tileForRouter, tripBox, type LonLat, type PolygonCoords } from './avoid';
 import { countAreasCrossed, milesInside, routeScore, thinLine } from './score';

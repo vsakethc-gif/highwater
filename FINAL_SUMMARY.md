@@ -37,7 +37,7 @@ It answers four questions:
    ZIP code centers · town centers · each tract's share in FEMA flood zones
                 │
                 ▼
- RULES (src/lib/hazards, src/lib/guidance, src/lib/routing) ── no AI, all tested
+ RULES (shared/hazards, shared/guidance, shared/routing) ── no AI, all tested
    alert table → hazard + level   gauge vs. flood stage   2-inch rain rule
    vulnerability percentiles       guidance by hazard + level   route scoring
                 │
@@ -142,7 +142,7 @@ Full details (exact addresses, limits, test results, quirks) are in DATA_SOURCES
 **Overall status = the highest level among all hazards.** The top one is the big card; others are listed below.
 
 ### Rule 1: Official alerts
-A table in the code (`src/lib/hazards/alertMap.ts`) maps each NWS alert name to a hazard and a level. Examples:
+A table in the code (`shared/hazards/alertMap.ts`) maps each NWS alert name to a hazard and a level. Examples:
 - Tornado Watch → Tornado, Watch. Tornado Warning → Warning. Tornado Warning tagged "considerable" or "catastrophic" damage, or "Tornado Emergency" → **Danger**.
 - Flood Watch → Flood, Watch. Flash Flood Warning → Warning. Flash Flood Warning tagged "catastrophic" → Danger.
 - Heat Advisory → Heat, Watch. Extreme Heat Warning → Warning.

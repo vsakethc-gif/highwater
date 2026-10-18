@@ -6,23 +6,23 @@
  * During a shelter-in-place hazard (tornado, severe storm, extreme cold...), the planner is
  * hidden and the page tells people to take shelter instead.
  */
-import { APP_NAME, COUNTY_EM, FEATURES, SCEMD_COUNTY_DIRECTORY } from '../config';
-import { fetchReports, reportsAvailable, simulatedReports, type Report } from '../lib/reports/client';
+import { APP_NAME, COUNTY_EM, FEATURES, SCEMD_COUNTY_DIRECTORY } from '../../shared/config';
+import { fetchReports, reportsAvailable, simulatedReports, type Report } from '../../shared/reports/client';
 import { append, h } from '../lib/dom';
-import { dataOrNull, loadConditions } from '../lib/data/conditions';
-import type { Alert } from '../lib/data/types';
-import { loadCounties } from '../lib/data/static';
-import { featureAt } from '../lib/geo';
-import { guidanceFor } from '../lib/guidance/guidance';
-import { alertAppliesTo, evaluate } from '../lib/hazards/engine';
-import { HAZARDS } from '../lib/hazards/hazards';
-import { buildAvoidPlan, type LonLat, type PolygonCoords } from '../lib/routing/avoid';
-import { awayFromWarning, byDistance, fetchOpenShelters, type Shelter, type Town } from '../lib/routing/destinations';
-import { appleMapsLink, googleMapsLink } from '../lib/routing/links';
-import { planRoutes, type RoutePlan, type RouteResult } from '../lib/routing/plan';
-import { FLOOD_ZONE_PENALTY_MIN, ALERT_AREA_PENALTY_MIN, MILES_INSIDE_PENALTY, DIP_PENALTY_MIN, formatDuration, formatMiles } from '../lib/routing/score';
+import { dataOrNull, loadConditions } from '../../shared/data/conditions';
+import type { Alert } from '../../shared/data/types';
+import { loadCounties } from '../../shared/data/static';
+import { featureAt } from '../../shared/geo';
+import { guidanceFor } from '../../shared/guidance/guidance';
+import { alertAppliesTo, evaluate } from '../../shared/hazards/engine';
+import { HAZARDS } from '../../shared/hazards/hazards';
+import { buildAvoidPlan, type LonLat, type PolygonCoords } from '../../shared/routing/avoid';
+import { awayFromWarning, byDistance, fetchOpenShelters, type Shelter, type Town } from '../../shared/routing/destinations';
+import { appleMapsLink, googleMapsLink } from '../../shared/routing/links';
+import { planRoutes, type RoutePlan, type RouteResult } from '../../shared/routing/plan';
+import { FLOOD_ZONE_PENALTY_MIN, ALERT_AREA_PENALTY_MIN, MILES_INSIDE_PENALTY, DIP_PENALTY_MIN, formatDuration, formatMiles } from '../../shared/routing/score';
 import { countyName, getState } from '../lib/state';
-import { dateTime, clockTime } from '../lib/time';
+import { dateTime, clockTime } from '../../shared/time';
 import { icon } from '../components/icon';
 import { pageShell } from '../components/layout';
 import { placeSearch } from '../components/placeSearch';

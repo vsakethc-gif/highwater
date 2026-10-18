@@ -4,22 +4,22 @@
  * Flow: pick a place → load alerts, gauges, rain (live or simulated) → run the
  * hazard engine → show the status card, why, guidance, and the underlying data.
  */
-import { APP_NAME, COUNTIES, FEATURES, THRESHOLDS } from '../config';
+import { APP_NAME, COUNTIES, FEATURES, THRESHOLDS } from '../../shared/config';
 import { h } from '../lib/dom';
-import { dataOrNull, loadConditions, type Conditions } from '../lib/data/conditions';
-import { describeZone, fetchFloodZone, type FloodZone } from '../lib/data/fema';
-import { loadTracts } from '../lib/data/static';
-import type { Alert, Gauge, Loaded } from '../lib/data/types';
-import { featureAt } from '../lib/geo';
-import { guidanceFor, routeAllowed } from '../lib/guidance/guidance';
-import type { GuidanceContext } from '../lib/guidance/types';
-import { alertAppliesTo, evaluate } from '../lib/hazards/engine';
-import { LEVELS } from '../lib/hazards/levels';
-import type { OverallStatus, Place } from '../lib/hazards/types';
-import { districtAverage, scoreBand, type Tract } from '../lib/hazards/vulnerability';
-import { findScenario } from '../lib/scenario/scenario';
+import { dataOrNull, loadConditions, type Conditions } from '../../shared/data/conditions';
+import { describeZone, fetchFloodZone, type FloodZone } from '../../shared/data/fema';
+import { loadTracts } from '../../shared/data/static';
+import type { Alert, Gauge, Loaded } from '../../shared/data/types';
+import { featureAt } from '../../shared/geo';
+import { guidanceFor, routeAllowed } from '../../shared/guidance/guidance';
+import type { GuidanceContext } from '../../shared/guidance/types';
+import { alertAppliesTo, evaluate } from '../../shared/hazards/engine';
+import { LEVELS } from '../../shared/hazards/levels';
+import type { OverallStatus, Place } from '../../shared/hazards/types';
+import { districtAverage, scoreBand, type Tract } from '../../shared/hazards/vulnerability';
+import { findScenario } from '../../shared/scenario/scenario';
 import { countyName, getState, placeLabel, subscribe } from '../lib/state';
-import { clockTime, dateTime, relativeTime } from '../lib/time';
+import { clockTime, dateTime, relativeTime } from '../../shared/time';
 import { alertRow } from '../components/alertRow';
 import { gaugeRow } from '../components/gaugeRow';
 import { guidanceBlock } from '../components/guidanceBlock';

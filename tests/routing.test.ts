@@ -2,14 +2,14 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import samples from './fixtures/nws-alerts-samples.json';
 import shelters from './fixtures/fema-open-shelters.json';
-import { parseAlert } from '../src/lib/data/nws';
-import { buildAvoidPlan, tileForRouter, tripBox, TILE_KM, type PolygonCoords } from '../src/lib/routing/avoid';
-import { routeScore, countAreasCrossed, milesInside, formatDuration, formatMiles, thinLine, ALERT_AREA_PENALTY_MIN } from '../src/lib/routing/score';
-import { googleMapsLink, appleMapsLink } from '../src/lib/routing/links';
-import { awayFromWarning, byDistance, parseShelters, type Town } from '../src/lib/routing/destinations';
-import { osrmInstruction, parseOrs } from '../src/lib/routing/plan';
-import { distanceKm } from '../src/lib/geo';
-import type { Alert } from '../src/lib/data/types';
+import { parseAlert } from '../shared/data/nws';
+import { buildAvoidPlan, tileForRouter, tripBox, TILE_KM, type PolygonCoords } from '../shared/routing/avoid';
+import { routeScore, countAreasCrossed, milesInside, formatDuration, formatMiles, thinLine, ALERT_AREA_PENALTY_MIN } from '../shared/routing/score';
+import { googleMapsLink, appleMapsLink } from '../shared/routing/links';
+import { awayFromWarning, byDistance, parseShelters, type Town } from '../shared/routing/destinations';
+import { osrmInstruction, parseOrs } from '../shared/routing/plan';
+import { distanceKm } from '../shared/geo';
+import type { Alert } from '../shared/data/types';
 
 const feature = (event: string) => parseAlert((samples as any).features.find((f: any) => f.properties.event === event));
 const square = (x: number, y: number, size: number): PolygonCoords => [

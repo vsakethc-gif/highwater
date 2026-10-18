@@ -5,8 +5,8 @@
  * put in the address bar or saved, so it can't leak through a shared link. Only a county
  * choice is remembered in this browser, as a convenience.
  */
-import { COUNTIES, DEFAULT_COUNTY_FIPS } from '../config';
-import type { Place } from './hazards/types';
+import { COUNTIES, DEFAULT_COUNTY_FIPS } from '../../shared/config';
+import type { Place } from '../../shared/hazards/types';
 
 export interface AppState {
   place: Place;

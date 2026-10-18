@@ -13,7 +13,7 @@
  *      using the latest update NWS had sent by then (text, warning area, damage threat tag).
  *   4. Keeps the 12 hours of river readings before that moment, and what the rain gauge
  *      actually measured in the 24 and 48 hours after it.
- *   5. Writes src/lib/scenario/scenarios/helene-*.json in the same format as the other scenarios.
+ *   5. Writes shared/scenario/scenarios/helene-*.json in the same format as the other scenarios.
  *
  * Scenario Mode replays the moment "as if now": every time is shifted so the moment is the present.
  */
@@ -23,7 +23,7 @@ const USER_AGENT = 'Highwater build script (https://github.com/vsakethc-gif/high
 const NWIS = 'https://nwis.waterservices.usgs.gov/nwis/iv/';
 const IEM = 'https://mesonet.agron.iastate.edu/json';
 
-// Keep in sync with COUNTIES in src/config.ts.
+// Keep in sync with COUNTIES in shared/config.ts.
 const COUNTIES = {
   Cherokee: '45021', Chester: '45023', Fairfield: '45039', Kershaw: '45055',
   Lancaster: '45057', Lee: '45061', Union: '45087', York: '45091',
@@ -244,7 +244,7 @@ async function main() {
       gauges,
       rain: { next24h_in: rainBetween(rain, moment, moment + 24 * 3600_000), next48h_in: rainBetween(rain, moment, moment + 48 * 3600_000) },
     };
-    await writeFile(new URL(`../src/lib/scenario/scenarios/${m.file}`, import.meta.url), JSON.stringify(scenario, null, 1) + '\n');
+    await writeFile(new URL(`../shared/scenario/scenarios/${m.file}`, import.meta.url), JSON.stringify(scenario, null, 1) + '\n');
     const withData = Object.values(gauges).filter((g) => g.readings.length).length;
     console.log(`${m.file}: ${alerts.length} alerts in effect, ${withData}/${sites.length} gauges with readings, rain next 24h ${scenario.rain.next24h_in} in`);
     for (const a of alerts) console.log(`   ${a.event} | ${a.county_fips.join(',')}${a.damage_threat ? ' | ' + JSON.stringify(a.damage_threat) : ''}${a.polygon ? ' | polygon' : ''}`);

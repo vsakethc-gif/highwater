@@ -7,7 +7,7 @@
  *   Storms:  NWS Thunderstorm Safety, Ready.gov Severe Weather
  * Sources for each are listed in METHODOLOGY.md. We never call a place or route "safe".
  */
-import { FEATURES, THRESHOLDS } from '../../config';
+import { FEATURES, THRESHOLDS } from '../config';
 import { HAZARDS } from '../hazards/hazards';
 import type { Level } from '../hazards/levels';
 import type { HazardStatus } from '../hazards/types';

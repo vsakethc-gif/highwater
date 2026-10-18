@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import active from './fixtures/nws-alerts-active-sc.json';
 import samples from './fixtures/nws-alerts-samples.json';
-import { vtecAction, parseAlert, parseAlerts, alertsForCounty, sameToFips, isEnded } from '../src/lib/data/nws';
+import { vtecAction, parseAlert, parseAlerts, alertsForCounty, sameToFips, isEnded } from '../shared/data/nws';
 
 const sampleFeatures = (samples as any).features as any[];
 const feature = (event: string) => sampleFeatures.find((f) => f.properties.event === event);

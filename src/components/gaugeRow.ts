@@ -2,9 +2,9 @@
  * gaugeRow.ts — one river or stream gauge: name, current height, trend, flood category, sparkline.
  */
 import { h } from '../lib/dom';
-import type { FloodCategory, Gauge, Trend } from '../lib/data/types';
-import { feet, gaugeName } from '../lib/format';
-import { clockTime, isStale, relativeTime } from '../lib/time';
+import type { FloodCategory, Gauge, Trend } from '../../shared/data/types';
+import { feet, gaugeName } from '../../shared/format';
+import { clockTime, isStale, relativeTime } from '../../shared/time';
 import { icon, type IconName } from './icon';
 import { sparkline } from './sparkline';
 

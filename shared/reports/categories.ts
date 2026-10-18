@@ -7,7 +7,7 @@
  * 2026-10-18 (see DATA_SOURCES.md). Electric cooperatives and city utilities vary by
  * address, so for those we say "the number on your power bill" instead of guessing.
  */
-import type { IconName } from '../../components/icon';
+import type { IconName } from '../icons';
 
 export type ReportCategory =
   | 'streetlight_out'

@@ -7,11 +7,11 @@
  * or change their status, so this page can't do anything for anyone else.
  * The sign-in token is kept only in memory: closing the tab signs you out.
  */
-import { APP_NAME, SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from '../config';
+import { APP_NAME, SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from '../../shared/config';
 import { h } from '../lib/dom';
-import { categoryInfo } from '../lib/reports/categories';
+import { categoryInfo } from '../../shared/reports/categories';
 import { countyName } from '../lib/state';
-import { dateTime } from '../lib/time';
+import { dateTime } from '../../shared/time';
 import { icon } from '../components/icon';
 import { pageShell } from '../components/layout';
 import '../styles/report.css';

@@ -182,7 +182,7 @@ Every source below was checked with a real request on **Saturday, October 17, 20
 - **On Oct 17: 0 open shelters in SC** (20 nationwide). The app must say so and link county emergency management.
 - **Quirk:** there is **no last-updated field**, so the app shows "checked at [time we fetched it]."
 - **Slow at times:** on Oct 18 a query took over 20 seconds. The app waits at most 12 seconds, then says the list didn't respond and links county emergency management.
-- **County emergency management links** (in `src/config.ts`): each checked Oct 17, 2026 against SCEMD's [County Emergency Managers](https://www.scemd.org/who-we-are/county-emergency-managers/) directory and loaded (York and Kershaw block scripts, so they were checked in a real browser; SCEMD's Lancaster link was broken, so the county's own current EM page is used).
+- **County emergency management links** (in `shared/config.ts`): each checked Oct 17, 2026 against SCEMD's [County Emergency Managers](https://www.scemd.org/who-we-are/county-emergency-managers/) directory and loaded (York and Kershaw block scripts, so they were checked in a real browser; SCEMD's Lancaster link was broken, so the county's own current EM page is used).
 
 ## 11. SC 511 road closures
 

@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { SCENARIOS, scenarioAlerts, scenarioGauges, scenarioRain, loadScenario, type ScenarioFile } from '../src/lib/scenario/scenario';
-import { evaluate } from '../src/lib/hazards/engine';
-import { guidanceFor, routeAllowed } from '../src/lib/guidance/guidance';
-import type { GaugeSite } from '../src/lib/data/types';
-import type { HazardId } from '../src/lib/hazards/types';
+import { SCENARIOS, scenarioAlerts, scenarioGauges, scenarioRain, loadScenario, type ScenarioFile } from '../shared/scenario/scenario';
+import { evaluate } from '../shared/hazards/engine';
+import { guidanceFor, routeAllowed } from '../shared/guidance/guidance';
+import type { GaugeSite } from '../shared/data/types';
+import type { HazardId } from '../shared/hazards/types';
 
 // The real gauge list the app ships with.
 const SITES: GaugeSite[] = JSON.parse(readFileSync('public/data/gauges.json', 'utf8')).gauges;

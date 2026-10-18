@@ -9,7 +9,7 @@
  *     people below poverty, people with a disability.
  *   - FEMA flood maps: the share of the tract's area inside the Special Flood
  *     Hazard Area (the "1% annual chance" high-risk zone).
- * The app turns these into scores with tested code in src/lib/hazards/vulnerability.ts.
+ * The app turns these into scores with tested code in shared/hazards/vulnerability.ts.
  *
  * Output: public/data/tracts.geojson
  */

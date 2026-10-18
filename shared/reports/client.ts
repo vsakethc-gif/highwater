@@ -7,10 +7,11 @@
  *   Scenario Mode: reports stay in this browser tab only and are never sent (brief 12.8).
  *
  * Privacy: no name, email, phone, or account. A random device ID (not tied to who you are)
- * is kept in this browser so the database can limit how many reports one device sends.
+ * is kept on this device so the database can limit how many reports one device sends.
  */
-import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL, WORKER_URL } from '../../config';
+import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL, WORKER_URL } from '../config';
 import type { ReportCategory } from './categories';
+import { platform } from '../platform';
 
 export interface Report {
   id: string;
@@ -32,17 +33,18 @@ export const reportsAvailable = (): boolean => Boolean(SUPABASE_URL && SUPABASE_
 const DEVICE_KEY = 'sc5ready.device';
 const SIM_KEY = 'sc5ready.simReports';
 
-/** A random ID for this browser, made once. It identifies a device, not a person. */
+/** A random ID for this device, made once. It identifies a device, not a person. */
 export function deviceId(): string {
+  const { storage, randomId } = platform();
   try {
-    let id = localStorage.getItem(DEVICE_KEY);
+    let id = storage.getItem(DEVICE_KEY);
     if (!id) {
-      id = crypto.randomUUID();
-      localStorage.setItem(DEVICE_KEY, id);
+      id = randomId();
+      storage.setItem(DEVICE_KEY, id);
     }
     return id;
   } catch {
-    return crypto.randomUUID(); // storage blocked: a fresh ID each time still works
+    return randomId(); // storage blocked: a fresh ID each time still works
   }
 }
 
@@ -91,7 +93,7 @@ export async function voteOnReport(reportId: string, kind: 'confirm' | 'fixed' |
 
 export function simulatedReports(): Report[] {
   try {
-    return JSON.parse(sessionStorage.getItem(SIM_KEY) ?? '[]') as Report[];
+    return JSON.parse(platform().session.getItem(SIM_KEY) ?? '[]') as Report[];
   } catch {
     return [];
   }
@@ -99,9 +101,9 @@ export function simulatedReports(): Report[] {
 
 export function addSimulatedReport(r: NewReport): Report {
   const now = new Date().toISOString();
-  const report: Report = { ...r, id: crypto.randomUUID(), created_at: now, last_confirmed_at: now, confirm_count: 0, resolved_votes: 0, simulated: true };
+  const report: Report = { ...r, id: platform().randomId(), created_at: now, last_confirmed_at: now, confirm_count: 0, resolved_votes: 0, simulated: true };
   try {
-    sessionStorage.setItem(SIM_KEY, JSON.stringify([report, ...simulatedReports()]));
+    platform().session.setItem(SIM_KEY, JSON.stringify([report, ...simulatedReports()]));
   } catch {
     /* ignore */
   }

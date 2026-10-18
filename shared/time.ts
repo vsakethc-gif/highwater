@@ -1,7 +1,7 @@
 /**
  * time.ts — "updated 5 minutes ago" text and the stale-data rule.
  */
-import { THRESHOLDS } from '../config';
+import { THRESHOLDS } from './config';
 
 /** "just now", "12 minutes ago", "3 hours ago", "2 days ago". */
 export function relativeTime(iso: string, now = Date.now()): string {

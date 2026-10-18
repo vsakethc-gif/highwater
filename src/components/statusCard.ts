@@ -5,11 +5,11 @@
  * say "Normal": it says we can't confirm conditions (brief 5.6, no false all-clear).
  */
 import { h } from '../lib/dom';
-import { HAZARDS } from '../lib/hazards/hazards';
-import { LEVELS, type Level } from '../lib/hazards/levels';
-import type { HazardStatus, OverallStatus, Trigger } from '../lib/hazards/types';
-import type { GuidanceBlock } from '../lib/guidance/types';
-import { clockTime, dateTime, relativeTime } from '../lib/time';
+import { HAZARDS } from '../../shared/hazards/hazards';
+import { LEVELS, type Level } from '../../shared/hazards/levels';
+import type { HazardStatus, OverallStatus, Trigger } from '../../shared/hazards/types';
+import type { GuidanceBlock } from '../../shared/guidance/types';
+import { clockTime, dateTime, relativeTime } from '../../shared/time';
 import { icon } from './icon';
 import { statusBadge } from './statusBadge';
 

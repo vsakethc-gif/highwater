@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { relativeTime, isStale } from '../src/lib/time';
+import { relativeTime, isStale } from '../shared/time';
 
 const now = Date.parse('2026-10-17T22:00:00Z');
 

@@ -4,13 +4,13 @@
  * It uses the same guidance engine as the status screen, so the advice always matches.
  * The page is part of the app's code, so once the app has been opened it works offline too.
  */
-import { APP_NAME, DISCLAIMER } from '../config';
+import { APP_NAME, DISCLAIMER } from '../../shared/config';
 import { h } from '../lib/dom';
-import { guidanceFor } from '../lib/guidance/guidance';
-import type { GuidanceContext } from '../lib/guidance/types';
-import { HAZARDS } from '../lib/hazards/hazards';
-import type { Level } from '../lib/hazards/levels';
-import type { HazardId } from '../lib/hazards/types';
+import { guidanceFor } from '../../shared/guidance/guidance';
+import type { GuidanceContext } from '../../shared/guidance/types';
+import { HAZARDS } from '../../shared/hazards/hazards';
+import type { Level } from '../../shared/hazards/levels';
+import type { HazardId } from '../../shared/hazards/types';
 import { icon } from '../components/icon';
 import { pageShell } from '../components/layout';
 import { statusBadge } from '../components/statusBadge';

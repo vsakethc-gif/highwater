@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { elevationProfile, flatLine } from '../src/lib/routing/elevation';
-import { routeScore } from '../src/lib/routing/score';
+import { elevationProfile, flatLine } from '../shared/routing/elevation';
+import { routeScore } from '../shared/routing/score';
 
 /** A straight route heading east, one point every ~100 m, with the given heights (meters). */
 function line(heights: number[]): number[][] {

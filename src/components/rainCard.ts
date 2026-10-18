@@ -1,11 +1,11 @@
 /**
  * rainCard.ts — forecast rainfall for the next 24 and 48 hours.
  */
-import { THRESHOLDS } from '../config';
+import { THRESHOLDS } from '../../shared/config';
 import { h } from '../lib/dom';
-import type { Loaded } from '../lib/data/types';
-import type { RainForecast } from '../lib/hazards/types';
-import { dateTime } from '../lib/time';
+import type { Loaded } from '../../shared/data/types';
+import type { RainForecast } from '../../shared/hazards/types';
+import { dateTime } from '../../shared/time';
 
 function stat(label: string, inches: number): HTMLElement {
   return h(

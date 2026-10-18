@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { LEVELS, highestLevel } from '../src/lib/hazards/levels';
+import { LEVELS, highestLevel } from '../shared/hazards/levels';
 
 describe('status levels', () => {
   it('has exactly four levels named Normal, Watch, Warning, Danger', () => {

@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import samples from './fixtures/nws-alerts-samples.json';
 import active from './fixtures/nws-alerts-active-sc.json';
-import { parseAlert, parseAlerts } from '../src/lib/data/nws';
-import { buildGauge } from '../src/lib/data/usgs';
-import { classifyAlert, ALERT_TABLE } from '../src/lib/hazards/alertMap';
-import { evaluate, alertAppliesTo } from '../src/lib/hazards/engine';
-import type { Alert, GaugeSite } from '../src/lib/data/types';
-import type { HazardInputs, Place } from '../src/lib/hazards/types';
+import { parseAlert, parseAlerts } from '../shared/data/nws';
+import { buildGauge } from '../shared/data/usgs';
+import { classifyAlert, ALERT_TABLE } from '../shared/hazards/alertMap';
+import { evaluate, alertAppliesTo } from '../shared/hazards/engine';
+import type { Alert, GaugeSite } from '../shared/data/types';
+import type { HazardInputs, Place } from '../shared/hazards/types';
 
 const NOW = Date.parse('2026-10-17T23:00:00Z');
 const YORK: Place = { kind: 'county', fips: '45091' };

@@ -10,10 +10,10 @@
  *   5. Confirmation: visible to others as unverified; NOT sent to the county or city;
  *      here's the official place to report it so it gets fixed.
  */
-import { APP_NAME, COUNTIES, TURNSTILE_SITE_KEY } from '../config';
+import { APP_NAME, COUNTIES, TURNSTILE_SITE_KEY } from '../../shared/config';
 import { append, h } from '../lib/dom';
-import { loadCounties } from '../lib/data/static';
-import { distanceKm, featureAt } from '../lib/geo';
+import { loadCounties } from '../../shared/data/static';
+import { distanceKm, featureAt } from '../../shared/geo';
 import {
   CATEGORIES,
   COUNTY_SITES,
@@ -23,8 +23,8 @@ import {
   looksPersonal,
   type CategoryInfo,
   type ReportCategory,
-} from '../lib/reports/categories';
-import { addSimulatedReport, fetchReports, reportsAvailable, simulatedReports, submitReport, type Report } from '../lib/reports/client';
+} from '../../shared/reports/categories';
+import { addSimulatedReport, fetchReports, reportsAvailable, simulatedReports, submitReport, type Report } from '../../shared/reports/client';
 import { countyName, getState } from '../lib/state';
 import { icon } from '../components/icon';
 import { pageShell } from '../components/layout';

@@ -7,7 +7,7 @@
  * Each source is loaded on its own: if one fails, the others still arrive, and
  * the failure is passed along as an Error so the screen can say what went wrong.
  */
-import { COUNTIES } from '../../config';
+import { COUNTIES } from '../config';
 import type { Place, RainForecast } from '../hazards/types';
 import { loadScenario, scenarioAlerts, scenarioGauges, scenarioRain } from '../scenario/scenario';
 import { loadGaugeSites } from './gauges';

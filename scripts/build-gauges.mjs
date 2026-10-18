@@ -18,7 +18,7 @@ const USER_AGENT = 'Highwater build script (https://github.com/vsakethc-gif/high
 const USGS = 'https://api.waterdata.usgs.gov/ogcapi/v0/collections';
 const NWPS = 'https://api.water.noaa.gov/nwps/v1';
 
-// Keep in sync with COUNTIES in src/config.ts.
+// Keep in sync with COUNTIES in shared/config.ts.
 const COUNTIES = {
   '45021': 'Cherokee', '45023': 'Chester', '45039': 'Fairfield', '45055': 'Kershaw',
   '45057': 'Lancaster', '45061': 'Lee', '45087': 'Union', '45091': 'York',

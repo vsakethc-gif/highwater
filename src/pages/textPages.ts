@@ -6,7 +6,7 @@
  */
 import { marked } from 'marked';
 import methodology from '../../METHODOLOGY.md?raw';
-import { APP_NAME } from '../config';
+import { APP_NAME } from '../../shared/config';
 import { h } from '../lib/dom';
 import { pageShell } from '../components/layout';
 

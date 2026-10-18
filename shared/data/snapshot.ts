@@ -2,7 +2,7 @@
  * snapshot.ts — the "last loaded" copy of live data, for when the network is down (brief P1a).
  *
  * After a successful live load for a county, we save that county's alerts, gauges,
- * and rain forecast in this browser (localStorage). If a later load fails, the app
+ * and rain forecast on this device (localStorage on the website, AsyncStorage on the phone). If a later load fails, the app
  * shows the saved copy, clearly labeled "Offline: showing info from [time]".
  *
  * Rules that keep this honest:
@@ -16,6 +16,7 @@
 import type { RainForecast } from '../hazards/types';
 import { isEnded } from './nws';
 import type { Alert, Gauge } from './types';
+import { platform } from '../platform';
 
 export interface Snapshot {
   saved_at: string;
@@ -56,7 +57,7 @@ export function restoreSnapshot(json: string | null, now = Date.now()): Snapshot
 
 export function saveSnapshot(snapshot: Snapshot): void {
   try {
-    localStorage.setItem(key(snapshot.fips), JSON.stringify(snapshot));
+    platform().storage.setItem(key(snapshot.fips), JSON.stringify(snapshot));
   } catch {
     /* storage full or blocked: the app still works, just without an offline copy */
   }
@@ -64,7 +65,7 @@ export function saveSnapshot(snapshot: Snapshot): void {
 
 export function loadSnapshot(fips: string): Snapshot | null {
   try {
-    return restoreSnapshot(localStorage.getItem(key(fips)));
+    return restoreSnapshot(platform().storage.getItem(key(fips)));
   } catch {
     return null;
   }

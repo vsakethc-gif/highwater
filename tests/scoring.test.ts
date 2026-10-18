@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import grid from './fixtures/nws-gridpoint-qpf.json';
-import { durationHours, sumRainInches, parseRain } from '../src/lib/data/rain';
-import { percentileRank, scoreTracts, dataQuality, districtAverage, scoreBand, type TractRaw } from '../src/lib/hazards/vulnerability';
-import { pointInGeometry, distanceKm } from '../src/lib/geo';
+import { durationHours, sumRainInches, parseRain } from '../shared/data/rain';
+import { percentileRank, scoreTracts, dataQuality, districtAverage, scoreBand, type TractRaw } from '../shared/hazards/vulnerability';
+import { pointInGeometry, distanceKm } from '../shared/geo';
 
 describe('rain forecast', () => {
   it('reads ISO durations', () => {

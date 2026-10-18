@@ -13,14 +13,18 @@ import './styles/components.css';
 import './styles/screens.css';
 import './styles/prepare.css';
 import './styles/motion.css';
-import { APP_NAME, FEATURES } from './config';
+import { APP_NAME, FEATURES } from '../shared/config';
 import { h } from './lib/dom';
 import { subscribe } from './lib/state';
 import { pageShell } from './components/layout';
 import { renderStatus } from './pages/status';
+import { useBrowserPlatform } from './platform';
 
 type Cleanup = () => void;
 type Page = (root: HTMLElement) => Cleanup | void;
+
+// Plug the browser into the shared rules and data code before anything runs.
+useBrowserPlatform();
 
 const root = document.getElementById('app')!;
 let cleanup: Cleanup | void;

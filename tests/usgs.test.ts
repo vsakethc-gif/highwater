@@ -8,8 +8,8 @@ import {
   parseOgcReadings,
   parseLegacyReadings,
   buildGauge,
-} from '../src/lib/data/usgs';
-import type { FloodStages, Reading } from '../src/lib/data/types';
+} from '../shared/data/usgs';
+import type { FloodStages, Reading } from '../shared/data/types';
 
 // Real official stages for Catawba River near Rock Hill (NOAA RHIS1)
 const RHIS1: FloodStages = { action: 13, minor: 15, moderate: 25, major: 30 };

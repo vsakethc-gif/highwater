@@ -2,9 +2,9 @@
  * layout.ts — the header, footer, and Scenario Mode banner shared by every page.
  * The footer always shows the 911 line and links to official sources.
  */
-import { APP_NAME, DISCLAIMER } from '../config';
+import { APP_NAME, DISCLAIMER } from '../../shared/config';
 import { h } from '../lib/dom';
-import { findScenario, SCENARIOS } from '../lib/scenario/scenario';
+import { findScenario, SCENARIOS } from '../../shared/scenario/scenario';
 import { getState, setState } from '../lib/state';
 import { icon } from './icon';
 

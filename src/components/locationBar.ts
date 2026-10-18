@@ -5,10 +5,10 @@
  * they're used to find the county and are sent only to the public data services
  * that answer for that spot (NWS rain forecast, FEMA flood zone). They're never saved.
  */
-import { COUNTIES } from '../config';
+import { COUNTIES } from '../../shared/config';
 import { h } from '../lib/dom';
-import { featureAt } from '../lib/geo';
-import { loadCounties, loadZips } from '../lib/data/static';
+import { featureAt } from '../../shared/geo';
+import { loadCounties, loadZips } from '../../shared/data/static';
 import { getState, setState } from '../lib/state';
 import { icon } from './icon';
 

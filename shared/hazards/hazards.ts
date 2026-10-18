@@ -2,7 +2,7 @@
  * hazards.ts — display info for each hazard: label, icon, and whether leaving
  * the area can make sense (which decides if a route planner is ever offered).
  */
-import type { IconName } from '../../components/icon';
+import type { IconName } from '../icons';
 import type { HazardId } from './types';
 
 export interface HazardInfo {

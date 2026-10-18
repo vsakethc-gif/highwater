@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { COUNTIES, DEFAULT_COUNTY_FIPS, FEATURES, DISCLAIMER } from '../src/config';
+import { COUNTIES, DEFAULT_COUNTY_FIPS, FEATURES, DISCLAIMER } from '../shared/config';
 
 describe('config', () => {
   it('lists the 8 core SC-5 counties with valid, unique South Carolina FIPS codes', () => {

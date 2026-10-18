@@ -3,9 +3,9 @@
  * note (always shown as plain text, never as HTML), and "Still there" / "Fixed" / "Flag".
  */
 import { h } from '../lib/dom';
-import { categoryInfo } from '../lib/reports/categories';
-import { voteOnReport, type Report } from '../lib/reports/client';
-import { relativeTime } from '../lib/time';
+import { categoryInfo } from '../../shared/reports/categories';
+import { voteOnReport, type Report } from '../../shared/reports/client';
+import { relativeTime } from '../../shared/time';
 import { icon } from './icon';
 
 export function reportCard(r: Report, distanceKm: number | null): HTMLLIElement {

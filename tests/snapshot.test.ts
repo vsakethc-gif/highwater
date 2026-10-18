@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { makeSnapshot, restoreSnapshot } from '../src/lib/data/snapshot';
-import { buildGauge } from '../src/lib/data/usgs';
-import { evaluate } from '../src/lib/hazards/engine';
-import type { Alert, GaugeSite } from '../src/lib/data/types';
+import { makeSnapshot, restoreSnapshot } from '../shared/data/snapshot';
+import { buildGauge } from '../shared/data/usgs';
+import { evaluate } from '../shared/hazards/engine';
+import type { Alert, GaugeSite } from '../shared/data/types';
 
 const NOW = Date.parse('2026-10-17T23:00:00Z');
 const alert = (event: string, fips: string, ends: string): Alert => ({

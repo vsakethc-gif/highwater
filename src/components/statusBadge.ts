@@ -3,7 +3,7 @@
  * It always shows an icon AND the level name, so it never relies on color alone.
  */
 import { h } from '../lib/dom';
-import { LEVELS, type Level } from '../lib/hazards/levels';
+import { LEVELS, type Level } from '../../shared/hazards/levels';
 import { icon } from './icon';
 
 export function statusBadge(level: Level): HTMLSpanElement {

@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { validateReport, validateVote, looksPersonal as workerLooksPersonal, hasBlockedWord } from '../worker/src/validate';
-import { CATEGORIES, COUNTY_SITES, POWER_LINE_DISTANCE_FT, expiryHours, looksPersonal, categoryInfo } from '../src/lib/reports/categories';
-import { reportsNearLine, type Report } from '../src/lib/reports/client';
+import { CATEGORIES, COUNTY_SITES, POWER_LINE_DISTANCE_FT, expiryHours, looksPersonal, categoryInfo } from '../shared/reports/categories';
+import { reportsNearLine, type Report } from '../shared/reports/client';
 
 const good = {
   category: 'streetlight_out',

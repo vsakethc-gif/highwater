@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { guidanceFor, routeAllowed, TURN_AROUND } from '../src/lib/guidance/guidance';
-import type { GuidanceContext } from '../src/lib/guidance/types';
-import type { HazardId, HazardStatus } from '../src/lib/hazards/types';
-import type { Level } from '../src/lib/hazards/levels';
+import { guidanceFor, routeAllowed, TURN_AROUND } from '../shared/guidance/guidance';
+import type { GuidanceContext } from '../shared/guidance/types';
+import type { HazardId, HazardStatus } from '../shared/hazards/types';
+import type { Level } from '../shared/hazards/levels';
 
 const ctx: GuidanceContext = { placeName: 'York County', inFloodZone: null, pctNoVehicle: 3, vulnerability: 40 };
 const status = (hazard: HazardId, level: Level, text = 'Test alert'): HazardStatus => ({

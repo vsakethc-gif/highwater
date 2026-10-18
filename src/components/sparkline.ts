@@ -5,7 +5,7 @@
  * It is decorative (the number and trend text next to it carry the meaning),
  * so it is hidden from screen readers.
  */
-import type { Reading } from '../lib/data/types';
+import type { Reading } from '../../shared/data/types';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const WIDTH = 96;

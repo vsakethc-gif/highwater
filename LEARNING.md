@@ -84,6 +84,9 @@ Evidence of my own work and a study guide for judging. Fill in "What I did" in y
 ### Lighthouse and layout shift
 Lighthouse is Google's built-in page checker. It scores speed, accessibility, best practices, and search basics from 0 to 100, on a slowed-down pretend phone. "Layout shift" measures how much things jump around while a page loads. We fixed it by reserving space for content before it arrives.
 
+### Media queries vs. container queries
+A media query changes the layout based on the screen's width. A container query changes it based on the width of the box the element sits in. The river gauge list uses a container query, so it looks right both full-width on a phone and in the narrow side column on a laptop.
+
 ### Failure testing
 To see what people get when a service is down, a test browser blocked one source at a time (weather alerts, river levels, the report database, map data). The rule: a failure must say "couldn't load," never look like "all clear."
 

@@ -23,7 +23,7 @@
 @media (min-width: 64rem) {
   .map-layout {
     flex-direction: row;
-    height: calc(100vh - 7.5rem);
+    height: calc(100vh - 4rem);
     min-height: 34rem;
   }
 

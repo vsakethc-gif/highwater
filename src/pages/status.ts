@@ -231,8 +231,10 @@ export function renderStatus(root: HTMLElement): () => void {
     const label = placeLabel(place);
     document.title = `${label} · ${APP_NAME}`;
 
-    const statusSlot = h('div', { 'aria-busy': 'true' }, skeleton(1, true));
-    const bodySlot = h('div', {}, skeleton(3));
+    const statusSlot = h('div', { class: 'status-layout__status', 'aria-busy': 'true' }, skeleton(1, true));
+    const bodySlot = h('div', { class: 'status-layout__body' }, skeleton(3));
+    // On wide screens the live data (alerts, rain, rivers) sits in a column beside the advice.
+    const asideSlot = h('div', { class: 'status-layout__aside' }, skeleton(3));
     const main = h(
       'main',
       { id: 'main', class: 'container' },
@@ -244,8 +246,7 @@ export function renderStatus(root: HTMLElement): () => void {
         place.kind === 'point' ? h('p', { class: 'meta' }, `In ${countyName(place.fips)} County`) : null,
         locationBar(),
       ),
-      statusSlot,
-      bodySlot,
+      h('div', { class: 'status-layout' }, statusSlot, bodySlot, asideSlot),
       live,
     );
     root.replaceChildren(...pageShell('status', main));
@@ -304,7 +305,6 @@ export function renderStatus(root: HTMLElement): () => void {
           : null;
 
       bodySlot.replaceChildren(
-        guidanceBlock(top),
         h(
           'div',
           { class: 'quick-actions' },
@@ -312,6 +312,9 @@ export function renderStatus(root: HTMLElement): () => void {
           h('a', { class: 'button button--secondary', href: '#/map' }, icon('Map'), 'Open district map'),
           FEATURES.reports ? h('a', { class: 'button button--secondary', href: '#/report' }, icon('Megaphone'), 'Report a problem') : null,
         ),
+        guidanceBlock(top),
+      );
+      asideSlot.replaceChildren(
         placeFacts(place, zone, tract, tracts) ?? '',
         alertsSection(place, c.alerts, alertsHere),
         section('rain-title', 'Rain forecast', rainCard(c.rain, place.kind === 'point' ? 'this spot' : `${seat} (county seat)`)),

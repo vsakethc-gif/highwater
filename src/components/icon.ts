@@ -6,6 +6,7 @@
  */
 import {
   createElement,
+  Activity,
   ArrowRight,
   Check,
   ChevronDown,
@@ -30,6 +31,7 @@ import {
   Info,
   Layers,
   LightbulbOff,
+  ListChecks,
   ListFilter,
   LocateFixed,
   LogOut,
@@ -60,6 +62,7 @@ import {
 } from 'lucide';
 
 const ICONS = {
+  Activity,
   ArrowRight,
   Check,
   ChevronDown,
@@ -84,6 +87,7 @@ const ICONS = {
   Info,
   Layers,
   LightbulbOff,
+  ListChecks,
   ListFilter,
   LocateFixed,
   LogOut,

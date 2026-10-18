@@ -52,6 +52,12 @@
   --status-danger-fg: #ffffff;
   --status-danger-border: #7a0e2a;
 
+  /* Light washes of each level for the big status card (body text stays ink, AA on all four). */
+  --status-normal-tint: #f1f7f3;
+  --status-watch-tint: #fdf4d9;
+  --status-warning-tint: #fcefe6;
+  --status-danger-tint: #faebef;
+
   /*
    * Map scale for tract scores (0–100), light = low, dark = high.
    * ColorBrewer YlGnBu: ordered by lightness, readable with color-vision differences,

@@ -45,6 +45,7 @@ Working log for Highwater (originally called SC-5 Ready). "Problems and fixes" b
 - **No accounts for reporters.** A random device ID (hashed with a secret in the Worker) is enough to limit spam without collecting identity.
 - **Expiry is in the read rule**, not a scheduled cleanup job: flooded-road reports stop showing after 48 hours, others after 30 days, with nothing to run.
 - **Six scenarios** now, covering four hazard types (flood, tornado, heat, tropical) and all of Watch, Warning, and Danger.
+- **Design refresh (Oct 18):** a bottom tab bar on phones (like a native app, and reachable with a thumb), the logo and a serif wordmark in a one-row header on wide screens, a status card tinted in its level's color, "Plan a route" moved right under the status card, and a two-column layout on wide screens (advice on the left, live data on the right). Section headings open with a heavy rule, newspaper style.
 
 ## Problems and fixes
 
@@ -94,6 +95,7 @@ Working log for Highwater (originally called SC-5 Ready). "Problems and fixes" b
 - **Keyboard users couldn't set a report location.** Setting the spot needed GPS or a map tap. Found during the keyboard-only test. Fix: an address/ZIP search box (shared with the route planner) where Enter searches.
 - **Error states that said "nothing here" instead of "couldn't load."** Found by blocking each data source on purpose in a test browser. When the report database was down, the list said "No active community reports nearby"; on the route page with alerts down, it said "No active warning areas." Both looked like real answers. Fix: each now says the data couldn't load. The district map's county table also no longer stays on "Loading…" forever.
 - **The menu was cut off on small phones** ("Ge…"). Found in screenshots at 360 px. Fix: the menu wraps onto two lines.
+- **River gauge rows spilled off the screen at 1024 px** after the two-column layout. Their wide layout was switched on by *screen* width, but they now sit in a narrow column. Fix: a container query, so the rows adapt to the width of their own list.
 
 ## Open questions for me
 

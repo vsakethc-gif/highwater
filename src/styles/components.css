@@ -13,16 +13,29 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-2);
-  min-height: 3.5rem;
+  gap: var(--space-3);
+  min-height: 4rem;
 }
 
+/* Logo mark + wordmark. The serif wordmark gives the app its own voice. */
 .site-header__name {
-  font-size: var(--text-lg);
-  font-weight: var(--weight-bold);
-  letter-spacing: -0.01em;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--tap-target);
+  font-family: var(--font-serif);
+  font-size: 1.375rem;
+  font-weight: var(--weight-semibold);
+  letter-spacing: -0.015em;
   color: var(--color-ink);
   text-decoration: none;
+}
+
+.logo-mark {
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: none;
+  color: var(--color-accent);
 }
 
 /* ---------- Banner (info / simulation / stale / emergency) ---------- */
@@ -99,18 +112,16 @@
 }
 
 /* ---------- Section and definition list used on the placeholder page ---------- */
+/* Sections open with a short heavy rule, like a newspaper data page. */
 .section {
-  padding-block: var(--space-4);
-  border-bottom: var(--border-width) solid var(--color-border);
-}
-
-.section:last-of-type {
-  border-bottom: 0;
+  padding-block: var(--space-5) 0;
 }
 
 .section__title {
   font-size: var(--text-xl);
   margin-bottom: var(--space-2);
+  padding-top: var(--space-1);
+  border-top: 3px solid var(--color-ink);
 }
 
 .eyebrow {
@@ -413,6 +424,12 @@
 }
 
 /* ---------- Gauge rows ---------- */
+/* Rows change layout based on the width of their own list (a "container query"), not the screen,
+   because on wide screens the list sits in a narrow side column. */
+.gauge-list {
+  container-type: inline-size;
+}
+
 .gauge-row {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -424,7 +441,7 @@
   border-bottom: var(--border-width) solid var(--color-border);
 }
 
-@media (min-width: 48rem) {
+@container (min-width: 40rem) {
   .gauge-row {
     grid-template-columns: 1fr 9rem 15rem;
     grid-template-areas: 'main reading chart';
@@ -477,7 +494,7 @@
   gap: var(--space-2);
 }
 
-@media (min-width: 48rem) {
+@container (min-width: 40rem) {
   .gauge-row__chart {
     justify-content: flex-end;
   }

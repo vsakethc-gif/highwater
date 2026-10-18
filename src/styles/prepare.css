@@ -86,6 +86,7 @@
 @media print {
   .site-header,
   .site-nav,
+  .tab-bar,
   .skip-link,
   .no-print,
   .banner--info,
@@ -98,6 +99,7 @@
 
   body {
     background: #fff;
+    padding-bottom: 0;
     color: #000;
     font-size: 11pt;
   }

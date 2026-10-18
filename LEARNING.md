@@ -101,6 +101,9 @@ A media query changes the layout based on the screen's width. A container query 
 ### Animation and reduced motion
 CSS can animate an element from one state to another ("keyframes"). We only animate opacity (see-through) and transform (move or scale), because those don't push other things around. Some people get dizzy from motion, so phones have a "reduce motion" setting; our CSS checks it and turns every animation off.
 
+### Elevation and tuning a rule with data
+OpenRouteService can give the height of every point on a route. A "low dip" is where the road drops into a valley. Our first guess (20 ft) mostly found ordinary hills, so we tested three versions on real routes and checked each dip against FEMA's flood map. The 40-ft version matched creeks every time. Testing a rule against real data, instead of guessing, is how you know it works.
+
 ### Archives and replays
 Government data services usually show what's happening now. Archives keep the past. USGS keeps every river reading, and Iowa State's mesonet keeps every NWS alert with each update. A replay picks one past minute, keeps only what was true then, and shifts the times so the app treats it as "now."
 

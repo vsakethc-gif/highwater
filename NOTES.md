@@ -53,6 +53,7 @@ Working log for Highwater (originally called SC-5 Ready). "Problems and fixes" b
 - **Deploy pinned to Ubuntu 24.04** and actions updated to their Node 24 versions, so GitHub's runner change on Oct 19 can't break the deploy during judging.
 - **Animations (Oct 18), at your request:** purposeful and short. New content rises in, river sparklines draw themselves, a "Live" dot pulses only for fresh live data, loading boxes shimmer, expanders and dialogs ease open, and buttons press in. All of it lives in `src/styles/motion.css`, only opacity and transform move (so nothing shifts), and it all switches off when a phone asks for reduced motion. This relaxes the brief's "under 200ms" rule slightly (most are about 250ms, sparklines 900ms) because you asked for more motion.
 - **Level meter on the status card:** a four-step Normal → Watch → Warning → Danger scale with the current step marked, so people see how serious it is at a glance. It is hidden from screen readers because the badge already says the level in words.
+- **Route elevation (Oct 18):** routes now show their lowest point and count "low dips" (creek and river valleys), using heights OpenRouteService returns in the same request (no extra quota). Each dip adds 2 points to the route score.
 
 ## Problems and fixes
 
@@ -106,6 +107,7 @@ Working log for Highwater (originally called SC-5 Ready). "Problems and fixes" b
 - **The Helene script missed a real Tornado Watch.** The archive showed Tornado Watch 687 in effect for Lancaster, Fairfield, Kershaw, and Lee at 7:30 AM, but the script dropped it. Diagnosed by printing that product: the same NWS message also *cancelled* a different watch (#684), and the script read #684's "cancelled" code. Fix: match the exact alert number. Now all 10 real alerts appear.
 - **Old USGS data lives at a different address.** Asking the usual USGS server for 2024 data returned a "301 redirect" with no data. Fix: call `nwis.waterservices.usgs.gov` directly.
 - **The map library runs about 1 second of code on slow phones** (Lighthouse found it was the main-thread bundle, about 1 MB). Switching libraries this late was too risky, so the route page now loads the map only when needed (76 → 96). The district map page still scores about 50, because the map *is* that page.
+- **The first "low dip" rule counted ordinary hills.** At 20 ft deep, an 18-mile route had 11 "dips" but crossed only 5 flood zones. Diagnosed by testing three depths on real routes and asking FEMA whether each dip was within 200 m of a high-risk flood zone: 20 ft → 6 of 15; 30 ft → 7 of 11; 40 ft → 7 of 7. Fix: use 40 ft within about ¾ mile on each side, so a "dip" really means a creek or river valley.
 
 ## Open questions for me
 

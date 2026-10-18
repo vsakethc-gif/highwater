@@ -16,6 +16,7 @@ import { buildAvoidPlan, tileForRouter, tripBox, type LonLat, type PolygonCoords
 import { countAreasCrossed, milesInside, routeScore, thinLine } from './score';
 import { pointInGeometry } from '../geo';
 import { reportsNearLine, type Report } from '../reports/client';
+import { elevationProfile, flatLine, type ElevationProfile } from './elevation';
 
 export type Provider = 'ors' | 'osrm-fallback';
 
@@ -37,6 +38,9 @@ export interface RouteResult {
   /** Miles driven inside any active warning area. */
   miles_in_warning: number;
   flood_zone_crossings: number | null;
+  /** Lowest point and low dips (null from the backup router, which has no elevation). */
+  elevation: ElevationProfile | null;
+  low_dips: number | null;
   /** Filled in by the reports feature (P1c); 0 until then. */
   nearby_unverified_reports: number;
   warnings: string[];
@@ -178,7 +182,7 @@ export async function floodZoneCrossings(line: number[][], outer?: AbortSignal):
   const signal = timeout.signal;
   try {
     const body = new URLSearchParams({
-      geometry: JSON.stringify({ paths: [thinLine(line)], spatialReference: { wkid: 4326 } }),
+      geometry: JSON.stringify({ paths: [thinLine(flatLine(line))], spatialReference: { wkid: 4326 } }),
       geometryType: 'esriGeometryPolyline',
       inSR: '4326',
       spatialRel: 'esriSpatialRelIntersects',
@@ -308,6 +312,7 @@ export async function planRoutes(
     const alertHits = countAreasCrossed(r.geometry.coordinates, enterable);
     const milesIn = milesInside(r.geometry.coordinates, avoidGeometries);
     const fromAvoid = avoided.includes(r);
+    const elevation = elevationProfile(r.geometry.coordinates);
     const warnings: string[] = [];
     if (alertHits > 0) warnings.push(`Enters ${alertHits} active warning area${alertHits > 1 ? 's' : ''}.`);
     if (milesIn > 0) warnings.push(`${milesIn.toFixed(1)} miles inside active warning areas.`);
@@ -323,6 +328,8 @@ export async function planRoutes(
       alert_area_intersections: alertHits,
       miles_in_warning: milesIn,
       flood_zone_crossings: crossings[i],
+      elevation,
+      low_dips: elevation?.dips ?? null,
       nearby_unverified_reports: reportsNearLine(
         community.reports.filter((x) => ROUTE_REPORT_KINDS.includes(x.category)),
         r.geometry.coordinates,

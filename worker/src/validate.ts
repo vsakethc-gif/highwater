@@ -75,6 +75,7 @@ export function orsBody(r: RouteRequest): Record<string, unknown> {
     instructions: true,
     language: 'en',
     units: 'm',
+    elevation: true, // each point comes back as [lon, lat, height in meters], for the route's lowest point and dips
   };
   if (r.avoid?.length) body.options = { avoid_polygons: { type: 'MultiPolygon', coordinates: r.avoid } };
   if (r.alternatives) body.alternative_routes = { target_count: 2, weight_factor: 1.6, share_factor: 0.6 };

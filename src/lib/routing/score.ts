@@ -6,12 +6,14 @@
  *              (an area you start or end in doesn't count: no route can avoid it)
  *         + 5  for each mile driven inside any active warning area
  *         + 3  for each FEMA high-risk flood zone it crosses
+ *         + 2  for each low dip (a valley the road drops into, usually a creek crossing)
  *
  * Lower is better. Why these weights: driving into an active warning is the thing we
  * most want to avoid, so it "costs" half an hour of extra driving. Time spent inside a
  * warning area matters too (5 points per mile, so 6 miles inside "costs" as much as
  * entering one more area). Flood-zone crossings are long-term risk (most creek crossings
- * are in one), so each costs a few minutes. The weights are a judgment call, and every
+ * are in one), so each costs a few minutes. Low dips are where water collects first, but
+ * they overlap with flood zones, so each costs a little less. The weights are a judgment call, and every
  * part is shown on each route card.
  */
 import { distanceKm, pointInGeometry } from '../geo';
@@ -19,6 +21,7 @@ import { distanceKm, pointInGeometry } from '../geo';
 export const ALERT_AREA_PENALTY_MIN = 30;
 export const MILES_INSIDE_PENALTY = 5;
 export const FLOOD_ZONE_PENALTY_MIN = 3;
+export const DIP_PENALTY_MIN = 2;
 
 export interface ScoredRoute {
   duration_s: number;
@@ -26,6 +29,8 @@ export interface ScoredRoute {
   miles_in_warning: number;
   /** null when FEMA couldn't be reached to count them. */
   flood_zone_crossings: number | null;
+  /** null when the route has no elevation (backup router). */
+  low_dips?: number | null;
 }
 
 export function routeScore(r: ScoredRoute): number {
@@ -33,7 +38,8 @@ export function routeScore(r: ScoredRoute): number {
     r.duration_s / 60 +
     ALERT_AREA_PENALTY_MIN * r.alert_area_intersections +
     MILES_INSIDE_PENALTY * r.miles_in_warning +
-    FLOOD_ZONE_PENALTY_MIN * (r.flood_zone_crossings ?? 0)
+    FLOOD_ZONE_PENALTY_MIN * (r.flood_zone_crossings ?? 0) +
+    DIP_PENALTY_MIN * (r.low_dips ?? 0)
   );
 }
 

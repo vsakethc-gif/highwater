@@ -148,7 +148,10 @@ The route planner helps people see a way out that avoids active warning areas we
 1. Ask OpenRouteService (through our Cloudflare Worker, which keeps the key secret) for the fastest route and up to two alternatives.
 2. If the fastest route passes through an active warning area, ask again with those areas as "avoid areas." OpenRouteService only accepts avoid areas up to 20 km across and 200 km², so big warning areas are cut into tiles of about 14 km × 14 km, keeping only tiles near the trip. You can't avoid the spot you're standing in, so tiles containing the start or destination are left out and the app says "You're starting inside an active warning area."
 3. If that fails, try again with only the tiles the fastest route crosses; if that fails too, say which areas couldn't be avoided.
-4. For each route, count the FEMA high-risk flood zones it crosses (asked live from FEMA), the warning areas it enters, and the miles it spends inside warning areas.
+4. For each route, count the FEMA high-risk flood zones it crosses (asked live from FEMA), the warning areas it enters, and the miles it spends inside warning areas. Then measure its **elevation** (OpenRouteService returns a height for every point of the route):
+   - **Lowest point:** the lowest spot on the route, in feet, and how far along it is.
+   - **Low dips:** places where the road drops at least **40 ft (12 m)** below the ground within about **¾ mile (1.2 km)** on both sides, which is the shape of a creek or river valley, where roads flood first. We tested this on real York County routes. At 20 ft, only 6 of 15 "dips" were near a creek (the rest were ordinary hills). At 40 ft, all 7 were within 200 m of a FEMA high-risk flood zone.
+   - Heights come from satellite elevation data and are approximate. A low road isn't always flooded, and a high road can still be blocked. The backup router (OSRM) has no heights, so its cards say "Not available."
 5. Compare routes with this formula (lower is better):
 
 | Part | Points |
@@ -157,8 +160,9 @@ The route planner helps people see a way out that avoids active warning areas we
 | Each active warning area the route enters (not counting one you start or end in) | 30 |
 | Each mile driven inside an active warning area | 5 |
 | Each FEMA high-risk flood zone crossed | 3 |
+| Each low dip (creek or river valley) | 2 |
 
-Entering a warning area "costs" as much as half an hour of extra driving because that's what we most want to avoid. The weights are a judgment call, and every part is shown on each route card.
+Entering a warning area "costs" as much as half an hour of extra driving because that's what we most want to avoid. Low dips overlap with flood zones (most dips are in one), so each costs a little less. The weights are a judgment call, and every part is shown on each route card.
 
 **If the routing service is down or slow** (no answer in 20–25 seconds), the app uses the public OSRM demo server instead, which can't avoid anything, and shows: **"This route does not avoid hazard areas."**
 

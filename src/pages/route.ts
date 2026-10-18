@@ -20,7 +20,7 @@ import { buildAvoidPlan, type LonLat, type PolygonCoords } from '../lib/routing/
 import { awayFromWarning, byDistance, fetchOpenShelters, type Shelter, type Town } from '../lib/routing/destinations';
 import { appleMapsLink, googleMapsLink } from '../lib/routing/links';
 import { planRoutes, type RoutePlan, type RouteResult } from '../lib/routing/plan';
-import { FLOOD_ZONE_PENALTY_MIN, ALERT_AREA_PENALTY_MIN, MILES_INSIDE_PENALTY, formatDuration, formatMiles } from '../lib/routing/score';
+import { FLOOD_ZONE_PENALTY_MIN, ALERT_AREA_PENALTY_MIN, MILES_INSIDE_PENALTY, DIP_PENALTY_MIN, formatDuration, formatMiles } from '../lib/routing/score';
 import { countyName, getState } from '../lib/state';
 import { dateTime, clockTime } from '../lib/time';
 import { icon } from '../components/icon';
@@ -118,6 +118,10 @@ function routeCard(r: RouteResult, fastest: RouteResult, start: LonLat, end: Lon
       h('dd', {}, r.nearby_unverified_reports ? `${r.nearby_unverified_reports} (flooded road, tree, or power line)` : 'None'),
       h('dt', {}, 'FEMA high-risk flood zones crossed'),
       h('dd', { class: 'num' }, r.flood_zone_crossings === null ? 'Couldn’t check' : String(r.flood_zone_crossings)),
+      h('dt', {}, 'Low dips (creek and river valleys)'),
+      h('dd', { class: 'num' }, r.elevation ? String(r.elevation.dips) : 'Not available'),
+      h('dt', {}, 'Lowest point on the route'),
+      h('dd', { class: 'num' }, r.elevation ? `${r.elevation.lowest_ft} ft, ${r.elevation.lowest_at_mi.toFixed(1)} mi in` : 'Not available'),
     ),
     r.avoided_areas.length ? h('p', { class: 'meta' }, `Asked to go around: ${[...new Set(r.avoided_areas)].join(', ')}.`) : null,
     r.warnings.length ? h('ul', { class: 'route-card__warnings' }, ...r.warnings.map((w) => h('li', {}, icon('TriangleAlert'), w))) : null,
@@ -359,7 +363,7 @@ export function renderRoute(root: HTMLElement): () => void {
       h(
         'p',
         { class: 'meta' },
-        `How routes are compared: travel minutes + ${ALERT_AREA_PENALTY_MIN} for each active warning area entered + ${MILES_INSIDE_PENALTY} for each mile inside one + ${FLOOD_ZONE_PENALTY_MIN} for each FEMA flood zone crossed. Lower is better. `,
+        `How routes are compared: travel minutes + ${ALERT_AREA_PENALTY_MIN} for each active warning area entered + ${MILES_INSIDE_PENALTY} for each mile inside one + ${FLOOD_ZONE_PENALTY_MIN} for each FEMA flood zone crossed + ${DIP_PENALTY_MIN} for each low dip. Lower is better. Heights are approximate, and a low road isn’t always flooded. `,
         h('a', { href: '#/methodology' }, 'More on how it works'),
       ),
       h('p', { class: 'meta' }, 'Google Maps and Apple Maps open the same start and end, but they don’t know about the warning areas this app avoids.'),

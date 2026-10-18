@@ -194,8 +194,9 @@ These answer: "If a hazard hits, where are the people with the fewest resources 
 2. **Make them fit the free service.** OpenRouteService only accepts avoid areas up to 20 km across and 200 km², so each warning area is cut into tiles about 14 km on a side, keeping only tiles near the trip. Tiles containing your start or destination are left out (you can't avoid where you're standing), and the app says "You're starting inside an active warning area."
 3. **Ask for routes** through our Worker: the fastest route and up to two alternatives. If the fastest goes through a warning area, ask again with the avoid areas. If that fails, retry with fewer areas and say which couldn't be avoided.
 4. **Measure each route:** warning areas entered, miles inside warning areas, FEMA flood zones crossed (asked live from FEMA), and unverified reports within about 100 m.
-5. **Score (lower is better):** 1 point per minute + **30** per warning area entered + **5** per mile inside a warning area + **3** per FEMA flood zone crossed. Entering a warning area "costs" as much as half an hour of extra driving because that's what we most want to avoid. Every part is shown on the card.
-6. **Backup:** if OpenRouteService doesn't answer in 20–25 seconds, the app uses the OSRM demo server with the banner **"This route does not avoid hazard areas."**
+5. **Measure elevation:** the lowest point on each route, and **low dips** (the road drops 40+ ft below the ground within ¾ mile on both sides, the shape of a creek valley). We tuned the 40-ft rule on real routes: every dip it found was within 200 m of a FEMA flood zone, while a 20-ft rule mostly found ordinary hills.
+6. **Score (lower is better):** 1 point per minute + **30** per warning area entered + **5** per mile inside a warning area + **3** per FEMA flood zone crossed + **2** per low dip. Entering a warning area "costs" as much as half an hour of extra driving because that's what we most want to avoid. Every part is shown on the card.
+7. **Backup:** if OpenRouteService doesn't answer in 20–25 seconds, the app uses the OSRM demo server with the banner **"This route does not avoid hazard areas."**
 
 **Why not avoid all FEMA flood zones?** Almost every creek crossing is in one, so no route would be found. We count them instead.
 
@@ -270,6 +271,7 @@ Languages: **TypeScript, HTML, CSS, SQL**, and JavaScript for scripts.
 9. **Pages jumping while loading** (layout shift) → placeholder boxes the same size as the real content; Status performance went from 89 to 96+.
 10. **A real tornado watch missing from the Helene replay** → one NWS message cancelled one watch and extended another; the script now matches the exact alert number.
 11. **A slow route page** → the map library loads only when needed (76 → 96).
+12. **"Low dips" that were really just hills** → tested 20, 30, and 40 ft against FEMA flood zones on real routes; 40 ft matched 7 of 7.
 
 ---
 

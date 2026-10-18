@@ -40,7 +40,16 @@ function fill(el: HTMLElement, ...children: (Node | string | null)[]): void {
 // ---------- Turnstile ("I'm human" check) ----------
 
 interface TurnstileApi {
-  render(el: HTMLElement, opts: { sitekey: string; callback: (token: string) => void; 'expired-callback': () => void; theme?: string }): string;
+  render(
+    el: HTMLElement,
+    opts: {
+      sitekey: string;
+      callback: (token: string) => void;
+      'expired-callback': () => void;
+      'error-callback': (code: string) => boolean;
+      theme?: string;
+    },
+  ): string;
   reset(id?: string): void;
 }
 declare global {
@@ -257,6 +266,14 @@ export function renderReport(root: HTMLElement): () => void {
         sitekey: TURNSTILE_SITE_KEY,
         callback: (t) => (token = t),
         'expired-callback': () => (token = ''),
+        // The check can fail when ad blockers, VPNs, or strict privacy settings block Cloudflare.
+        'error-callback': (code: string) => {
+          token = '';
+          problem(
+            `The “I’m human” check couldn’t run (code ${code}). Ad blockers, VPNs, or strict privacy settings can block it: try turning them off for this site, or use another browser or your phone. You can still report the problem at the official links for your category.`,
+          );
+          return true; // we showed our own message
+        },
         theme: 'light',
       });
     } catch {

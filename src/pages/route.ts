@@ -19,7 +19,7 @@ import { buildAvoidPlan, type LonLat } from '../lib/routing/avoid';
 import { awayFromWarning, byDistance, fetchOpenShelters, type Shelter, type Town } from '../lib/routing/destinations';
 import { appleMapsLink, googleMapsLink } from '../lib/routing/links';
 import { planRoutes, searchAddress, type RoutePlan, type RouteResult } from '../lib/routing/plan';
-import { FLOOD_ZONE_PENALTY_MIN, ALERT_AREA_PENALTY_MIN, formatDuration, formatMiles } from '../lib/routing/score';
+import { FLOOD_ZONE_PENALTY_MIN, ALERT_AREA_PENALTY_MIN, MILES_INSIDE_PENALTY, formatDuration, formatMiles } from '../lib/routing/score';
 import { countyName, getState } from '../lib/state';
 import { dateTime, clockTime } from '../lib/time';
 import { WORKER_URL } from '../config';
@@ -109,8 +109,10 @@ function routeCard(r: RouteResult, fastest: RouteResult, start: LonLat, end: Lon
       { class: 'route-facts' },
       h('dt', {}, 'Compared with fastest'),
       h('dd', { class: 'num' }, r.isFastest ? 'This is the fastest' : `${extra} min longer`),
-      h('dt', {}, 'Active warning areas'),
-      h('dd', {}, r.alert_area_intersections === 0 ? 'Doesn’t pass through any we know about' : `Passes through ${r.alert_area_intersections}`),
+      h('dt', {}, 'Active warning areas entered'),
+      h('dd', {}, r.alert_area_intersections === 0 ? 'Doesn’t enter any we know about' : `Enters ${r.alert_area_intersections}`),
+      h('dt', {}, 'Miles inside warning areas'),
+      h('dd', { class: 'num' }, r.miles_in_warning.toFixed(1)),
       h('dt', {}, 'FEMA high-risk flood zones crossed'),
       h('dd', { class: 'num' }, r.flood_zone_crossings === null ? 'Couldn’t check' : String(r.flood_zone_crossings)),
     ),
@@ -151,6 +153,8 @@ export function renderRoute(root: HTMLElement): () => void {
   let towns: Town[] = [];
   let plan: RoutePlan | null = null;
   let selected: string | null = null;
+  /** true once the person picks a destination option themselves (we then stop choosing for them). */
+  let userChose = false;
 
   const message = h('p', { class: 'route-message', 'aria-live': 'polite' });
   const say = (t: string) => (message.textContent = t);
@@ -254,7 +258,10 @@ export function renderRoute(root: HTMLElement): () => void {
   function renderDestOptions(): void {
     const radio = (value: DestinationChoice, label: string, help: string, disabled = false) => {
       const input = h('input', { type: 'radio', name: 'dest', id: `dest-${value}`, value, checked: choice === value, disabled });
-      input.addEventListener('change', () => chooseDestination(value));
+      input.addEventListener('change', () => {
+        userChose = true;
+        chooseDestination(value);
+      });
       return h('div', { class: 'dest-option' }, input, h('label', { for: `dest-${value}` }, h('span', { class: 'dest-option__label' }, label), h('span', { class: 'meta' }, help)));
     };
     const avoidCount = buildAvoidPlan(alerts).sources.length;
@@ -262,7 +269,7 @@ export function renderRoute(root: HTMLElement): () => void {
       shelters instanceof Error
         ? 'Couldn’t load shelters right now.'
         : shelters === null
-          ? 'Checking FEMA’s list…'
+          ? 'Checking FEMA’s list (can take a few seconds)…'
           : shelters.length
             ? `${shelters.length} open in or near SC-5`
             : 'No shelters are listed as open right now.';
@@ -343,7 +350,7 @@ export function renderRoute(root: HTMLElement): () => void {
       h(
         'p',
         { class: 'meta' },
-        `How routes are compared: travel minutes + ${ALERT_AREA_PENALTY_MIN} for each active warning area passed through + ${FLOOD_ZONE_PENALTY_MIN} for each FEMA flood zone crossed. Lower is better. `,
+        `How routes are compared: travel minutes + ${ALERT_AREA_PENALTY_MIN} for each active warning area entered + ${MILES_INSIDE_PENALTY} for each mile inside one + ${FLOOD_ZONE_PENALTY_MIN} for each FEMA flood zone crossed. Lower is better. `,
         h('a', { href: '#/methodology' }, 'More on how it works'),
       ),
       h('p', { class: 'meta' }, 'Google Maps and Apple Maps open the same start and end, but they don’t know about the warning areas this app avoids.'),
@@ -481,15 +488,26 @@ export function renderRoute(root: HTMLElement): () => void {
     });
     refreshLabels();
 
-    [shelters, towns] = await Promise.all([
-      fetchOpenShelters().catch((e: Error) => e),
-      fetch(`${import.meta.env.BASE_URL}data/towns.json`).then((r) => r.json() as Promise<Town[]>).catch(() => []),
-    ]);
+    // Towns are our own small file: load them first so "Away from the warning area" works right away.
+    towns = await fetch(`${import.meta.env.BASE_URL}data/towns.json`)
+      .then((r) => r.json() as Promise<Town[]>)
+      .catch(() => []);
+    if (cancelled) return;
+    const hasAvoidAreas = buildAvoidPlan(alerts).sources.length > 0;
+    if (!userChose) chooseDestination(hasAvoidAreas ? 'away' : 'shelter');
+
+    // FEMA's shelter service can be slow, so it never holds up the planner: 12 seconds at most.
+    shelters = await fetchOpenShelters(AbortSignal.timeout(12_000)).catch(
+      () => new Error('FEMA’s shelter list didn’t respond. Check with your county emergency management office.'),
+    );
     if (cancelled) return;
     if (Array.isArray(shelters)) routeMap.setShelters(shelters);
-    // No open shelters: start on the next useful choice instead of a disabled one.
-    if (!Array.isArray(shelters) || !shelters.length) choice = buildAvoidPlan(alerts).sources.length ? 'away' : 'place';
-    chooseDestination(choice);
+    // Prefer the nearest open shelter when there is one, unless the person already picked something.
+    if (!userChose) {
+      if (Array.isArray(shelters) && shelters.length) chooseDestination('shelter');
+      else if (choice === 'shelter') chooseDestination(hasAvoidAreas ? 'away' : 'place');
+      else renderDestOptions();
+    } else renderDestOptions();
   })();
 
   return () => {

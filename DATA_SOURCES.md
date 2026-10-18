@@ -18,7 +18,7 @@ Every source below was checked with a real request on **Saturday, October 17, 20
 | 7 | Census boundary files | Yes | n/a (script only) | No | Tract + county outlines | 2 |
 | 7b | Census TIGERweb | Yes | — | No | Verified county FIPS codes | 1 |
 | 8 | Census Geocoder | Yes | **No** | No | Address search (via Worker) | 2+ |
-| 9 | OpenRouteService | Needs key | via Worker only | **Yes** | Routes that avoid hazard areas | 4 |
+| 9 | OpenRouteService | Yes (via Worker); **was unresponsive on Oct 18, see below** | via Worker only | **Yes** | Routes that avoid hazard areas | 4 |
 | 9b | OSRM demo server | Yes | Yes | No | Fallback route (no avoidance) | 4 |
 | 10 | FEMA Open Shelters | Yes | Yes | No | Open shelters | 4 |
 | 11 | SC 511 road closures | **No public feed found** | — | — | Skipped | — |
@@ -151,6 +151,27 @@ Every source below was checked with a real request on **Saturday, October 17, 20
 - `https://router.project-osrm.org/route/v1/driving/-81.029,34.923;-80.86,34.72?overview=false` → 32 min, 23 mi. Browser OK.
 - **Cannot avoid areas.** Usage policy: light use only (see the project's usage policy).
 
+### 9c. Our Cloudflare Worker (deployed Oct 18, 2026)
+
+- **URL:** `https://sc5-ready.sc5ready.workers.dev` (code in `/worker`).
+- `POST /route` → OpenRouteService directions (key stored as the Worker secret `ORS_API_KEY`); `GET /geocode?q=` → Census Geocoder.
+- Accepts requests only from this app's pages (`ALLOWED_ORIGINS`); anything else gets `403`. Checks inputs (points in or near SC, at most 30 avoid polygons and 3,000 points, address text up to 120 characters). Rate limit: 20 route and 60 address requests per visitor per 10 minutes (visitors tracked by a one-way hash of their IP, in memory only). Logging is off.
+- Gives up on ORS after 20 seconds and on the geocoder after 15, returning `504` so the app can use its backup.
+- **Cloudflare Workers free plan:** 100,000 requests/day, 10 ms CPU per request ([limits](https://developers.cloudflare.com/workers/platform/limits/)).
+
+### 9d. OpenRouteService findings (Oct 18)
+
+- **Keys moved in 2025:** they're now made at **account.heigit.org**, not the old ORS dashboard, and look like `eyJ...`. ORS staff say this format works with the normal API ([ORS forum](https://ask.openrouteservice.org/t/unable-to-use-jwt-style-api-key-with-directions-rest-api-need-classic-api-key/7535)).
+- **Tested through our Worker:** Rock Hill → Lancaster gave 36 min / 28.3 mi plus an alternative (37 min / 24.1 mi); with an avoid area, 42 min / 31.5 mi. **Avoid areas and alternative routes work together in one request** (not stated in the docs).
+- **Then it stopped answering:** a few minutes later, every request *with our key* hung (no response in 60 s), at both `api.openrouteservice.org` and `api.heigit.org`, while requests without a key got an instant `401`. Most likely a problem with HeiGIT's key checking or free-plan throttling. The app now times out and falls back to OSRM. **Check the daily quota on account.heigit.org.**
+- No rate-limit headers were returned, so the free-plan quota should be read from the HeiGIT dashboard.
+
+### 9e. Census places (towns), added in Phase 4
+`https://www2.census.gov/geo/docs/maps-data/data/gazetteer/2024_Gazetteer/2024_gaz_place_45.txt` (note: lowercase file name). 32 active incorporated places inside SC-5 → `public/data/towns.json`.
+
+### 9f. FEMA flood-zone crossings for a route
+`POST` to the NFHL layer 28 query with `geometryType=esriGeometryPolyline`, `where=SFHA_TF='T'`, `returnCountOnly=true` (form-encoded, so no browser preflight). Browser OK. Rock Hill → Lancaster crosses 9. The app thins the route to 250 points and waits at most 10 seconds.
+
 ## 10. FEMA Open Shelters
 
 - **Layer:** `https://gis.fema.gov/arcgis/rest/services/NSS/OpenShelters/FeatureServer/0`
@@ -160,6 +181,8 @@ Every source below was checked with a real request on **Saturday, October 17, 20
 - **Updates:** synced with the Red Cross database every morning, then checked every 20 minutes (from the service description).
 - **On Oct 17: 0 open shelters in SC** (20 nationwide). The app must say so and link county emergency management.
 - **Quirk:** there is **no last-updated field**, so the app shows "checked at [time we fetched it]."
+- **Slow at times:** on Oct 18 a query took over 20 seconds. The app waits at most 12 seconds, then says the list didn't respond and links county emergency management.
+- **County emergency management links** (in `src/config.ts`): each checked Oct 17, 2026 against SCEMD's [County Emergency Managers](https://www.scemd.org/who-we-are/county-emergency-managers/) directory and loaded (York and Kershaw block scripts, so they were checked in a real browser; SCEMD's Lancaster link was broken, so the county's own current EM page is used).
 
 ## 11. SC 511 road closures
 

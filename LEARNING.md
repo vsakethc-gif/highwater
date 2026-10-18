@@ -49,6 +49,16 @@ Evidence of my own work and a study guide for judging. Fill in "What I did" in y
 - A printable "Get ready" page with steps for every hazard.
 - The app can be installed and opens offline; the last loaded data is shown, clearly labeled, when there's no signal.
 
+### Sunday, October 18, 2026: Phase 4 (route planner and shelters)
+
+**What I did** *(edit this in your own words)*
+- Created the OpenRouteService (HeiGIT) and Cloudflare accounts and approved access.
+- _Add: what you tried in the route planner and what you noticed._
+
+**What was built**
+- A Cloudflare Worker that keeps the routing key secret and handles address search.
+- The lower-exposure route planner: shelters, "away from the warning area," route cards with a scoring formula, a backup router, and the shelter-in-place block.
+
 ## Concepts
 
 ### What is a web app made of?
@@ -148,3 +158,15 @@ Small storage spaces inside your browser for this one website. localStorage keep
 
 ### Shelter in place
 For some hazards (tornado, severe storm, extreme heat or cold, winter storm, high wind) going outside or driving is more dangerous than staying put. The app tells people to take shelter where they are and never offers a route out for those.
+
+### Server-side secret (why we have a Worker)
+Anything in a website's code can be read by anyone. A routing key in the browser could be copied and used up. So the key lives in a tiny program on Cloudflare (the **Worker**); the app asks the Worker, and the Worker adds the key before asking OpenRouteService.
+
+### Avoid polygons
+Shapes we ask the router to stay out of. They're "hard" rules: if every road is blocked, there's no route, so the app retries with fewer areas and says what it couldn't avoid.
+
+### Timeouts and fallbacks
+Free services are sometimes slow or down. A **timeout** means "stop waiting after N seconds." A **fallback** is the plan B: here, the OSRM backup router, clearly labeled because it can't avoid hazards.
+
+### Rate limiting
+Capping how many requests one visitor can make in a period (20 routes per 10 minutes), so nobody can use up the free quota.

@@ -59,11 +59,18 @@ async function handleRoute(request: Request, env: Env, cors: Record<string, stri
   const checked = validateRoute(body);
   if (typeof checked === 'string') return json({ error: checked }, 400, cors);
 
-  const res = await fetch(ORS_URL, {
-    method: 'POST',
-    headers: { Authorization: env.ORS_API_KEY, 'Content-Type': 'application/json', Accept: 'application/geo+json' },
-    body: JSON.stringify(orsBody(checked)),
-  });
+  // Give up after 20 seconds so the app can switch to its backup instead of hanging.
+  let res: Response;
+  try {
+    res = await fetch(ORS_URL, {
+      method: 'POST',
+      headers: { Authorization: env.ORS_API_KEY, 'Content-Type': 'application/json', Accept: 'application/geo+json' },
+      body: JSON.stringify(orsBody(checked)),
+      signal: AbortSignal.timeout(20_000),
+    });
+  } catch {
+    return json({ error: 'The routing service didn’t respond in time.', status: 504 }, 504, cors);
+  }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     // Pass back ORS's reason (e.g. "no route found", quota reached) without exposing the key.
@@ -80,7 +87,12 @@ async function handleGeocode(request: Request, cors: Record<string, string>): Pr
   const q = validateQuery(new URL(request.url).searchParams.get('q'));
   if (!q) return json({ error: 'Enter an address.' }, 400, cors);
   const url = `${GEOCODER_URL}?${new URLSearchParams({ address: q, benchmark: 'Public_AR_Current', format: 'json' })}`;
-  const res = await fetch(url);
+  let res: Response;
+  try {
+    res = await fetch(url, { signal: AbortSignal.timeout(15_000) });
+  } catch {
+    return json({ error: 'Address search didn’t respond in time. Try a ZIP code or tap the map.' }, 504, cors);
+  }
   if (!res.ok) return json({ error: `Address search error ${res.status}` }, 502, cors);
   const data = (await res.json()) as {
     result?: { addressMatches?: { matchedAddress: string; coordinates: { x: number; y: number } }[] };

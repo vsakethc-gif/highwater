@@ -133,6 +133,37 @@ Context rules that change the advice:
 
 Every guidance block ends with: *This app is not an official warning system. Follow instructions from local officials. In an emergency, call 911.* The app never calls a place or route "safe."
 
+## Lower-exposure route planner
+
+The route planner helps people see a way out that avoids active warning areas we know about, and where to go. It is called a **lower-exposure** route, never a "safe" route. Every route screen says: *Routes can't see every closed or flooded road. Never drive through water. If officials give evacuation directions, follow theirs instead. Call 911 if you are in danger.*
+
+**When it's offered.** Only when leaving can make sense: a flood Warning or Danger, a Tropical Storm or Hurricane Warning, or an official evacuation order. During a tornado, severe storm, winter storm, extreme heat or cold, or high-wind warning, the planner is turned off and the app says to take shelter where you are.
+
+**Where to.** (1) The nearest shelter that FEMA and the American Red Cross list as **open** (we never list a shelter unless its status is OPEN, and we show when we checked); if none are open, the app says so and links your county emergency management office. (2) "Away from the warning area": the nearest town center (Census 2024 list of 32 SC-5 cities and towns) that is outside every active warning area and at least 3 km from the start. (3) A place you choose (ZIP code, address, or a tap on the map).
+
+**What gets avoided.** Active Warning- or Danger-level NWS alerts for flooding, tropical storms, and evacuation orders that come with a drawn warning area. Warnings that cover whole counties without a drawn area can't be routed around, and the app says so. We do **not** avoid FEMA flood zones (almost every creek crossing is in one, so no route would be found); we count them instead.
+
+**How it works.**
+
+1. Ask OpenRouteService (through our Cloudflare Worker, which keeps the key secret) for the fastest route and up to two alternatives.
+2. If the fastest route passes through an active warning area, ask again with those areas as "avoid areas." OpenRouteService only accepts avoid areas up to 20 km across and 200 km², so big warning areas are cut into tiles of about 14 km × 14 km, keeping only tiles near the trip. You can't avoid the spot you're standing in, so tiles containing the start or destination are left out and the app says "You're starting inside an active warning area."
+3. If that fails, try again with only the tiles the fastest route crosses; if that fails too, say which areas couldn't be avoided.
+4. For each route, count the FEMA high-risk flood zones it crosses (asked live from FEMA), the warning areas it enters, and the miles it spends inside warning areas.
+5. Compare routes with this formula (lower is better):
+
+| Part | Points |
+|---|---|
+| Travel time | 1 per minute |
+| Each active warning area the route enters (not counting one you start or end in) | 30 |
+| Each mile driven inside an active warning area | 5 |
+| Each FEMA high-risk flood zone crossed | 3 |
+
+Entering a warning area "costs" as much as half an hour of extra driving because that's what we most want to avoid. The weights are a judgment call, and every part is shown on each route card.
+
+**If the routing service is down or slow** (no answer in 20–25 seconds), the app uses the public OSRM demo server instead, which can't avoid anything, and shows: **"This route does not avoid hazard areas."**
+
+"Open in Google Maps / Apple Maps" opens the same start and end in those apps, which don't know about our avoid areas; the screen says so.
+
 ## Get ready page
 
 "Get ready" lists the steps for every hazard on one printable page, using the same guidance rules as the status screen.
@@ -158,3 +189,5 @@ Scenario Mode replays a made-up emergency to show how the rules respond. There a
 - Census figures are estimates with margins of error, especially for small tracts.
 - A ZIP code is placed at its center point and assigned to the county that center falls in.
 - The app cannot see road closures (South Carolina 511 has no public data feed).
+- Routes can't see every closed or flooded road. The free routing service can be slow, unavailable, or out of daily requests; then the backup route can't avoid anything, and the app says so.
+- Shelter information is only as current as FEMA's and the Red Cross's data. Always confirm with county emergency management.

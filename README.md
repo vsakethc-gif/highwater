@@ -8,7 +8,7 @@ Built for the 2026 Congressional App Challenge (SC-5) by a high school student i
 
 **Live site:** https://vsakethc-gif.github.io/sc5-ready/
 
-**Status:** Phase 3. All NWS hazard types with guidance, a printable "Get ready" page, and an installable app that works offline.
+**Status:** Phase 4. Adds the lower-exposure route planner, open shelters, and address search through one small Cloudflare Worker.
 
 ## Running it on your computer
 
@@ -24,6 +24,17 @@ node scripts/build-boundaries.mjs   # county + tract outlines (public/data/count
 node scripts/build-tracts.mjs       # Census + FEMA numbers per tract (needs CENSUS_API_KEY in .env)
 node scripts/build-zips.mjs         # ZIP code centers (public/data/zips.json)
 node scripts/build-icons.mjs        # app icons for installing on phones (public/icons)
+```
+
+## The Cloudflare Worker (`/worker`)
+
+One small server function that keeps the OpenRouteService key secret and proxies address search.
+
+```bash
+cd worker
+npx wrangler login              # one time: connect to your Cloudflare account
+npx wrangler secret bulk .dev.vars   # upload ORS_API_KEY from the git-ignored .dev.vars file
+npx wrangler deploy             # publish https://sc5-ready.sc5ready.workers.dev
 ```
 
 ## How the code is organized
@@ -64,6 +75,11 @@ node scripts/build-icons.mjs        # app icons for installing on phones (public
 | [Lucide](https://lucide.dev/) | Open-source icon set | ISC |
 | [Public Sans](https://public-sans.digital.gov/) (via Fontsource) | Main typeface, made by the U.S. government | OFL-1.1 |
 | [Source Serif 4](https://github.com/adobe-fonts/source-serif) (via Fontsource) | Serif typeface for page headings | OFL-1.1 |
+| [Wrangler](https://developers.cloudflare.com/workers/wrangler/) | Deploys the Cloudflare Worker | MIT/Apache-2.0 |
+| [@turf/bbox-clip](https://turfjs.org/) | Cuts big warning areas into tiles the router accepts | MIT |
+| [Cloudflare Workers](https://workers.cloudflare.com/) | Free hosting for the one small server function | — |
+| [OpenRouteService](https://openrouteservice.org/) (HeiGIT) | Driving directions that can avoid areas | Free plan, key required |
+| [OSRM demo server](https://project-osrm.org/) | Backup directions when ORS is down (no avoidance) | Light use only |
 | [GitHub Pages](https://pages.github.com/) | Free hosting for the website | — |
 | GitHub Actions | Builds and deploys the site automatically on every push | — |
 

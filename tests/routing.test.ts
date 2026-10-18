@@ -4,7 +4,7 @@ import samples from './fixtures/nws-alerts-samples.json';
 import shelters from './fixtures/fema-open-shelters.json';
 import { parseAlert } from '../src/lib/data/nws';
 import { buildAvoidPlan, tileForRouter, tripBox, TILE_KM, type PolygonCoords } from '../src/lib/routing/avoid';
-import { routeScore, countAreasCrossed, formatDuration, formatMiles, thinLine, ALERT_AREA_PENALTY_MIN } from '../src/lib/routing/score';
+import { routeScore, countAreasCrossed, milesInside, formatDuration, formatMiles, thinLine, ALERT_AREA_PENALTY_MIN } from '../src/lib/routing/score';
 import { googleMapsLink, appleMapsLink } from '../src/lib/routing/links';
 import { awayFromWarning, byDistance, parseShelters, type Town } from '../src/lib/routing/destinations';
 import { osrmInstruction, parseOrs } from '../src/lib/routing/plan';
@@ -68,13 +68,26 @@ describe('tiling for OpenRouteService limits (20 km across, 200 km²)', () => {
 });
 
 describe('route scoring (documented formula)', () => {
-  it('minutes + 30 per warning area + 3 per flood-zone crossing', () => {
-    expect(routeScore({ duration_s: 1800, alert_area_intersections: 1, flood_zone_crossings: 4 })).toBe(30 + 30 + 12);
+  it('minutes + 30 per warning area entered + 5 per mile inside + 3 per flood-zone crossing', () => {
+    expect(routeScore({ duration_s: 1800, alert_area_intersections: 1, miles_in_warning: 2, flood_zone_crossings: 4 })).toBe(30 + 30 + 10 + 12);
+  });
+
+  it('when you start inside a warning area, the route that leaves it sooner scores better', () => {
+    const lingers = routeScore({ duration_s: 34 * 60, alert_area_intersections: 0, miles_in_warning: 9, flood_zone_crossings: 5 });
+    const leaves = routeScore({ duration_s: 39 * 60, alert_area_intersections: 0, miles_in_warning: 3, flood_zone_crossings: 5 });
+    expect(leaves).toBeLessThan(lingers);
+  });
+
+  it('measures miles inside an area', () => {
+    const area = { type: 'Polygon', coordinates: square(-81.0, 34.9, 0.1) } as GeoJSON.Polygon;
+    const line = [[-81.05, 34.95], [-80.95, 34.95], [-80.85, 34.95]];
+    // only the first segment (about 5.7 mi) has its middle inside
+    expect(milesInside(line, [area])).toBeCloseTo(5.7, 0);
   });
 
   it('a route through a warning area loses to one up to 30 minutes slower that avoids it', () => {
-    const through = routeScore({ duration_s: 20 * 60, alert_area_intersections: 1, flood_zone_crossings: 2 });
-    const around = routeScore({ duration_s: (20 + ALERT_AREA_PENALTY_MIN - 1) * 60, alert_area_intersections: 0, flood_zone_crossings: 2 });
+    const through = routeScore({ duration_s: 20 * 60, alert_area_intersections: 1, miles_in_warning: 0, flood_zone_crossings: 2 });
+    const around = routeScore({ duration_s: (20 + ALERT_AREA_PENALTY_MIN - 1) * 60, alert_area_intersections: 0, miles_in_warning: 0, flood_zone_crossings: 2 });
     expect(around).toBeLessThan(through);
   });
 

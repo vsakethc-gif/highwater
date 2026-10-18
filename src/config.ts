@@ -58,9 +58,9 @@ export const SCEMD_COUNTY_DIRECTORY = 'https://www.scemd.org/who-we-are/county-e
 
 /**
  * The one Cloudflare Worker (brief 2.3): hides the routing key and proxies address search.
- * Set after the Worker is deployed. Empty = route planner shows "routing unavailable".
+ * Deployed 2026-10-18. If empty, the route planner falls back to OSRM (no hazard avoidance).
  */
-export const WORKER_URL = '';
+export const WORKER_URL = 'https://sc5-ready.sc5ready.workers.dev';
 
 /** The county shown first, before the person chooses their own. */
 export const DEFAULT_COUNTY_FIPS = '45091'; // York

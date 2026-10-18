@@ -13,7 +13,8 @@
 import { WORKER_URL } from '../../config';
 import type { Alert } from '../data/types';
 import { buildAvoidPlan, tileForRouter, tripBox, type LonLat, type PolygonCoords } from './avoid';
-import { countAreasCrossed, routeScore, thinLine } from './score';
+import { countAreasCrossed, milesInside, routeScore, thinLine } from './score';
+import { pointInGeometry } from '../geo';
 
 export type Provider = 'ors' | 'osrm-fallback';
 
@@ -30,7 +31,10 @@ export interface RouteResult {
   distance_m: number;
   /** Warning names this route was asked to go around. */
   avoided_areas: string[];
+  /** Active warning areas the route ENTERS (not counting one you start or end in). */
   alert_area_intersections: number;
+  /** Miles driven inside any active warning area. */
+  miles_in_warning: number;
   flood_zone_crossings: number | null;
   /** Filled in by the reports feature (P1c); 0 until then. */
   nearby_unverified_reports: number;
@@ -88,12 +92,24 @@ export function parseOrs(json: { features?: OrsFeature[] }): RawRoute[] {
 
 async function orsRoute(start: LonLat, end: LonLat, avoid: PolygonCoords[] | null, alternatives: boolean, signal?: AbortSignal): Promise<RawRoute[]> {
   if (!WORKER_URL) throw new RoutingError('Routing service not set up', 503);
-  const res = await fetch(`${WORKER_URL}/route`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ start, end, avoid: avoid?.length ? avoid : null, alternatives }),
-    signal,
-  });
+  // Stop waiting after 25 seconds (the Worker itself gives up on ORS after 20).
+  const timeout = new AbortController();
+  const timer = setTimeout(() => timeout.abort(), 25_000);
+  signal?.addEventListener('abort', () => timeout.abort());
+  let res: Response;
+  try {
+    res = await fetch(`${WORKER_URL}/route`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ start, end, avoid: avoid?.length ? avoid : null, alternatives }),
+      signal: timeout.signal,
+    });
+  } catch (err) {
+    if (signal?.aborted) throw err;
+    throw new RoutingError('The routing service didn’t respond in time', 504);
+  } finally {
+    clearTimeout(timer);
+  }
   const json = await res.json().catch(() => ({}));
   if (!res.ok) throw new RoutingError((json as { error?: string }).error ?? `Routing error ${res.status}`, res.status);
   return parseOrs(json);
@@ -150,8 +166,15 @@ async function osrmRoute(start: LonLat, end: LonLat, signal?: AbortSignal): Prom
 
 const NFHL_ZONES = 'https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query';
 
-/** How many separate high-risk flood zones the route line crosses. null if FEMA can't be reached. */
-export async function floodZoneCrossings(line: number[][], signal?: AbortSignal): Promise<number | null> {
+/**
+ * How many separate high-risk flood zones the route line crosses.
+ * null if FEMA can't be reached within 10 seconds: a slow FEMA never holds up the route.
+ */
+export async function floodZoneCrossings(line: number[][], outer?: AbortSignal): Promise<number | null> {
+  const timeout = new AbortController();
+  const timer = setTimeout(() => timeout.abort(), 10_000);
+  outer?.addEventListener('abort', () => timeout.abort());
+  const signal = timeout.signal;
   try {
     const body = new URLSearchParams({
       geometry: JSON.stringify({ paths: [thinLine(line)], spatialReference: { wkid: 4326 } }),
@@ -167,6 +190,8 @@ export async function floodZoneCrossings(line: number[][], signal?: AbortSignal)
     return typeof json.count === 'number' ? json.count : null;
   } catch {
     return null;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -203,24 +228,39 @@ export async function planRoutes(start: LonLat, end: LonLat, alerts: Alert[], si
   let avoided: RawRoute[] = [];
   const fastestCrosses = base.length > 0 && countAreasCrossed(base[0].geometry.coordinates, avoidGeometries) > 0;
   if (provider === 'ors' && fastestCrosses) {
-    const tiles = tileForRouter(avoidPolygons, tripBox(start, end));
+    // You can't avoid the spot you're standing in (or going to). Leave out the tiles that contain
+    // the start or end, so the route heads out of the warning area the most direct way.
+    const allTiles = tileForRouter(avoidPolygons, tripBox(start, end));
+    const tiles = allTiles.filter((t) => !isInside(start[0], start[1], t) && !isInside(end[0], end[1], t));
+    if (avoidGeometries.some((g) => pointInGeometry(start[0], start[1], g))) {
+      notices.push('You’re starting inside an active warning area. The route leads out of it, but it can’t avoid the part you’re already in.');
+    }
+    if (avoidGeometries.some((g) => pointInGeometry(end[0], end[1], g))) {
+      notices.push('Your destination is inside an active warning area. Consider choosing a place outside it.');
+    }
     try {
       avoided = await orsRoute(start, end, tiles, false, signal);
       avoidedNames.push(...avoidPlan.sources.map((s) => s.event));
     } catch (err) {
       if (signal?.aborted) throw err;
-      // Retry with only the tiles the fastest route actually runs through.
-      const line = base[0].geometry.coordinates;
-      const crossed = tiles.filter((t) => line.some(([lon, lat]) => isInside(lon, lat, t)));
-      try {
-        if (!crossed.length || crossed.length === tiles.length) throw err;
-        avoided = await orsRoute(start, end, crossed, false, signal);
-        avoidedNames.push(...avoidPlan.sources.map((s) => s.event));
-        notices.push('We could only route around the parts of the warning areas on the direct path, not the whole areas.');
-      } catch {
-        notices.push(
-          `We couldn’t find a road around the active warning areas (${avoidPlan.sources.map((s) => s.event).join(', ')}). The routes below may pass through them.`,
-        );
+      // If the service timed out, don't make people wait for a second try.
+      if (err instanceof RoutingError && err.status === 504) {
+        notices.push('The routing service was too slow to plan a way around the warning areas. The routes below may pass through them.');
+        avoided = [];
+      } else {
+        // Retry with only the tiles the fastest route actually runs through.
+        const line = base[0].geometry.coordinates;
+        const crossed = tiles.filter((t) => line.some(([lon, lat]) => isInside(lon, lat, t)));
+        try {
+          if (!crossed.length || crossed.length === tiles.length) throw err;
+          avoided = await orsRoute(start, end, crossed, false, signal);
+          avoidedNames.push(...avoidPlan.sources.map((s) => s.event));
+          notices.push('We could only route around the parts of the warning areas on the direct path, not the whole areas.');
+        } catch {
+          notices.push(
+            `We couldn’t find a road around the active warning areas (${avoidPlan.sources.map((s) => s.event).join(', ')}). The routes below may pass through them.`,
+          );
+        }
       }
     }
   } else if (provider === 'ors' && avoidPolygons.length) {
@@ -229,12 +269,16 @@ export async function planRoutes(start: LonLat, end: LonLat, alerts: Alert[], si
 
   // 3. Measure every route
   const raw = dedupe([...base, ...avoided]).slice(0, 3);
+  // Areas a route could choose not to enter: every avoid area except ones holding the start or end.
+  const enterable = avoidGeometries.filter((g) => !pointInGeometry(start[0], start[1], g) && !pointInGeometry(end[0], end[1], g));
   const crossings = await Promise.all(raw.map((r) => floodZoneCrossings(r.geometry.coordinates, signal)));
   const routes: RouteResult[] = raw.map((r, i) => {
-    const alertHits = countAreasCrossed(r.geometry.coordinates, avoidGeometries);
+    const alertHits = countAreasCrossed(r.geometry.coordinates, enterable);
+    const milesIn = milesInside(r.geometry.coordinates, avoidGeometries);
     const fromAvoid = avoided.includes(r);
     const warnings: string[] = [];
-    if (alertHits > 0) warnings.push(`Passes through ${alertHits} active warning area${alertHits > 1 ? 's' : ''}.`);
+    if (alertHits > 0) warnings.push(`Enters ${alertHits} active warning area${alertHits > 1 ? 's' : ''}.`);
+    if (milesIn > 0) warnings.push(`${milesIn.toFixed(1)} miles inside active warning areas.`);
     if (crossings[i] === null) warnings.push('Couldn’t check FEMA flood zones for this route.');
     if (provider === 'osrm-fallback') warnings.push('Does not account for active hazards.');
     const result = {
@@ -245,6 +289,7 @@ export async function planRoutes(start: LonLat, end: LonLat, alerts: Alert[], si
       distance_m: r.distance_m,
       avoided_areas: fromAvoid ? avoidedNames : [],
       alert_area_intersections: alertHits,
+      miles_in_warning: milesIn,
       flood_zone_crossings: crossings[i],
       nearby_unverified_reports: 0,
       warnings,

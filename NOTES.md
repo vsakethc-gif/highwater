@@ -39,6 +39,8 @@ Working log for SC-5 Ready. "Problems and fixes" becomes the answer to the judge
 - **Hand-written service worker instead of a plugin (Workbox).** It's about 70 lines, so every line can be explained; a tiny build step fills in the file list and a version number.
 - **The service worker never caches government API data.** The app keeps its own labeled "last loaded" copy per county instead, so old data can't be mistaken for live data.
 - **Guidance tables for 9 more hazards** (tropical, winter, cold, heat, wind, fire weather, fog, air quality, evacuation), each line taken from an official page. A Watch shows "get ready" steps; a Warning shows "act now" steps.
+- **One Cloudflare Worker** (`/worker`) for routing and address search, so the ORS key never reaches the browser. Only this app's pages may call it.
+- **Route scoring formula:** minutes + 30 per warning area entered + 5 per mile inside one + 3 per FEMA flood zone crossed. Transparent and shown on every card.
 - **Six scenarios** now, covering four hazard types (flood, tornado, heat, tropical) and all of Watch, Warning, and Danger. It is simpler and much smaller than MapLibre, which is enough for drawing our data on top of a basemap.
 
 ## Problems and fixes
@@ -70,11 +72,18 @@ Working log for SC-5 Ready. "Problems and fixes" becomes the answer to the judge
 - **Some official safety pages were thin.** The NWS fog and fire-weather pages and AirNow's AQI page didn't list the specific steps; I found the detailed official pages (fog-driving, wildfire-ww) instead, and dropped two tips I couldn't source (low-beam headlights, bring pets inside for cold).
 - **MapLibre's background worker logs an error in development mode only** (not in the production build, where the console is clean). Noted, not worth fixing.
 
+- **The routing service limits avoid areas to 20 km across, but warning areas are bigger.** Fix: cut each warning area into tiles of about 14 km × 14 km and send only the tiles near the trip. Tested that every tile stays under 20 km and 200 km².
+- **Routing failed when the start was inside the warning area.** Asking to avoid the area you're standing in is impossible, so the router errored (502). Fix: leave out tiles that contain the start or destination, and tell the person "You're starting inside an active warning area."
+- **The first scoring formula couldn't tell routes apart** when they all start inside the warning area (every route "passed through 1"). Fix: count only warning areas a route *enters*, and add miles driven inside warning areas (5 points per mile). Tested: the route that leaves sooner now wins.
+- **FEMA's shelter service took over 20 seconds**, and the planner waited for it. Fix: 12-second limit on shelters, 10 seconds on flood-zone counts; town choices load separately so "Away from the warning area" works at once.
+- **OpenRouteService stopped answering requests that used our key** (it hung instead of erroring) a few minutes after working fine. Diagnosed by comparing requests with and without the key, on both ORS addresses: no-key requests got an instant "401," keyed ones hung. Fix on our side: the Worker gives up after 20 seconds, the app after 25, and the app switches to the OSRM backup with its "does not avoid hazard areas" banner. Verified in the browser.
+- **Account setup snags:** keyboard input never reached the terminal tabs (GitHub login, Cloudflare secret prompt), so we used approval links in the browser and a git-ignored `.dev.vars` file instead; Cloudflare needed a workers.dev subdomain, which we registered through Cloudflare's API after the dashboard didn't create one.
+
 ## Open questions for me
 
 - Do you want to keep the name "SC-5 Ready"? (Change it in `src/config.ts` → `APP_NAME`.)
-- **OpenRouteService key (needed for Phase 4):** sign up at https://openrouteservice.org/dev/#/signup.
-- **ORS avoid polygons are limited to 20 km across and 200 km².** Many warning polygons are bigger, so in Phase 4 we'll trim avoid areas to the part near the route. This could limit how well the route planner works; we'll know by the Wednesday cut-rule check.
+- **OpenRouteService:** check your daily quota at account.heigit.org, and whether requests are working again. If ORS stays down, the app still works with the backup router (no hazard avoidance).
+- **Your ORS key was pasted into the chat.** It's low risk (it only spends routing quota and is now stored safely in Cloudflare), but you can make a new key at account.heigit.org; then put it in `worker/.dev.vars` and I'll re-upload it.
 
 ## Later (ideas outside current scope)
 
@@ -124,3 +133,11 @@ Working log for SC-5 Ready. "Problems and fixes" becomes the answer to the judge
 3. **Scenario Mode → Tropical storm (Kershaw):** Warning with the rain-and-wind icon; "Also active here: Flooding, Watch."
 4. **Install:** on Android Chrome, the menu offers "Install app" or "Add to Home screen"; on iPhone Safari, Share → "Add to Home Screen." The icon is the blue water and gauge symbol.
 5. **Offline:** open the app once with signal, then turn on airplane mode and reopen it. The app opens, a "You're offline" banner shows on every page, Get ready works, and the status shows "Offline: showing info from [time]" with "Can't confirm," never "Normal."
+
+### Phase 4
+1. **Scenario Mode → Flash flood emergency.** The status shows Danger and a **Plan a lower-exposure route** button.
+2. Open it: the safety notice is at the top. "Nearest open shelter" says no shelters are open, with your county's emergency management link.
+3. Start: type ZIP **29715** → "Start: ZIP 29715". The destination fills in: **Van Wyck (town center outside the warning area)**.
+4. **Plan routes:** within about 25 seconds you see route cards (time, miles, minutes vs fastest, warning areas entered, miles inside warning areas, FEMA flood zones crossed), steps, and Google/Apple Maps links. If ORS is down, a red "This route does not avoid hazard areas" banner shows.
+5. **Scenario Mode → Tornado warning (Lancaster)**, then go to the route page: it says "Stay where you are and take shelter" and shows no planner.
+6. **Print or save these directions** prints the route cards with all steps.

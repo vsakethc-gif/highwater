@@ -47,6 +47,8 @@ async function pageFor(path: string): Promise<Page> {
       return renderStatus;
     case '/map':
       return (await import('./pages/map')).renderMap;
+    case '/route':
+      return FEATURES.routePlanner ? (await import('./pages/route')).renderRoute : notFound;
     case '/prepare':
       return (await import('./pages/prepare')).renderPrepare;
     case '/methodology':

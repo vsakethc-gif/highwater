@@ -19,7 +19,8 @@ function serviceWorker(): Plugin {
     generateBundle(_options, bundle) {
       const built = Object.keys(bundle).filter((file) => {
         if (file.endsWith('.map') || file === 'sw.js') return false;
-        if (/(^|\/)map-[^/]+\.(js|css)$/.test(file) || file.includes('maplibre-gl-worker')) return false;
+        // The map library and the pages that need it (district map, route planner) need the internet anyway.
+        if (/(^|\/)(map|route|routeMap|maplibre-gl)-[^/]*\.(js|css)$/.test(file) || file.includes('maplibre-gl-worker')) return false;
         if (file.endsWith('.woff2')) return /-latin-wght-/.test(file);
         return true;
       });

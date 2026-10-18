@@ -37,6 +37,31 @@ export const COUNTIES: readonly County[] = [
   { fips: '45091', name: 'York', seat: { name: 'York', lat: 34.9943, lon: -81.242 } },
 ];
 
+/**
+ * County emergency management offices: where to confirm shelters and get official instructions.
+ * Each link was checked on 2026-10-17: listed in SCEMD's "County Emergency Managers" directory
+ * and loading (Lancaster's SCEMD link was broken, so this is the county's own current EM page).
+ */
+export const COUNTY_EM: Record<string, string> = {
+  '45021': 'https://cherokeecountysc.gov/emergency-services/',
+  '45023': 'https://www.chestercountysc.gov/government/emergency-management',
+  '45039': 'https://www.fairfieldsc.com/departments/emergency-management',
+  '45055': 'https://www.kershaw.sc.gov/government/departments-r-z/safety-and-emergency-services/emergency-management',
+  '45057': 'https://www.lancastercountysc.gov/Directory.aspx?DID=49',
+  '45061': 'https://www.leecountysc.org/directory/departments___elected_officials/fire_department___emergency_management.php',
+  '45087': 'https://gearupunionsc.com/departments/emergency-management/',
+  '45091': 'https://www.yorkcountysc.gov/149/Emergency-Management',
+};
+
+/** SCEMD's statewide directory of county emergency managers. */
+export const SCEMD_COUNTY_DIRECTORY = 'https://www.scemd.org/who-we-are/county-emergency-managers/';
+
+/**
+ * The one Cloudflare Worker (brief 2.3): hides the routing key and proxies address search.
+ * Set after the Worker is deployed. Empty = route planner shows "routing unavailable".
+ */
+export const WORKER_URL = '';
+
 /** The county shown first, before the person chooses their own. */
 export const DEFAULT_COUNTY_FIPS = '45091'; // York
 
@@ -48,7 +73,7 @@ export const DEFAULT_COUNTY_FIPS = '45091'; // York
 export const FEATURES = {
   multiHazard: true, // P1a: detailed guidance for every NWS hazard type (off = generic "follow the alert")
   offline: true, // P1a: installable app (service worker) + "last loaded" copy when offline
-  routePlanner: false, // P1b: lower-exposure route map + shelters
+  routePlanner: true, // P1b: lower-exposure route map + shelters
   reports: false, // P1c: community issue reporting
   airQuality: false, // P2
   earthquakes: false, // P2

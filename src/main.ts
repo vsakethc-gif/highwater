@@ -23,6 +23,31 @@ type Page = (root: HTMLElement) => Cleanup | void;
 
 const root = document.getElementById('app')!;
 let cleanup: Cleanup | void;
+const RELOAD_KEY = 'sc5ready.reloadedForUpdate';
+/** sessionStorage can be blocked by browser settings; these never throw. */
+const session = {
+  get: (k: string): string | null => {
+    try {
+      return sessionStorage.getItem(k);
+    } catch {
+      return '1'; // can't remember a reload, so don't risk a loop
+    }
+  },
+  set: (k: string, v: string) => {
+    try {
+      sessionStorage.setItem(k, v);
+    } catch {
+      /* ignore */
+    }
+  },
+  remove: (k: string) => {
+    try {
+      sessionStorage.removeItem(k);
+    } catch {
+      /* ignore */
+    }
+  },
+};
 
 function notFound(el: HTMLElement): void {
   document.title = `Page not found · ${APP_NAME}`;
@@ -49,6 +74,10 @@ async function pageFor(path: string): Promise<Page> {
       return (await import('./pages/map')).renderMap;
     case '/route':
       return FEATURES.routePlanner ? (await import('./pages/route')).renderRoute : notFound;
+    case '/report':
+      return FEATURES.reports ? (await import('./pages/report')).renderReport : notFound;
+    case '/admin':
+      return FEATURES.reports ? (await import('./pages/admin')).renderAdmin : notFound;
     case '/prepare':
       return (await import('./pages/prepare')).renderPrepare;
     case '/methodology':
@@ -67,7 +96,15 @@ async function route(): Promise<void> {
   try {
     const page = await pageFor(path);
     cleanup = page(root);
+    session.remove(RELOAD_KEY);
   } catch {
+    // After an update, an open tab may ask for a page file that no longer exists.
+    // Reload once to get the new version (the flag stops an endless reload loop).
+    if (navigator.onLine && session.get(RELOAD_KEY) === null) {
+      session.set(RELOAD_KEY, '1');
+      location.reload();
+      return;
+    }
     root.replaceChildren(
       ...pageShell(
         'none',

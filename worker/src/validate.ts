@@ -110,3 +110,95 @@ export class RateLimiter {
     for (const [k, times] of this.hits) if (times.every((t) => now - t >= this.windowMs)) this.hits.delete(k);
   }
 }
+
+// ---------------------------------------------------------------------
+// Community reports (brief 11.5): server-side checks before saving.
+// The database functions check the same things again.
+// ---------------------------------------------------------------------
+
+export const REPORT_CATEGORIES = [
+  'streetlight_out',
+  'traffic_signal_out',
+  'downed_tree',
+  'flooded_road',
+  'blocked_drain',
+  'road_damage',
+  'sign_damage',
+  'downed_power_line',
+  'other',
+] as const;
+export const SC5_COUNTIES = ['45021', '45023', '45039', '45055', '45057', '45061', '45087', '45091'];
+/** SC-5's 8 counties plus a small buffer. */
+export const SC5_BOX = { minLon: -82.0, maxLon: -79.95, minLat: 33.85, maxLat: 35.3 };
+export const MAX_DESCRIPTION = 280;
+
+/** A short list of words we don't show publicly. Flags and the admin page catch the rest. */
+const BLOCKED_WORDS = ['fuck', 'shit', 'bitch', 'cunt', 'asshole', 'bastard', 'dick', 'pussy'];
+
+export interface ReportRequest {
+  category: (typeof REPORT_CATEGORIES)[number];
+  lat: number;
+  lon: number;
+  county_fips: string;
+  description: string | null;
+  device_id: string;
+  turnstile_token: string;
+}
+
+export function looksPersonal(text: string): boolean {
+  return /\d{3}[\s.\-)]*\d{3}[\s.\-]*\d{4}/.test(text) || /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i.test(text);
+}
+
+export function hasBlockedWord(text: string): boolean {
+  const words = text.toLowerCase().split(/[^a-z]+/);
+  return words.some((w) => BLOCKED_WORDS.includes(w));
+}
+
+const isDeviceId = (v: unknown): v is string => typeof v === 'string' && /^[0-9a-f-]{20,64}$/i.test(v);
+
+/** Returns a clean report, or a plain-language error. */
+export function validateReport(body: unknown): ReportRequest | string {
+  if (!body || typeof body !== 'object') return 'Request body must be JSON.';
+  const b = body as Record<string, unknown>;
+  if (!REPORT_CATEGORIES.includes(b.category as never)) return 'Choose a category.';
+  const lat = Number(b.lat);
+  const lon = Number(b.lon);
+  if (!Number.isFinite(lat) || !Number.isFinite(lon) || lon < SC5_BOX.minLon || lon > SC5_BOX.maxLon || lat < SC5_BOX.minLat || lat > SC5_BOX.maxLat) {
+    return 'The location must be in SC-5’s 8 counties.';
+  }
+  if (!SC5_COUNTIES.includes(String(b.county_fips))) return 'The location must be in SC-5’s 8 counties.';
+  let description: string | null = null;
+  if (b.description !== undefined && b.description !== null) {
+    if (typeof b.description !== 'string') return 'Description must be text.';
+    description = b.description.trim().slice(0, MAX_DESCRIPTION + 1) || null;
+    if (description && description.length > MAX_DESCRIPTION) return `Keep the description to ${MAX_DESCRIPTION} characters.`;
+    if (description && looksPersonal(description)) return 'Please remove phone numbers or email addresses from the description.';
+    if (description && hasBlockedWord(description)) return 'Please remove offensive words from the description.';
+  }
+  if (!isDeviceId(b.device_id)) return 'Missing device ID.';
+  if (typeof b.turnstile_token !== 'string' || b.turnstile_token.length < 10) return 'Please complete the “I’m human” check.';
+  return {
+    category: b.category as ReportRequest['category'],
+    lat: Math.round(lat * 1e5) / 1e5,
+    lon: Math.round(lon * 1e5) / 1e5,
+    county_fips: String(b.county_fips),
+    description,
+    device_id: b.device_id,
+    turnstile_token: b.turnstile_token,
+  };
+}
+
+export interface VoteRequest {
+  report_id: string;
+  kind: 'confirm' | 'fixed' | 'flag';
+  device_id: string;
+}
+
+export function validateVote(body: unknown): VoteRequest | string {
+  if (!body || typeof body !== 'object') return 'Request body must be JSON.';
+  const b = body as Record<string, unknown>;
+  if (typeof b.report_id !== 'string' || !/^[0-9a-f-]{36}$/i.test(b.report_id)) return 'Unknown report.';
+  if (!['confirm', 'fixed', 'flag'].includes(b.kind as string)) return 'Unknown vote.';
+  if (!isDeviceId(b.device_id)) return 'Missing device ID.';
+  return { report_id: b.report_id, kind: b.kind as VoteRequest['kind'], device_id: b.device_id };
+}

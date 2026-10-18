@@ -6,7 +6,8 @@
  * During a shelter-in-place hazard (tornado, severe storm, extreme cold...), the planner is
  * hidden and the page tells people to take shelter instead.
  */
-import { APP_NAME, COUNTY_EM, SCEMD_COUNTY_DIRECTORY } from '../config';
+import { APP_NAME, COUNTY_EM, FEATURES, SCEMD_COUNTY_DIRECTORY } from '../config';
+import { fetchReports, reportsAvailable, simulatedReports, type Report } from '../lib/reports/client';
 import { append, h } from '../lib/dom';
 import { dataOrNull, loadConditions } from '../lib/data/conditions';
 import type { Alert } from '../lib/data/types';
@@ -113,6 +114,8 @@ function routeCard(r: RouteResult, fastest: RouteResult, start: LonLat, end: Lon
       h('dd', {}, r.alert_area_intersections === 0 ? 'Doesn’t enter any we know about' : `Enters ${r.alert_area_intersections}`),
       h('dt', {}, 'Miles inside warning areas'),
       h('dd', { class: 'num' }, r.miles_in_warning.toFixed(1)),
+      h('dt', {}, 'Unverified reports nearby'),
+      h('dd', {}, r.nearby_unverified_reports ? `${r.nearby_unverified_reports} (flooded road, tree, or power line)` : 'None'),
       h('dt', {}, 'FEMA high-risk flood zones crossed'),
       h('dd', { class: 'num' }, r.flood_zone_crossings === null ? 'Couldn’t check' : String(r.flood_zone_crossings)),
     ),
@@ -153,6 +156,9 @@ export function renderRoute(root: HTMLElement): () => void {
   let towns: Town[] = [];
   let plan: RoutePlan | null = null;
   let selected: string | null = null;
+  /** Unverified community reports (flooded roads, trees, power lines) for the route cards and avoid areas. */
+  let communityReports: Report[] = [];
+  const avoidFloodedBox = h('input', { type: 'checkbox', id: 'avoid-flooded', checked: true });
   /** true once the person picks a destination option themselves (we then stop choosing for them). */
   let userChose = false;
 
@@ -367,7 +373,7 @@ export function renderRoute(root: HTMLElement): () => void {
     say('Planning routes… this can take a few seconds.');
     resultsSlot.replaceChildren(h('ul', { class: 'skeleton-list', 'aria-hidden': 'true' }, h('li', { class: 'skeleton skeleton--tall' })));
     try {
-      plan = await planRoutes(start.point, destination.point, alerts, controller.signal);
+      plan = await planRoutes(start.point, destination.point, alerts, controller.signal, { reports: communityReports, avoidFlooded: avoidFloodedBox.checked });
       selected = plan.routes[0]?.id ?? null;
       routeMap?.setRoutes(plan.routes, selected);
       say(plan.routes.length ? `${plan.routes.length} route${plan.routes.length > 1 ? 's' : ''} found.` : 'No route found.');
@@ -423,6 +429,14 @@ export function renderRoute(root: HTMLElement): () => void {
       destOptions,
       destLabel,
       h('h2', { class: 'subsection-title' }, '3. Plan'),
+      FEATURES.reports
+        ? h(
+            'div',
+            { class: 'check' },
+            avoidFloodedBox,
+            h('label', { for: 'avoid-flooded' }, 'Avoid community-reported flooded roads', h('span', { class: 'meta' }, ' (unverified reports from neighbors)')),
+          )
+        : null,
       planButton,
       message,
     ),
@@ -488,6 +502,11 @@ export function renderRoute(root: HTMLElement): () => void {
     });
     refreshLabels();
 
+    // Community reports load in the background; routes work without them.
+    if (FEATURES.reports) {
+      const local = scenario ? simulatedReports() : [];
+      (reportsAvailable() && !scenario ? fetchReports().catch(() => [] as Report[]) : Promise.resolve([] as Report[])).then((r) => (communityReports = [...local, ...r]));
+    }
     // Towns are our own small file: load them first so "Away from the warning area" works right away.
     towns = await fetch(`${import.meta.env.BASE_URL}data/towns.json`)
       .then((r) => r.json() as Promise<Town[]>)

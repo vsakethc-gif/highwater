@@ -27,6 +27,10 @@ import { evaluate } from '../lib/hazards/engine';
 import { LEVELS, type Level } from '../lib/hazards/levels';
 import { districtAverage, scoreBand, type Tract } from '../lib/hazards/vulnerability';
 import { countyName, getState } from '../lib/state';
+import { FEATURES } from '../config';
+import { categoryInfo } from '../lib/reports/categories';
+import { fetchReports, reportsAvailable, simulatedReports, type Report } from '../lib/reports/client';
+import { relativeTime } from '../lib/time';
 import { clockTime } from '../lib/time';
 import { icon } from '../components/icon';
 import { pageShell } from '../components/layout';
@@ -190,8 +194,13 @@ function legend(layer: ScoreLayer, images: Record<string, ImageData>): HTMLEleme
     h(
       'div',
       { class: 'legend__group' },
-      h('p', { class: 'legend__title' }, 'Lines'),
-      h('ul', { class: 'legend__list' }, h('li', {}, h('span', { class: 'legend__line' }), 'County border')),
+      h('p', { class: 'legend__title' }, 'Lines and reports'),
+      h(
+        'ul',
+        { class: 'legend__list' },
+        h('li', {}, h('span', { class: 'legend__line' }), 'County border'),
+        FEATURES.reports ? h('li', {}, h('span', { class: 'legend__report' }), 'Community report (unverified)') : null,
+      ),
     ),
   );
 }
@@ -339,6 +348,7 @@ export function renderMap(root: HTMLElement): () => void {
           { class: 'check-group' },
           toggle('toggle-alerts', 'Official alert areas', (on) => visible(['alerts-fill', 'alerts-line', 'alerts-line-county'], on)),
           toggle('toggle-gauges', 'River gauges', (on) => visible(['gauges'], on)),
+          FEATURES.reports ? toggle('toggle-reports', 'Community reports (unverified)', (on) => visible(['reports'], on)) : null,
         ),
         legendSlot,
       ),
@@ -509,10 +519,41 @@ export function renderMap(root: HTMLElement): () => void {
         // The selected tract's outline goes on top of everything except gauges, so it's never hidden.
         map.addLayer({ id: 'tract-selected', type: 'line', source: 'tracts', filter: ['==', ['get', 'geoid'], ''], paint: { 'line-color': token('--color-ink'), 'line-width': 3 } });
         map.addLayer({ id: 'gauges', type: 'symbol', source: 'gauges', layout: { 'icon-image': ['get', 'icon'], 'icon-allow-overlap': true } });
+        map.addSource('reports', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+        map.addLayer({
+          id: 'reports',
+          type: 'circle',
+          source: 'reports',
+          paint: { 'circle-radius': 6, 'circle-color': token('--status-watch-border'), 'circle-stroke-color': token('--color-ink'), 'circle-stroke-width': 1.5 },
+        });
+        // Community reports load in the background (simulated ones in Scenario Mode).
+        if (FEATURES.reports) {
+          const local: Report[] = scenario ? simulatedReports() : [];
+          (reportsAvailable() && !scenario ? fetchReports().catch(() => [] as Report[]) : Promise.resolve([] as Report[])).then((live) => {
+            const all = [...local, ...live];
+            (map?.getSource('reports') as maplibregl.GeoJSONSource | undefined)?.setData({
+              type: 'FeatureCollection',
+              features: all.map((r) => ({
+                type: 'Feature',
+                geometry: { type: 'Point', coordinates: [r.lon, r.lat] },
+                properties: { label: categoryInfo(r.category).label, when: relativeTime(r.created_at), simulated: Boolean(r.simulated) },
+              })),
+            });
+          });
+        }
 
         // Clicks: a gauge shows a popup; a tract opens the detail panel.
         map.on('click', (e: MapMouseEvent) => {
           if (!map) return;
+          const rep = map.queryRenderedFeatures(e.point, { layers: ['reports'] })[0];
+          if (rep) {
+            const p = rep.properties as { label: string; when: string; simulated: boolean };
+            new maplibregl.Popup({ closeButton: true, maxWidth: '240px' })
+              .setLngLat((rep.geometry as GeoJSON.Point).coordinates as [number, number])
+              .setDOMContent(h('div', { class: 'popup' }, h('p', { class: 'popup__title' }, p.label), h('p', { class: 'meta' }, `${p.simulated ? 'Simulated' : 'Unverified community report'} · ${p.when}`), h('p', {}, h('a', { href: '#/report' }, 'See reports'))))
+              .addTo(map);
+            return;
+          }
           const g = map.queryRenderedFeatures(e.point, { layers: ['gauges'] })[0];
           if (g) {
             const p = g.properties as { name: string; value: string; stage: number | null };
@@ -529,7 +570,7 @@ export function renderMap(root: HTMLElement): () => void {
           const t = map.queryRenderedFeatures(e.point, { layers: ['tracts-fill'] })[0];
           selectTract(t ? String(t.properties.geoid) : null);
         });
-        for (const id of ['gauges', 'tracts-fill']) {
+        for (const id of ['gauges', 'reports', 'tracts-fill']) {
           map.on('mouseenter', id, () => map && (map.getCanvas().style.cursor = 'pointer'));
           map.on('mouseleave', id, () => map && (map.getCanvas().style.cursor = ''));
         }

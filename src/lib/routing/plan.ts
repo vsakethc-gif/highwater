@@ -15,6 +15,7 @@ import type { Alert } from '../data/types';
 import { buildAvoidPlan, tileForRouter, tripBox, type LonLat, type PolygonCoords } from './avoid';
 import { countAreasCrossed, milesInside, routeScore, thinLine } from './score';
 import { pointInGeometry } from '../geo';
+import { reportsNearLine, type Report } from '../reports/client';
 
 export type Provider = 'ors' | 'osrm-fallback';
 
@@ -204,7 +205,30 @@ function dedupe(routes: RawRoute[]): RawRoute[] {
   return out;
 }
 
-export async function planRoutes(start: LonLat, end: LonLat, alerts: Alert[], signal?: AbortSignal): Promise<RoutePlan> {
+/** Community reports used by the planner (brief 10.2): shown near routes; flooded roads can be avoided. */
+export interface ReportInput {
+  reports: Report[];
+  avoidFlooded: boolean;
+}
+
+/** Kinds of unverified reports worth mentioning on a route card. */
+const ROUTE_REPORT_KINDS = ['flooded_road', 'downed_tree', 'downed_power_line'];
+
+/** A small square (about 150 m across) around a reported flooded road, to route around it. */
+function reportSquare(r: Report): PolygonCoords {
+  const dLat = 75 / 111_000;
+  const dLon = 75 / (111_000 * Math.cos((r.lat * Math.PI) / 180));
+  const [x0, x1, y0, y1] = [r.lon - dLon, r.lon + dLon, r.lat - dLat, r.lat + dLat].map((n) => Math.round(n * 1e5) / 1e5);
+  return [[[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]]];
+}
+
+export async function planRoutes(
+  start: LonLat,
+  end: LonLat,
+  alerts: Alert[],
+  signal?: AbortSignal,
+  community: ReportInput = { reports: [], avoidFlooded: false },
+): Promise<RoutePlan> {
   const avoidPlan = buildAvoidPlan(alerts);
   const avoidPolygons = avoidPlan.sources.flatMap((s) => s.polygons);
   const avoidGeometries: GeoJSON.Geometry[] = avoidPolygons.map((p) => ({ type: 'Polygon', coordinates: p }));
@@ -226,12 +250,20 @@ export async function planRoutes(start: LonLat, end: LonLat, alerts: Alert[], si
   // 2. Lower-exposure route around warning areas the fastest route passes through
   const avoidedNames: string[] = [];
   let avoided: RawRoute[] = [];
-  const fastestCrosses = base.length > 0 && countAreasCrossed(base[0].geometry.coordinates, avoidGeometries) > 0;
+  // Community-reported flooded roads near the trip (unverified), as small avoid squares.
+  const box = tripBox(start, end);
+  const floodedNearTrip = community.avoidFlooded
+    ? community.reports.filter((r) => r.category === 'flooded_road' && r.lon >= box[0] && r.lon <= box[2] && r.lat >= box[1] && r.lat <= box[3])
+    : [];
+  const reportSquares = floodedNearTrip.slice(0, 15).map(reportSquare);
+  const fastestNearFlooded = base.length > 0 && reportsNearLine(floodedNearTrip, base[0].geometry.coordinates).length > 0;
+  const fastestCrosses = base.length > 0 && (countAreasCrossed(base[0].geometry.coordinates, avoidGeometries) > 0 || fastestNearFlooded);
   if (provider === 'ors' && fastestCrosses) {
     // You can't avoid the spot you're standing in (or going to). Leave out the tiles that contain
     // the start or end, so the route heads out of the warning area the most direct way.
     const allTiles = tileForRouter(avoidPolygons, tripBox(start, end));
-    const tiles = allTiles.filter((t) => !isInside(start[0], start[1], t) && !isInside(end[0], end[1], t));
+    const tiles = [...allTiles, ...reportSquares].filter((t) => !isInside(start[0], start[1], t) && !isInside(end[0], end[1], t));
+    if (reportSquares.length) avoidedNames.push('community-reported flooded roads (unverified)');
     if (avoidGeometries.some((g) => pointInGeometry(start[0], start[1], g))) {
       notices.push('You’re starting inside an active warning area. The route leads out of it, but it can’t avoid the part you’re already in.');
     }
@@ -291,7 +323,10 @@ export async function planRoutes(start: LonLat, end: LonLat, alerts: Alert[], si
       alert_area_intersections: alertHits,
       miles_in_warning: milesIn,
       flood_zone_crossings: crossings[i],
-      nearby_unverified_reports: 0,
+      nearby_unverified_reports: reportsNearLine(
+        community.reports.filter((x) => ROUTE_REPORT_KINDS.includes(x.category)),
+        r.geometry.coordinates,
+      ).length,
       warnings,
       provider,
       steps: r.steps,

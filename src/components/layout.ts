@@ -8,7 +8,7 @@ import { findScenario, SCENARIOS } from '../lib/scenario/scenario';
 import { getState, setState } from '../lib/state';
 import { icon } from './icon';
 
-export type Route = 'status' | 'map' | 'prepare' | 'methodology' | 'about' | 'none';
+export type Route = 'status' | 'map' | 'report' | 'prepare' | 'methodology' | 'about' | 'none';
 
 export function skipLink(): HTMLAnchorElement {
   return h('a', { class: 'skip-link', href: '#main' }, 'Skip to main content');
@@ -17,6 +17,7 @@ export function skipLink(): HTMLAnchorElement {
 const NAV: { route: Route; label: string; href: string }[] = [
   { route: 'status', label: 'Status', href: '#/' },
   { route: 'map', label: 'District map', href: '#/map' },
+  { route: 'report', label: 'Report a problem', href: '#/report' },
   { route: 'prepare', label: 'Get ready', href: '#/prepare' },
   { route: 'methodology', label: 'How it works', href: '#/methodology' },
   { route: 'about', label: 'About', href: '#/about' },

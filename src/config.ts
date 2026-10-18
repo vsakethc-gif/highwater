@@ -62,6 +62,16 @@ export const SCEMD_COUNTY_DIRECTORY = 'https://www.scemd.org/who-we-are/county-e
  */
 export const WORKER_URL = 'https://sc5-ready.sc5ready.workers.dev';
 
+/**
+ * Community reports (P1c). These are PUBLIC values by design: the publishable key only
+ * allows what the database's Row Level Security rules allow (read active reports).
+ * Writing goes through the Worker. Empty = the reports feature shows "not available yet".
+ */
+export const SUPABASE_URL = '';
+export const SUPABASE_PUBLISHABLE_KEY = '';
+/** Cloudflare Turnstile site key (public). The matching secret lives only in the Worker. */
+export const TURNSTILE_SITE_KEY = '';
+
 /** The county shown first, before the person chooses their own. */
 export const DEFAULT_COUNTY_FIPS = '45091'; // York
 
@@ -74,7 +84,7 @@ export const FEATURES = {
   multiHazard: true, // P1a: detailed guidance for every NWS hazard type (off = generic "follow the alert")
   offline: true, // P1a: installable app (service worker) + "last loaded" copy when offline
   routePlanner: true, // P1b: lower-exposure route map + shelters
-  reports: false, // P1c: community issue reporting
+  reports: true, // P1c: community issue reporting
   airQuality: false, // P2
   earthquakes: false, // P2
   wildfire: false, // P2

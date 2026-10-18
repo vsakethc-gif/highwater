@@ -6,16 +6,26 @@
  *                      "secret", so it never reaches anyone's browser.
  *   2. GET /geocode  — address search through the U.S. Census Geocoder, which doesn't
  *                      allow browsers to call it directly (no CORS).
+ *   3. POST /report  — a community report: checks Turnstile and the content, then saves it
+ *                      through a database function using the Supabase SECRET key.
+ *   4. POST /vote    — "Still there", "Fixed", or "Flag" on a report.
  *
  * Privacy: nothing is stored or logged. Locations pass through to the service that
  * answers them and are then forgotten.
  */
-import { orsBody, RateLimiter, validateQuery, validateRoute } from './validate';
+import { orsBody, RateLimiter, validateQuery, validateReport, validateRoute, validateVote } from './validate';
 
 export interface Env {
   ORS_API_KEY: string;
   /** Comma-separated list of sites allowed to use this Worker. */
   ALLOWED_ORIGINS: string;
+  /** Supabase project URL and SECRET key (the secret key never leaves this Worker). */
+  SUPABASE_URL: string;
+  SUPABASE_SECRET_KEY: string;
+  /** Cloudflare Turnstile secret, for checking the anti-spam token. */
+  TURNSTILE_SECRET: string;
+  /** Random text mixed into device IDs before hashing, so stored hashes can't be matched to devices. */
+  DEVICE_SALT: string;
 }
 
 const ORS_URL = 'https://api.openrouteservice.org/v2/directions/driving-car/geojson';
@@ -103,6 +113,85 @@ async function handleGeocode(request: Request, cors: Record<string, string>): Pr
   return json({ matches }, 200, cors);
 }
 
+// ---------- Community reports ----------
+
+const reportLimiter = new RateLimiter(10, 60 * 60_000); // 10 report attempts per visitor per hour
+const voteLimiter = new RateLimiter(60, 60 * 60_000); // 60 votes per visitor per hour
+
+/** Hash the device's random ID with our secret salt. Only this hash is ever stored. */
+async function deviceHash(deviceId: string, env: Env): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(env.DEVICE_SALT + ':' + deviceId));
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+/** Ask Cloudflare whether the Turnstile token is real (the "I'm human" check). */
+async function turnstileOk(token: string, request: Request, env: Env): Promise<boolean> {
+  const form = new FormData();
+  form.append('secret', env.TURNSTILE_SECRET);
+  form.append('response', token);
+  const ip = request.headers.get('CF-Connecting-IP');
+  if (ip) form.append('remoteip', ip);
+  try {
+    const res = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', { method: 'POST', body: form, signal: AbortSignal.timeout(10_000) });
+    const data = (await res.json()) as { success?: boolean };
+    return data.success === true;
+  } catch {
+    return false;
+  }
+}
+
+/** Call one of our database functions with the secret key. */
+async function rpc(env: Env, fn: string, args: Record<string, unknown>): Promise<{ ok: boolean; data: unknown }> {
+  const res = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+    method: 'POST',
+    headers: { apikey: env.SUPABASE_SECRET_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify(args),
+    signal: AbortSignal.timeout(15_000),
+  });
+  return { ok: res.ok, data: await res.json().catch(() => null) };
+}
+
+/** Turn database error codes into plain words. */
+function dbMessage(data: unknown): string {
+  const msg = (data as { message?: string } | null)?.message ?? '';
+  if (msg.includes('personal_info')) return 'Please remove phone numbers or email addresses from the description.';
+  if (msg.includes('rate_limited')) return 'Too many reports from this device. Please wait an hour.';
+  if (msg.includes('not_found')) return 'That report is no longer active.';
+  return 'The report couldn’t be saved. Please try again later.';
+}
+
+async function handleReport(request: Request, env: Env, cors: Record<string, string>): Promise<Response> {
+  if (!reportLimiter.allow(await visitorId(request))) return json({ error: 'Too many reports. Please wait a while and try again.' }, 429, cors);
+  const checked = validateReport(await request.json().catch(() => null));
+  if (typeof checked === 'string') return json({ error: checked }, 400, cors);
+  if (!(await turnstileOk(checked.turnstile_token, request, env))) {
+    return json({ error: 'The “I’m human” check didn’t go through. Please try it again.' }, 400, cors);
+  }
+  const result = await rpc(env, 'submit_report', {
+    p_category: checked.category,
+    p_lat: checked.lat,
+    p_lon: checked.lon,
+    p_county_fips: checked.county_fips,
+    p_description: checked.description,
+    p_device_hash: await deviceHash(checked.device_id, env),
+  });
+  if (!result.ok) return json({ error: dbMessage(result.data) }, 400, cors);
+  return json({ id: result.data }, 201, cors);
+}
+
+async function handleVote(request: Request, env: Env, cors: Record<string, string>): Promise<Response> {
+  if (!voteLimiter.allow(await visitorId(request))) return json({ error: 'Too many votes. Please wait a while.' }, 429, cors);
+  const checked = validateVote(await request.json().catch(() => null));
+  if (typeof checked === 'string') return json({ error: checked }, 400, cors);
+  const result = await rpc(env, 'vote_report', {
+    p_report_id: checked.report_id,
+    p_device_hash: await deviceHash(checked.device_id, env),
+    p_kind: checked.kind,
+  });
+  if (!result.ok) return json({ error: dbMessage(result.data) }, 400, cors);
+  return json({ result: result.data }, 200, cors);
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const origin = request.headers.get('Origin');
@@ -114,6 +203,8 @@ export default {
     const { pathname } = new URL(request.url);
     if (pathname === '/route' && request.method === 'POST') return handleRoute(request, env, cors);
     if (pathname === '/geocode' && request.method === 'GET') return handleGeocode(request, cors);
+    if (pathname === '/report' && request.method === 'POST') return handleReport(request, env, cors);
+    if (pathname === '/vote' && request.method === 'POST') return handleVote(request, env, cors);
     return json({ error: 'Not found.' }, 404, cors);
   },
 };

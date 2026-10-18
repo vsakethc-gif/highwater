@@ -259,3 +259,12 @@
 .tract-list__item:hover {
   background: var(--color-accent-tint);
 }
+
+.legend__report {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  border: 1.5px solid var(--color-ink);
+  border-radius: 50%;
+  background: var(--status-watch-border);
+}

@@ -513,3 +513,15 @@
   width: 1rem;
   height: 1rem;
 }
+
+/* Danger button: used only for "Call 911" style actions. */
+.button--danger {
+  background: var(--status-danger-bg);
+  color: var(--status-danger-fg);
+  text-decoration: none;
+}
+
+.button--danger:hover {
+  background: var(--color-ink);
+  color: var(--color-on-accent);
+}

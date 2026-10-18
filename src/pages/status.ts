@@ -305,7 +305,13 @@ export function renderStatus(root: HTMLElement): () => void {
 
       bodySlot.replaceChildren(
         guidanceBlock(top),
-        h('div', { class: 'quick-actions' }, routeLine, h('a', { class: 'button button--secondary', href: '#/map' }, icon('Map'), 'Open district map')),
+        h(
+          'div',
+          { class: 'quick-actions' },
+          routeLine,
+          h('a', { class: 'button button--secondary', href: '#/map' }, icon('Map'), 'Open district map'),
+          FEATURES.reports ? h('a', { class: 'button button--secondary', href: '#/report' }, icon('Megaphone'), 'Report a problem') : null,
+        ),
         placeFacts(place, zone, tract, tracts) ?? '',
         alertsSection(place, c.alerts, alertsHere),
         section('rain-title', 'Rain forecast', rainCard(c.rain, place.kind === 'point' ? 'this spot' : `${seat} (county seat)`)),

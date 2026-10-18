@@ -53,19 +53,6 @@
   margin-top: var(--space-1);
 }
 
-.start-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1);
-}
-
-.spot-label {
-  padding: var(--space-1) var(--space-2);
-  border-left: 4px solid var(--color-accent);
-  background: var(--color-accent-tint);
-  font-weight: var(--weight-semibold);
-}
-
 .route-map {
   height: 50vh;
   min-height: 20rem;
@@ -79,15 +66,6 @@
   .route-map {
     height: 70vh;
   }
-}
-
-.route-message:empty {
-  display: none;
-}
-
-.route-message {
-  font-size: var(--text-sm);
-  color: var(--color-ink-muted);
 }
 
 .search-results {

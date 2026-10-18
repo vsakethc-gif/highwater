@@ -133,7 +133,10 @@ export function siteFooter(): HTMLElement {
     { class: 'site-footer' },
     h(
       'div',
-      { class: 'container prose' },
+      { class: 'container' },
+      h(
+        'div',
+        { class: 'prose' },
       h('p', { class: 'emergency-line' }, icon('Phone'), h('a', { href: 'tel:911' }, 'In an emergency, call 911')),
       h('p', {}, DISCLAIMER),
       h(
@@ -143,6 +146,7 @@ export function siteFooter(): HTMLElement {
         h('a', { href: 'https://www.weather.gov/alerts' }, 'National Weather Service alerts'),
         ' · ',
         h('a', { href: 'https://www.scemd.org/' }, 'SC Emergency Management Division'),
+      ),
       ),
     ),
   );

@@ -579,7 +579,9 @@ export function renderMap(root: HTMLElement): () => void {
         status.textContent = 'Some map pieces didn’t load. The text version below still works.';
       });
     } catch {
-      if (!cancelled) status.textContent = 'The map data didn’t load. Check your connection and try again.';
+      if (cancelled) return;
+      status.textContent = 'The map data didn’t load. Check your connection and try again.';
+      countyTableSlot.replaceChildren(h('p', { class: 'meta' }, 'The county table needs the same data, so it couldn’t load either. The Status page may still work.'));
     }
   })();
 

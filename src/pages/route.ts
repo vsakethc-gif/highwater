@@ -11,7 +11,7 @@ import { fetchReports, reportsAvailable, simulatedReports, type Report } from '.
 import { append, h } from '../lib/dom';
 import { dataOrNull, loadConditions } from '../lib/data/conditions';
 import type { Alert } from '../lib/data/types';
-import { loadCounties, loadZips } from '../lib/data/static';
+import { loadCounties } from '../lib/data/static';
 import { featureAt } from '../lib/geo';
 import { guidanceFor } from '../lib/guidance/guidance';
 import { alertAppliesTo, evaluate } from '../lib/hazards/engine';
@@ -19,13 +19,13 @@ import { HAZARDS } from '../lib/hazards/hazards';
 import { buildAvoidPlan, type LonLat } from '../lib/routing/avoid';
 import { awayFromWarning, byDistance, fetchOpenShelters, type Shelter, type Town } from '../lib/routing/destinations';
 import { appleMapsLink, googleMapsLink } from '../lib/routing/links';
-import { planRoutes, searchAddress, type RoutePlan, type RouteResult } from '../lib/routing/plan';
+import { planRoutes, type RoutePlan, type RouteResult } from '../lib/routing/plan';
 import { FLOOD_ZONE_PENALTY_MIN, ALERT_AREA_PENALTY_MIN, MILES_INSIDE_PENALTY, formatDuration, formatMiles } from '../lib/routing/score';
 import { countyName, getState } from '../lib/state';
 import { dateTime, clockTime } from '../lib/time';
-import { WORKER_URL } from '../config';
 import { icon } from '../components/icon';
 import { pageShell } from '../components/layout';
+import { placeSearch } from '../components/placeSearch';
 import type { RouteMap } from '../components/routeMap';
 import '../styles/route.css';
 
@@ -177,52 +177,13 @@ export function renderRoute(root: HTMLElement): () => void {
     startLabel.textContent = start ? `Start: ${start.label}` : 'Start: not set yet';
     destLabel.textContent = destination ? `Destination: ${destination.label}` : 'Destination: not set yet';
     tapHint.textContent = `Tapping the map sets your ${tapTarget}.`;
-    planButton.toggleAttribute('disabled', !(start && destination));
+    planButton.toggleAttribute('disabled', !(start && destination && alertsReady));
     routeMap?.setPoints(start?.point ?? null, destination?.point ?? null);
   }
 
-  /** A text box that accepts a ZIP code (built in) or an address (through our Worker). */
-  function placeSearch(id: string, label: string, onFound: (s: Spot) => void): HTMLElement {
-    const input = h('input', { id, class: 'input', type: 'text', autocomplete: 'street-address', placeholder: WORKER_URL ? 'Address or ZIP code' : 'ZIP code' });
-    const results = h('ul', { class: 'search-results' });
-    const form = h(
-      'form',
-      { class: 'place-search', role: 'search' },
-      h('label', { for: id, class: 'field-label' }, label),
-      h('div', { class: 'zip-form__row' }, input, h('button', { class: 'button button--secondary', type: 'submit' }, icon('Search'), 'Find')),
-      results,
-    );
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const q = input.value.trim();
-      results.replaceChildren();
-      if (/^\d{5}$/.test(q)) {
-        const z = (await loadZips().catch(() => ({}) as Record<string, [number, number, string]>))[q];
-        if (!z) return say(`ZIP ${q} isn’t in the 8 SC-5 counties.`);
-        return onFound({ point: [z[1], z[0]], label: `ZIP ${q}` });
-      }
-      if (!WORKER_URL) return say('Address search isn’t available yet. Enter a 5-digit ZIP code or tap the map.');
-      say('Searching…');
-      try {
-        const matches = await searchAddress(q);
-        if (!matches.length) return say('No matching address found. Check the spelling, or tap the map.');
-        say(`${matches.length} match${matches.length > 1 ? 'es' : ''} found. Choose one.`);
-        results.replaceChildren(
-          ...matches.map((m) => {
-            const b = h('button', { class: 'search-result', type: 'button' }, m.label);
-            b.addEventListener('click', () => {
-              results.replaceChildren();
-              onFound({ point: [m.lon, m.lat], label: m.label });
-            });
-            return h('li', {}, b);
-          }),
-        );
-      } catch (err) {
-        say(err instanceof Error ? err.message : 'Address search failed. Try a ZIP code or tap the map.');
-      }
-    });
-    return form;
-  }
+  /** ZIP or address search (shared component), reporting through this page's message line. */
+  const search = (id: string, label: string, onFound: (s: Spot) => void) =>
+    placeSearch(id, label, (p) => onFound({ point: [p.lon, p.lat], label: p.label }), say);
 
   function setStart(s: Spot): void {
     start = s;
@@ -317,11 +278,11 @@ export function renderRoute(root: HTMLElement): () => void {
         { class: 'dest-fieldset' },
         h('legend', { class: 'field-label' }, 'Where do you want to go?'),
         radio('shelter', 'Nearest open shelter', shelterHelp, Array.isArray(shelters) && !shelters.length),
-        radio('away', 'Away from the warning area', avoidCount ? 'Nearest town center outside the active warning areas' : 'No active warning areas to get away from', !avoidCount),
+        radio('away', 'Away from the warning area', avoidCount ? 'Nearest town center outside the active warning areas' : alertsFailed ? 'Not available: current alerts couldn’t be loaded' : 'No active warning areas to get away from', !avoidCount),
         radio('place', 'A place I choose', 'Search an address or ZIP, or tap the map'),
       ),
       shelterList,
-      choice === 'place' ? placeSearch('dest-search', 'Destination', setDestination) : null,
+      choice === 'place' ? search('dest-search', 'Destination', setDestination) : null,
       Array.isArray(shelters)
         ? h('p', { class: 'meta' }, `Shelter list from FEMA and the American Red Cross, checked ${clockTime(shelters[0]?.checked_at ?? new Date().toISOString())}. Always confirm with your county before you go.`)
         : null,
@@ -423,7 +384,7 @@ export function renderRoute(root: HTMLElement): () => void {
       { class: 'planner__controls', 'aria-label': 'Plan a route' },
       h('h2', { class: 'subsection-title' }, '1. Where are you starting?'),
       h('div', { class: 'start-row' }, locate, tapStart),
-      placeSearch('start-search', 'Or search', setStart),
+      search('start-search', 'Or search', setStart),
       startLabel,
       h('h2', { class: 'subsection-title' }, '2. Where to?'),
       destOptions,
@@ -443,7 +404,18 @@ export function renderRoute(root: HTMLElement): () => void {
     h('div', { class: 'planner__map no-print' }, mapEl, tapHint),
   );
 
-  const body = h('div', {}, h('p', { class: 'meta' }, 'Loading alerts and shelters…'));
+  // The planner is drawn right away (so the page doesn't jump when data arrives);
+  // the Plan button stays off until current alerts have loaded.
+  let alertsReady = false;
+  let alertsFailed = false;
+  const alertsNotice = h('div', {});
+  const body = h(
+    'div',
+    {},
+    alertsNotice,
+    planner,
+    h('section', { class: 'section', 'aria-labelledby': 'routes-title' }, resultsSlot, timestamps),
+  );
   root.replaceChildren(
     ...pageShell(
       'none',
@@ -475,13 +447,13 @@ export function renderRoute(root: HTMLElement): () => void {
     }
 
     fill(
-      body,
+      alertsNotice,
       c.alerts instanceof Error
         ? h('div', { class: 'notice notice--error', role: 'alert' }, icon('CloudOff'), h('p', {}, 'Couldn’t load current alerts, so routes can’t avoid warning areas. Check weather.gov/alerts.'))
         : null,
-      planner,
-      h('section', { class: 'section', 'aria-labelledby': 'routes-title' }, resultsSlot, timestamps),
     );
+    alertsFailed = c.alerts instanceof Error;
+    alertsReady = true;
     refreshLabels();
     renderDestOptions();
 

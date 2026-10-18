@@ -28,6 +28,7 @@ import { addSimulatedReport, fetchReports, reportsAvailable, simulatedReports, s
 import { countyName, getState } from '../lib/state';
 import { icon } from '../components/icon';
 import { pageShell } from '../components/layout';
+import { placeSearch } from '../components/placeSearch';
 import { reportCard } from '../components/reportCard';
 import type { PickMap } from '../components/pickMap';
 import '../styles/report.css';
@@ -134,6 +135,7 @@ export function renderReport(root: HTMLElement): () => void {
   let spot: { lon: number; lat: number; fips: string } | null = null;
   let token = '';
   let reports: Report[] = [];
+  let loadFailed = false; // true when the report list couldn’t be fetched (never show "none nearby" then)
 
   const formSlot = h('div', {});
   const nearSlot = h('div', {});
@@ -240,6 +242,7 @@ export function renderReport(root: HTMLElement): () => void {
             { class: 'report-form__rest' },
             h('h2', { class: 'subsection-title' }, '2. Where is it?'),
             h('div', { class: 'start-row' }, locate),
+            placeSearch('report-place', 'Or search an address or ZIP code', (f) => void setSpot(Math.round(f.lon * 1e5) / 1e5, Math.round(f.lat * 1e5) / 1e5), say),
             h('p', { class: 'meta' }, 'Or tap the map. You can drag the pin to the exact spot.'),
             spotLabel,
             h('h2', { class: 'subsection-title' }, h('label', { for: 'report-desc' }, '3. Add a short note (optional)')),
@@ -390,7 +393,9 @@ export function renderReport(root: HTMLElement): () => void {
       h('div', { class: 'report-filter' }, h('label', { for: 'report-filter', class: 'field-label' }, h('span', {}, icon('ListFilter')), 'Show'), select),
       shown.length
         ? h('ul', { class: 'report-list' }, ...shown.map(({ r, km }) => reportCard(r, km)))
-        : h('p', { class: 'empty-state' }, icon('CircleCheck'), filter === 'all' ? 'No active community reports nearby.' : 'No active reports in this category nearby.'),
+        : loadFailed
+          ? h('div', { class: 'notice notice--error' }, icon('CloudOff'), h('p', {}, 'Couldn’t load community reports right now, so we can’t show what’s nearby. You can still send one.'))
+          : h('p', { class: 'empty-state' }, icon('CircleCheck'), filter === 'all' ? 'No active community reports nearby.' : 'No active reports in this category nearby.'),
       h('p', { class: 'meta' }, 'Reports are from community members and are not verified. Flooded-road reports disappear after 48 hours and others after 30 days, unless someone taps “Still there.”'),
     );
   }
@@ -399,14 +404,14 @@ export function renderReport(root: HTMLElement): () => void {
     const local = simulated ? simulatedReports() : [];
     try {
       reports = [...local, ...(reportsAvailable() ? await fetchReports() : [])];
+      loadFailed = false;
     } catch {
       reports = local;
-      if (!cancelled)
-        fill(nearSlot, h('div', { class: 'notice notice--error' }, icon('CloudOff'), h('p', {}, 'Couldn’t load community reports right now. You can still send one.')));
+      loadFailed = true;
     }
     if (cancelled) return;
     map?.setReports(reports);
-    if (reports.length || reportsAvailable()) renderNearby();
+    if (reports.length || reportsAvailable() || loadFailed) renderNearby();
   }
 
   root.replaceChildren(

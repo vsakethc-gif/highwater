@@ -606,8 +606,16 @@
   overflow-x: auto;
 }
 
+/* Same size as the real status card + "Why this status?" (measured), so nothing jumps when data arrives. */
 .skeleton--tall {
-  height: 12rem;
+  height: 24rem;
+  margin-top: var(--space-3);
+}
+
+@media (min-width: 48rem) {
+  .skeleton--tall {
+    height: 17rem;
+  }
 }
 
 /* ---------- Text pages (How it works, About, 404) ---------- */
@@ -722,4 +730,58 @@
 .route-message {
   font-size: var(--text-sm);
   color: var(--color-ink-muted);
+}
+
+/* Address/ZIP search boxes fill their row (the short ZIP-only box is on the status page). */
+.place-search .zip-form__row .input {
+  max-width: none;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Small phones: the menu wraps onto two lines instead of being cut off. */
+@media (max-width: 30rem) {
+  .site-nav ul {
+    flex-wrap: wrap;
+    gap: 0 var(--space-2);
+    overflow-x: visible;
+  }
+
+  .site-nav a {
+    min-height: 2.5rem;
+  }
+}
+
+/* "On this page" list at the top of the long How it works page. */
+.toc {
+  margin: var(--space-4) 0 var(--space-5);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.toc__title {
+  margin: 0 0 var(--space-2);
+  font-weight: 600;
+}
+
+.toc ol {
+  margin: 0;
+  padding-left: var(--space-4);
+}
+
+.toc li {
+  margin: 0;
+}
+
+.toc a {
+  display: inline-block;
+  padding: var(--space-1) 0;
+  min-height: 2.75rem;
+  line-height: 2.25rem;
+}
+
+.prose-page h2[tabindex='-1']:focus {
+  outline: none;
 }

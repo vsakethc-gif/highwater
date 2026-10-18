@@ -21,12 +21,34 @@ export function renderMethodology(root: HTMLElement): void {
     table.replaceWith(wrap);
     wrap.append(table);
   }
+  // A short table of contents (built from the section headings) so people can jump
+  // straight to the part they need instead of scrolling a very long page.
+  const headings = [...article.querySelectorAll('h2')];
+  if (headings.length > 3) {
+    const list = h('ol', {});
+    headings.forEach((heading, i) => {
+      heading.id ||= `section-${i + 1}`;
+      heading.setAttribute('tabindex', '-1');
+      const link = h('a', { href: `#${heading.id}` }, heading.textContent ?? '');
+      // The app uses #/page web addresses, so we scroll ourselves instead of changing the address.
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        heading.scrollIntoView();
+        heading.focus({ preventScroll: true });
+      });
+      list.append(h('li', {}, link));
+    });
+    article
+      .querySelector('h1')
+      ?.after(h('nav', { class: 'toc', 'aria-label': 'On this page' }, h('p', { class: 'toc__title' }, 'On this page'), list));
+  }
   root.replaceChildren(...pageShell('methodology', h('main', { id: 'main', class: 'container text-page' }, article)));
 }
 
 export function renderAbout(root: HTMLElement): void {
   document.title = `About · ${APP_NAME}`;
   const p = (text: string) => h('p', {}, text);
+  const li = (text: string) => h('li', {}, text);
   root.replaceChildren(
     ...pageShell(
       'about',
@@ -47,18 +69,28 @@ export function renderAbout(root: HTMLElement): void {
           h(
             'ul',
             {},
-            h('li', {}, 'It is not an official warning system. It can be late, wrong, or missing alerts. Official alerts, local officials, and 911 come first.'),
-            h('li', {}, 'It does not predict disasters. It shows official alerts and live readings, and applies the published rules on “How it works.”'),
-            h('li', {}, 'River gauge readings are provisional, and many small creeks have no gauge.'),
-            h('li', {}, 'FEMA flood zones show long-term risk, not where it is flooding today.'),
+            li('It is not an official warning system. It can be late, wrong, or missing alerts. Official alerts, local officials, and 911 come first.'),
+            li('It does not predict disasters. It shows official alerts and live readings, and applies the published rules on “How it works.”'),
+            li('River gauge readings are provisional, some gauges go offline, and many small creeks have no gauge at all.'),
+            li('FEMA flood zones show long-term risk, not where it is flooding today, and some maps are years old.'),
+            li('Census figures are estimates with margins of error, especially for small neighborhoods.'),
+            li('Routes can’t see every closed or flooded road, and the free routing service can be busy or unavailable.'),
+            li('Shelter information is only as current as the FEMA and Red Cross data. Always confirm with your county emergency management office.'),
+            li('Community reports are unverified, can be wrong, and are not sent to any government agency.'),
           ),
           h('h2', {}, 'Privacy'),
           p(
-            'The app has no accounts and no tracking. If you use “Use my location,” your location stays in your browser. It is sent only to the public services that answer for that spot (the National Weather Service forecast and FEMA’s flood map), and it is never saved or put in the web address.',
+            'The app has no accounts, no ads, and no tracking. If you use “Use my location,” your location stays in your browser. It is sent only to the public services that answer for that spot (the National Weather Service forecast and FEMA’s flood map), and it is never saved or put in the web address.',
+          ),
+          p(
+            'When you plan a route, the start and end points go through our small relay server to the routing service and are not stored. Addresses you search for are looked up by the U.S. Census Geocoder the same way.',
+          ),
+          p(
+            'Community reports save only the problem type, the spot, an optional short note, and the time, plus a scrambled code for your device that is used only to limit spam and is never shown. No name, email, phone number, or account is collected, and IP addresses are not stored.',
           ),
           h('h2', {}, 'Data credits'),
           p(
-            'U.S. Geological Survey (river levels), NOAA National Water Prediction Service (flood stages), National Weather Service (alerts and rain forecast), FEMA National Flood Hazard Layer (flood zones), U.S. Census Bureau (population data and boundaries). Map © OpenStreetMap contributors, OpenMapTiles, OpenFreeMap.',
+            'U.S. Geological Survey (river levels), NOAA National Water Prediction Service (flood stages), National Weather Service (alerts and rain forecast), FEMA National Flood Hazard Layer (flood zones), FEMA and American Red Cross National Shelter System (open shelters), U.S. Census Bureau (population data, boundaries, and address search), openrouteservice by HeiGIT and OSRM (routes). Map © OpenStreetMap contributors, OpenMapTiles, OpenFreeMap.',
           ),
           h('p', {}, h('a', { href: 'https://github.com/vsakethc-gif/highwater' }, 'Source code on GitHub')),
         ),

@@ -69,7 +69,24 @@ Evidence of my own work and a study guide for judging. Fill in "What I did" in y
 **What was built**
 - A public reporting form with spam protection and no personal data, official "get it fixed" links, community votes, automatic expiry, a map layer, route warnings, and a private admin page.
 
+### Sunday, October 18, 2026: Phase 6 (polish, accessibility, performance)
+
+**What I did** *(edit this in your own words)*
+- Chose the final name, Highwater.
+- _Add: what you checked on your own phone, and anything that looked off to you._
+
+**What was built**
+- A design pass at 5 screen widths, honest error messages when each data source fails, a table of contents for How it works, a fuller About page, a link-preview image, and keyboard access for setting a report location.
+- Lighthouse (mobile): accessibility 100 and best practices 100 on every page; performance 97–100 except the map (50) and route (76) pages, where the map library is the bottleneck.
+
 ## Concepts
+
+### Lighthouse and layout shift
+Lighthouse is Google's built-in page checker. It scores speed, accessibility, best practices, and search basics from 0 to 100, on a slowed-down pretend phone. "Layout shift" measures how much things jump around while a page loads. We fixed it by reserving space for content before it arrives.
+
+### Failure testing
+To see what people get when a service is down, a test browser blocked one source at a time (weather alerts, river levels, the report database, map data). The rule: a failure must say "couldn't load," never look like "all clear."
+
 
 ### What is a web app made of?
 - **HTML** is the structure (headings, paragraphs, links).

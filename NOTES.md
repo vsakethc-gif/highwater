@@ -89,6 +89,11 @@ Working log for Highwater (originally called SC-5 Ready). "Problems and fixes" b
 - **An open tab broke after an update.** It asked for a page file that a new build had replaced. Fix: if a page file fails to load, reload once to get the new version (a flag prevents a reload loop).
 - **Saving a secret key from Notepad didn't work, and a Desktop note was empty.** Fix: the key went from the clipboard straight into the git-ignored file with a small script, which checked it started with `sb_secret_` and cleared the clipboard. It never appeared in chat.
 - **Supabase's default permissions let anyone call database functions.** Fix: `schema.sql` explicitly revokes function access from the public roles and grants it only to the secret-key role. Tested: a direct call with the public key is denied.
+- **The Status page jumped while loading** (Lighthouse layout shift 0.169). Diagnosed by measuring the status card's real height at 5 screen widths with a script. Fix: the loading placeholder is now the same height, so nothing moves. Performance score went from 89 to 96.
+- **The route page jumped even more** (layout shift 0.457): the whole planner appeared only after alerts loaded. Fix: draw the planner right away and keep the Plan button off until alerts are in. Shift dropped to 0.03.
+- **Keyboard users couldn't set a report location.** Setting the spot needed GPS or a map tap. Found during the keyboard-only test. Fix: an address/ZIP search box (shared with the route planner) where Enter searches.
+- **Error states that said "nothing here" instead of "couldn't load."** Found by blocking each data source on purpose in a test browser. When the report database was down, the list said "No active community reports nearby"; on the route page with alerts down, it said "No active warning areas." Both looked like real answers. Fix: each now says the data couldn't load. The district map's county table also no longer stays on "Loading…" forever.
+- **The menu was cut off on small phones** ("Ge…"). Found in screenshots at 360 px. Fix: the menu wraps onto two lines.
 
 ## Open questions for me
 
@@ -103,6 +108,7 @@ Working log for Highwater (originally called SC-5 Ready). "Problems and fixes" b
 - Address search (needs the Cloudflare Worker, Phase 4).
 - Alert popups on the map; tap a spot on the map to check it.
 - Re-run `node scripts/build-gauges.mjs` before submission, in case gauges went offline or came back.
+- **Map and route pages score about 50 and 76 for Lighthouse performance** (everything else 97–100). The cause is the map library itself (MapLibre, about 1 MB, ~1.1–1.5 s of setup on Lighthouse's slowed-down phone). Ideas: a lighter map library, or showing the map only after a tap.
 - Update the GitHub Actions versions in `deploy.yml`: GitHub warns that the current ones use Node 20, which is being retired. They still work today.
 
 ## Manual test script
@@ -161,3 +167,11 @@ Working log for Highwater (originally called SC-5 Ready). "Problems and fixes" b
 5. **Route planner:** route cards show "Unverified reports nearby"; "Avoid community-reported flooded roads" is checked by default.
 6. **Scenario Mode on:** sending says "Saved in this tab (simulation)… Nothing was sent."
 7. **#/admin** (after you're set up as admin): sign in, then Hide / Restore / Resolve reports.
+
+### Phase 6
+1. On a phone-width screen (360 px), the menu wraps onto two lines; nothing is cut off.
+2. **How it works:** an "On this page" list at the top; tapping an item jumps to that section.
+3. **About:** lists all eight limits, privacy for location, routes, and reports, and every data source.
+4. Turn on airplane mode, then reload: the offline banner shows the last saved info. Turn it off: live data returns.
+5. Paste the site link into a chat app: a preview card with "Highwater" appears (after deploy).
+6. Keyboard only: Tab to "Report a problem", pick a category with Enter, type a ZIP and press Enter: the location is set.

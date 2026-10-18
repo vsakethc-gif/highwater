@@ -75,7 +75,7 @@ Every source below was checked with a real request on **Saturday, October 17, 20
 ## 3. NWS alerts
 
 - **URL:** `https://api.weather.gov/alerts/active?area=SC` (GeoJSON)
-- **Auth:** none. Scripts send `User-Agent: SC5Ready (vsakethc-gif.github.io/sc5-ready)` as NWS asks.
+- **Auth:** none. Scripts send `User-Agent: Highwater (vsakethc-gif.github.io/highwater)` as NWS asks.
 - **Browser OK:** yes (`*`). Cache is 5 seconds. About 5 KB gzipped.
 - **Matching alerts to counties:**
   - `geocode.SAME` lists county codes as `0` + FIPS (`045057` = Lancaster).

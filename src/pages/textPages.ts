@@ -60,7 +60,7 @@ export function renderAbout(root: HTMLElement): void {
           p(
             'U.S. Geological Survey (river levels), NOAA National Water Prediction Service (flood stages), National Weather Service (alerts and rain forecast), FEMA National Flood Hazard Layer (flood zones), U.S. Census Bureau (population data and boundaries). Map © OpenStreetMap contributors, OpenMapTiles, OpenFreeMap.',
           ),
-          h('p', {}, h('a', { href: 'https://github.com/vsakethc-gif/sc5-ready' }, 'Source code on GitHub')),
+          h('p', {}, h('a', { href: 'https://github.com/vsakethc-gif/highwater' }, 'Source code on GitHub')),
         ),
       ),
     ),

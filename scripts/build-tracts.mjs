@@ -19,7 +19,7 @@ import * as turf from '@turf/turf';
 const ACS_YEAR = 2024;
 const COUNTY_CODES = ['021', '023', '039', '055', '057', '061', '087', '091'];
 const NFHL = 'https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query';
-const USER_AGENT = 'SC5Ready build script (https://github.com/vsakethc-gif/sc5-ready)';
+const USER_AGENT = 'Highwater build script (https://github.com/vsakethc-gif/highwater)';
 
 // ACS variables (labels checked against the Census variables list, see DATA_SOURCES.md)
 const AGE_65_PLUS = [20, 21, 22, 23, 24, 25, 44, 45, 46, 47, 48, 49].map((n) => `B01001_0${n}E`);

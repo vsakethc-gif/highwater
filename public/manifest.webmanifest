@@ -1,6 +1,6 @@
 {
-  "name": "SC-5 Ready: hazard readiness for South Carolina's 5th District",
-  "short_name": "SC-5 Ready",
+  "name": "Highwater: hazard readiness for South Carolina's 5th District",
+  "short_name": "Highwater",
   "description": "Live official alerts, river levels, and plain-language steps for the 8 counties of South Carolina's 5th District. Not an official warning system.",
   "start_url": "./#/",
   "scope": "./",

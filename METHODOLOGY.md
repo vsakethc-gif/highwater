@@ -1,6 +1,6 @@
 # How it works
 
-SC-5 Ready turns official public data into a status for your location, using fixed rules written out on this page. It is **transparent, rule-based analysis**: there is no artificial intelligence in the app, and no secret formula. Every status lists the reasons behind it under "Why this status?"
+Highwater turns official public data into a status for your location, using fixed rules written out on this page. It is **transparent, rule-based analysis**: there is no artificial intelligence in the app, and no secret formula. Every status lists the reasons behind it under "Why this status?"
 
 > **This app is not an official warning system.** It can be late, wrong, or missing alerts. Official National Weather Service alerts, local officials, and 911 come first.
 

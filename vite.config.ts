@@ -50,7 +50,7 @@ function serviceWorker(): Plugin {
 
 export default defineConfig({
   // './' makes every file path relative, so the built site works no matter
-  // which sub-folder GitHub Pages serves it from (e.g. /sc5-ready/).
+  // which sub-folder GitHub Pages serves it from (e.g. /highwater/).
   base: './',
   plugins: [serviceWorker()],
   build: {

@@ -14,7 +14,7 @@
  */
 import { writeFile } from 'node:fs/promises';
 
-const USER_AGENT = 'SC5Ready build script (https://github.com/vsakethc-gif/sc5-ready)';
+const USER_AGENT = 'Highwater build script (https://github.com/vsakethc-gif/highwater)';
 const USGS = 'https://api.waterdata.usgs.gov/ogcapi/v0/collections';
 const NWPS = 'https://api.water.noaa.gov/nwps/v1';
 

@@ -1,6 +1,6 @@
 # Project notes
 
-Working log for SC-5 Ready. "Problems and fixes" becomes the answer to the judges' question about technical challenges.
+Working log for Highwater (originally called SC-5 Ready). "Problems and fixes" becomes the answer to the judges' question about technical challenges.
 
 ## Assumptions
 
@@ -11,7 +11,7 @@ Working log for SC-5 Ready. "Problems and fixes" becomes the answer to the judge
 - **"Insufficient data" tracts:** fewer than 200 people or 50 households. That catches Winthrop University's dorm tract (York 606: 1,471 people, all in group housing, 0 households) and a state prison tract in Lee County (9203.01), plus one 190-person tract in Lancaster.
 - **Map county statuses** use alerts and gauges only (no rain forecast), and the map says so.
 - - **Trend rule:** compare the newest reading with the oldest one inside the last 3 hours. A change of 0.1 ft or more is "rising" or "falling"; less is "steady."
-- **Live site:** https://vsakethc-gif.github.io/sc5-ready/ (repo: https://github.com/vsakethc-gif/sc5-ready).
+- **Live site:** https://vsakethc-gif.github.io/highwater/ (repo: https://github.com/vsakethc-gif/highwater). Renamed from SC-5 Ready on 2026-10-18; the Cloudflare Worker and Turnstile widget kept their original sc5-ready names.
 - **The repo must be public:** GitHub Pages is free only for public repositories, and the judges may want to read the code anyway.
 
 ## Decisions
@@ -92,7 +92,7 @@ Working log for SC-5 Ready. "Problems and fixes" becomes the answer to the judge
 
 ## Open questions for me
 
-- Do you want to keep the name "SC-5 Ready"? (Change it in `src/config.ts` → `APP_NAME`.)
+- ~~App name~~ Decided: **Highwater** (2026-10-18).
 - **OpenRouteService:** check your daily quota at account.heigit.org, and whether requests are working again. If ORS stays down, the app still works with the backup router (no hazard avoidance).
 - **Your ORS key was pasted into the chat.** It's low risk (it only spends routing quota and is now stored safely in Cloudflare), but you can make a new key at account.heigit.org; then put it in `worker/.dev.vars` and I'll re-upload it.
 
@@ -109,7 +109,7 @@ Working log for SC-5 Ready. "Problems and fixes" becomes the answer to the judge
 
 ### Phase 0
 1. Open the live URL on a phone and on a computer.
-2. The page shows the header "SC-5 Ready", a blue "In development" note, a headline, four status levels, 8 counties, and a footer with "call 911".
+2. The page shows the header "Highwater", a blue "In development" note, a headline, four status levels, 8 counties, and a footer with "call 911".
 3. Each status level shows an icon, a word, and a color.
 4. Press Tab once: a "Skip to main content" link appears. Keep pressing Tab: every link shows a blue focus ring.
 5. At 360px wide, nothing scrolls sideways.

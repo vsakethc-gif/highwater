@@ -1,5 +1,5 @@
 -- =====================================================================
--- SC-5 Ready: community reports database (brief, section 11)
+-- Highwater: community reports database (brief, section 11)
 --
 -- How to use: open your Supabase project → SQL Editor → New query,
 -- paste this whole file, and click Run. It is safe to run more than once.

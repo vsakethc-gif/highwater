@@ -7,7 +7,7 @@
  */
 
 /** The app's display name. Placeholder: change it here and it changes everywhere. */
-export const APP_NAME = 'SC-5 Ready';
+export const APP_NAME = 'Highwater';
 
 /** One-sentence description used in page titles and the social preview. */
 export const APP_TAGLINE =

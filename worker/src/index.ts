@@ -1,5 +1,5 @@
 /**
- * SC-5 Ready Worker — the app's one small piece of server code (brief, section 2.3).
+ * Highwater Worker — the app's one small piece of server code (brief, section 2.3).
  *
  * It exists for two reasons:
  *   1. POST /route   — asks OpenRouteService for directions. The ORS key is a Worker

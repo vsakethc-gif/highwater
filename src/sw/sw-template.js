@@ -1,5 +1,5 @@
 /**
- * Service worker for SC-5 Ready (brief P1a: works with weak or no signal).
+ * Service worker for Highwater (brief P1a: works with weak or no signal).
  *
  * A service worker is a small script the browser keeps running for this site.
  * It sits between the app and the network, so it can answer from a saved copy

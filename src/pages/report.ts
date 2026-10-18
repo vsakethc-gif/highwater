@@ -51,6 +51,7 @@ interface TurnstileApi {
     },
   ): string;
   reset(id?: string): void;
+  remove(id: string): void;
 }
 declare global {
   interface Window {
@@ -160,7 +161,10 @@ export function renderReport(root: HTMLElement): () => void {
   });
   const counter = h('p', { id: 'desc-count', class: 'meta' }, `0 / ${MAX_DESCRIPTION}`);
   description.addEventListener('input', () => (counter.textContent = `${description.value.length} / ${MAX_DESCRIPTION}`));
-  const turnstileEl = h('div', { class: 'turnstile-box' });
+  // The check runs in an embedded frame. Moving a frame makes the browser reload it, which breaks
+  // the check, so every time the form is rebuilt we remove the old widget and make a fresh one.
+  let turnstileEl = h('div', { class: 'turnstile-box' });
+  let widgetId: string | null = null;
   const sendButton = h('button', { class: 'button button--primary', type: 'submit' }, simulated ? 'Send (simulated)' : 'Send report');
 
   async function setSpot(lon: number, lat: number): Promise<void> {
@@ -200,6 +204,10 @@ export function renderReport(root: HTMLElement): () => void {
   }
 
   function renderForm(): void {
+    if (widgetId && window.turnstile) window.turnstile.remove(widgetId);
+    widgetId = null;
+    token = '';
+    turnstileEl = h('div', { class: 'turnstile-box' });
     const locate = h('button', { class: 'button button--secondary', type: 'button' }, icon('LocateFixed'), 'Use my location');
     locate.addEventListener('click', () => {
       if (!('geolocation' in navigator)) return say('This browser can’t share your location. Tap the map instead.');
@@ -261,8 +269,8 @@ export function renderReport(root: HTMLElement): () => void {
     }
     try {
       const ts = await loadTurnstile();
-      if (cancelled || turnstileEl.childElementCount) return;
-      ts.render(turnstileEl, {
+      if (cancelled || !turnstileEl.isConnected || turnstileEl.childElementCount) return;
+      widgetId = ts.render(turnstileEl, {
         sitekey: TURNSTILE_SITE_KEY,
         callback: (t) => (token = t),
         'expired-callback': () => (token = ''),
@@ -313,7 +321,7 @@ export function renderReport(root: HTMLElement): () => void {
       showConfirmation(categoryInfo(category), spot.fips);
     } catch (err) {
       problem(err instanceof Error ? err.message : 'The report couldn’t be sent. Please try again.');
-      window.turnstile?.reset();
+      if (widgetId) window.turnstile?.reset(widgetId);
       token = '';
       sendButton.removeAttribute('disabled');
     }

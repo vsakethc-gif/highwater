@@ -67,10 +67,10 @@ export const WORKER_URL = 'https://sc5-ready.sc5ready.workers.dev';
  * allows what the database's Row Level Security rules allow (read active reports).
  * Writing goes through the Worker. Empty = the reports feature shows "not available yet".
  */
-export const SUPABASE_URL = '';
-export const SUPABASE_PUBLISHABLE_KEY = '';
+export const SUPABASE_URL = 'https://nywkprgdvishxicumtvx.supabase.co';
+export const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_R0vcZe999h5U7Co7Sx3dVA_QpQxzpPA';
 /** Cloudflare Turnstile site key (public). The matching secret lives only in the Worker. */
-export const TURNSTILE_SITE_KEY = '';
+export const TURNSTILE_SITE_KEY = '0x4AAAAAAFagqhq5XFjVLuGy';
 
 /** The county shown first, before the person chooses their own. */
 export const DEFAULT_COUNTY_FIPS = '45091'; // York

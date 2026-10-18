@@ -11,3 +11,4 @@ enabled = false
 
 [vars]
 ALLOWED_ORIGINS = "https://vsakethc-gif.github.io,http://localhost:5173,http://localhost:4173"
+SUPABASE_URL = "https://nywkprgdvishxicumtvx.supabase.co"

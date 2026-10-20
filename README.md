@@ -102,6 +102,13 @@ The app has **one shared brain and two front ends**: the rules and data code liv
 | [Supabase](https://supabase.com/) | Free Postgres database for community reports, with Row Level Security | Free plan |
 | [Cloudflare Turnstile](https://www.cloudflare.com/products/turnstile/) | Free "I'm human" check on the report form | Free plan |
 | [GitHub Pages](https://pages.github.com/) | Free hosting for the website | — |
+| [React Native](https://reactnative.dev/) + [Expo](https://expo.dev/) (SDK 58) | The phone app: real native screens written in TypeScript | MIT |
+| [Expo Go](https://expo.dev/go) | Free app that runs our phone app from a QR code (testing and demo only; not published) | Free |
+| [Expo Router](https://docs.expo.dev/router/introduction/) | Screens and the bottom tab bar in the phone app | MIT |
+| [React Native Reanimated](https://docs.swmansion.com/react-native-reanimated/) + Gesture Handler | Smooth animations that run on the phone's UI thread | MIT |
+| [react-native-svg](https://github.com/software-mansion/react-native-svg) + [lucide-react-native](https://lucide.dev/) | Drawing the gauge tubes, sparklines, and icons on the phone | MIT / ISC |
+| expo-location, expo-haptics, expo-blur, expo-crypto, expo-font, expo-splash-screen | Location (with permission), light vibration feedback, the tab bar blur, random IDs, fonts, splash screen | MIT |
+| [AsyncStorage](https://react-native-async-storage.github.io/async-storage/) | Saving the chosen county, the offline copy, and checklist progress on the phone | MIT |
 | GitHub Actions | Builds and deploys the site on every push; pings the database every 3 days so it stays awake | — |
 | [U.S. Census Geocoder](https://geocoding.geo.census.gov/) | Turns a typed street address into a map point (through the Worker) | Free, no key |
 | [FEMA Open Shelters](https://gis.fema.gov/) | Shelters that FEMA and the American Red Cross list as open | Free, no key |

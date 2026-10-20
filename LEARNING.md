@@ -104,6 +104,15 @@ CSS can animate an element from one state to another ("keyframes"). We only anim
 ### Elevation and tuning a rule with data
 OpenRouteService can give the height of every point on a route. A "low dip" is where the road drops into a valley. Our first guess (20 ft) mostly found ordinary hills, so we tested three versions on real routes and checked each dip against FEMA's flood map. The 40-ft version matched creeks every time. Testing a rule against real data, instead of guessing, is how you know it works.
 
+### React Native, Expo, and Expo Go
+**React Native** lets you build a real phone app (real native buttons, lists, and maps, not a web page) using TypeScript. **Expo** is a set of tools and libraries on top of React Native that handles the hard parts (fonts, location, splash screen). **Expo Go** is a free app from the App Store and Google Play that can run our app straight from the computer by scanning a QR code, with no paid developer account and no app store.
+
+### One brain, two apps
+The rules (alert table, flood rules, guidance, scoring) live in `/shared`. The website and the phone app both use that same code, so they always give the same answer. Each app only plugs in how it loads files and saves things (browser storage vs. phone storage).
+
+### UI thread vs. JavaScript thread
+A phone app has a lane of work that draws the screen (UI thread) and a lane that runs app logic (JavaScript thread). Reanimated runs animations on the drawing lane, so they stay smooth even when the app is busy.
+
 ### Archives and replays
 Government data services usually show what's happening now. Archives keep the past. USGS keeps every river reading, and Iowa State's mesonet keeps every NWS alert with each update. A replay picks one past minute, keeps only what was true then, and shifts the times so the app treats it as "now."
 

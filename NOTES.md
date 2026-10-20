@@ -55,6 +55,15 @@ Working log for Highwater (originally called SC-5 Ready). "Problems and fixes" b
 - **Level meter on the status card:** a four-step Normal → Watch → Warning → Danger scale with the current step marked, so people see how serious it is at a glance. It is hidden from screen readers because the badge already says the level in words.
 - **Route elevation (Oct 18):** routes now show their lowest point and count "low dips" (creek and river valleys), using heights OpenRouteService returns in the same request (no extra quota). Each dip adds 2 points to the route score.
 
+### Phone app (started Oct 18–19)
+- **One brain, two apps.** The rules, guidance, data code, scenarios, and config moved into `/shared`. The website (`/src`) and the phone app (`/mobile`) both import it. Each app plugs in only how it loads data files and saves things (`shared/platform.ts`). Moved with `git mv` and a script that rewrote every import, then checked: 170 tests pass and every web page was clicked through.
+- **Expo SDK 58** (the current one, released Sept 29, 2026), so it runs in today's Expo Go. Every native library was checked against the list built into Expo Go 58 before installing it, and installed with `npx expo install` so the versions match.
+- **JavaScript tabs, not native tabs:** they let the tab bar use the same Lucide icons as the website, with a label on every tab and our own sliding indicator.
+- **Reanimated directly, not Moti:** Moti isn't built into Expo Go and its last release predates Reanimated 4. Reanimated is what Moti uses underneath anyway.
+- **How Reanimated keeps animations smooth:** a phone app has two main "threads" (lanes of work). The JavaScript thread runs our app logic (loading data, running the rules). The UI thread draws the screen. Reanimated runs animations on the UI thread, so even while the app is busy loading river data, the status card's color change and the water rising in the gauge tubes stay at 60 frames per second.
+- **Built-in data is bundled into the phone app** (about 160 KB, copied from `public/data` before each start), so it works offline from the first launch.
+- **Dark mode** is designed from the same tokens as light mode; in Scenario Mode the accent turns slate, so a simulation never looks like live data.
+
 ## Problems and fixes
 
 - **A gray failed the contrast check.** The first "subtle" gray (`#6b7680`) was 4.37:1 on the page background, under the 4.5:1 WCAG AA minimum. I found it with a small script that computes contrast ratios, then darkened it to `#606b75` (5.13:1). The Normal and Watch badge borders were also too faint, so I darkened them past 3:1.
@@ -108,6 +117,10 @@ Working log for Highwater (originally called SC-5 Ready). "Problems and fixes" b
 - **Old USGS data lives at a different address.** Asking the usual USGS server for 2024 data returned a "301 redirect" with no data. Fix: call `nwis.waterservices.usgs.gov` directly.
 - **The map library runs about 1 second of code on slow phones** (Lighthouse found it was the main-thread bundle, about 1 MB). Switching libraries this late was too risky, so the route page now loads the map only when needed (76 → 96). The district map page still scores about 50, because the map *is* that page.
 - **The first "low dip" rule counted ordinary hills.** At 20 ft deep, an 18-mile route had 11 "dips" but crossed only 5 flood zones. Diagnosed by testing three depths on real routes and asking FEMA whether each dip was within 200 m of a high-risk flood zone: 20 ft → 6 of 15; 30 ft → 7 of 11; 40 ft → 7 of 7. Fix: use 40 ft within about ¾ mile on each side, so a "dip" really means a creek or river valley.
+- **SDK 58 moved Expo Router's pieces.** `Stack`, `Tabs`, and `Link` now come from separate paths (`expo-router/stack`, `expo-router/js-tabs`), the tab bar receives `navigateToTab()` instead of `navigation`, and `Redirect` isn't re-exported. Found by the TypeScript check and fixed by reading the library's own type files, not guessing.
+- **The phone bundler (Metro) couldn't see `/shared` at first.** Expo's docs cover "workspace" setups, which would have changed how the website installs packages. Fix: add `/shared` to Metro's watch list (`mobile/metro.config.js`), which leaves the website untouched. Proved by building the Android bundle.
+- **All 36 font weights were being bundled.** Importing from the font packages' main file pulls in every weight. Fix: import only the five weights we use.
+- **The selected county was scrolled off-screen.** York is last in the county row, so the chosen chip was hidden. Fix: the row scrolls to the selected county.
 
 ## Open questions for me
 

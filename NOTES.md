@@ -122,6 +122,8 @@ Working log for Highwater (originally called SC-5 Ready). "Problems and fixes" b
 - **All 36 font weights were being bundled.** Importing from the font packages' main file pulls in every weight. Fix: import only the five weights we use.
 - **The selected county was scrolled off-screen.** York is last in the county row, so the chosen chip was hidden. Fix: the row scrolls to the selected county.
 
+- **District map warnings and messy labels (Oct 19).** Testing every map interaction in a browser found: (1) the browser console filled with warnings when zooming, from three layers in the free basemap's style that compare numbers some map features don't have; fix: load the style ourselves and make those comparisons treat a missing number safely (the map looks the same). (2) Our colored neighborhoods were drawn on top of the town names, washing them out; fix: draw them beneath the basemap's labels. (3) County names repeated ("LEE" three times) because they were labeled per map tile; fix: one label point at the center of each county. (4) Cherokee, Union, and York names were hidden by gauge dots; fix: dots no longer block labels, and county names draw on top. (5) On phones, something scrolled into view (for example by the keyboard) could end up under the bottom tab bar; fix: the page keeps a tab-bar-sized gap when scrolling (WCAG 2.2 "Focus Not Obscured").
+
 ## Open questions for me
 
 - ~~App name~~ Decided: **Highwater** (2026-10-18).

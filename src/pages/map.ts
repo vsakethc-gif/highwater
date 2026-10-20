@@ -37,6 +37,56 @@ import { pageShell } from '../components/layout';
 import { statusBadge } from '../components/statusBadge';
 
 const BASEMAP = 'https://tiles.openfreemap.org/styles/positron';
+
+/**
+ * The basemap's style has three layers (state boundaries and two highway-shield layers) whose
+ * filters compare numbers that some map features don't have, which fills the browser console with
+ * warnings as you zoom. We load the style ourselves and make those comparisons treat a missing
+ * number as 999 (too big to match), so the map looks the same without the warnings.
+ */
+/**
+ * One label point per county: the center (centroid) of its largest piece of land.
+ * Labeling the county shapes directly repeats the name in every map tile the county touches.
+ */
+function countyLabelPoints(counties: CountyCollection): GeoJSON.FeatureCollection<GeoJSON.Point, { name: string }> {
+  const ringArea = (ring: number[][]) => ring.reduce((a, [x1, y1], i) => { const [x2, y2] = ring[(i + 1) % ring.length]; return a + x1 * y2 - x2 * y1; }, 0) / 2;
+  return {
+    type: 'FeatureCollection',
+    features: counties.features.map((county) => {
+      const polygons = county.geometry.type === 'Polygon' ? [county.geometry.coordinates] : county.geometry.coordinates;
+      const outer = polygons.map((p) => p[0]).sort((a, b) => Math.abs(ringArea(b)) - Math.abs(ringArea(a)))[0];
+      const A = ringArea(outer);
+      let cx = 0;
+      let cy = 0;
+      outer.forEach(([x1, y1], i) => {
+        const [x2, y2] = outer[(i + 1) % outer.length];
+        const cross = x1 * y2 - x2 * y1;
+        cx += (x1 + x2) * cross;
+        cy += (y1 + y2) * cross;
+      });
+      return { type: 'Feature', geometry: { type: 'Point', coordinates: [cx / (6 * A), cy / (6 * A)] }, properties: { name: county.properties.name } };
+    }),
+  };
+}
+
+async function basemapStyle(): Promise<maplibregl.StyleSpecification | string> {
+  const safe = (expr: unknown): unknown => {
+    if (!Array.isArray(expr)) return expr;
+    if (['<', '<=', '>', '>='].includes(expr[0])) {
+      return [expr[0], ...expr.slice(1).map((a) => (Array.isArray(a) && a[0] === 'get' ? ['to-number', ['coalesce', a, 999]] : safe(a)))];
+    }
+    return expr.map(safe);
+  };
+  try {
+    const style = (await fetch(BASEMAP).then((r) => r.json())) as maplibregl.StyleSpecification;
+    for (const layer of style.layers) {
+      if ('filter' in layer && layer.filter && /^(boundary|highway-shield)/.test(layer.id)) layer.filter = safe(layer.filter) as maplibregl.FilterSpecification;
+    }
+    return style;
+  } catch {
+    return BASEMAP; // if that fails, let the map load the style directly
+  }
+}
 maplibregl.setWorkerUrl(workerUrl);
 
 type ScoreLayer = 'vulnerability_score' | 'exposure_score' | 'priority_score' | 'none';
@@ -460,9 +510,11 @@ export function renderMap(root: HTMLElement): () => void {
       // The map itself
       const bounds = new maplibregl.LngLatBounds();
       counties.features.forEach((c) => (c.geometry.type === 'Polygon' ? c.geometry.coordinates.flat() : c.geometry.coordinates.flat(2)).forEach((p) => bounds.extend(p as [number, number])));
+      const style = await basemapStyle();
+      if (cancelled) return;
       map = new maplibregl.Map({
         container: mapEl,
-        style: BASEMAP,
+        style,
         bounds,
         fitBoundsOptions: { padding: 24 },
         attributionControl: { compact: false },
@@ -475,6 +527,7 @@ export function renderMap(root: HTMLElement): () => void {
         for (const [name, img] of Object.entries(images)) map.addImage(name, img, { pixelRatio: 1 });
         map.addSource('tracts', { type: 'geojson', data: tractData });
         map.addSource('counties', { type: 'geojson', data: counties });
+        map.addSource('county-label-points', { type: 'geojson', data: countyLabelPoints(counties) });
         map.addSource('alerts', { type: 'geojson', data: alertFeatures(alerts, counties) });
         map.addSource('gauges', {
           type: 'geojson',
@@ -488,8 +541,10 @@ export function renderMap(root: HTMLElement): () => void {
           },
         });
 
-        map.addLayer({ id: 'tracts-fill', type: 'fill', source: 'tracts', paint: { 'fill-color': fillExpression('vulnerability_score'), 'fill-opacity': 0.72 } });
-        map.addLayer({ id: 'tracts-line', type: 'line', source: 'tracts', paint: { 'line-color': token('--color-surface'), 'line-width': 0.6 } });
+        // Our colored areas go BENEATH the basemap's place names, so town names stay crisp instead of washed out.
+        const firstLabel = map.getStyle().layers.find((l) => l.type === 'symbol')?.id;
+        map.addLayer({ id: 'tracts-fill', type: 'fill', source: 'tracts', paint: { 'fill-color': fillExpression('vulnerability_score'), 'fill-opacity': 0.72 } }, firstLabel);
+        map.addLayer({ id: 'tracts-line', type: 'line', source: 'tracts', paint: { 'line-color': token('--color-surface'), 'line-width': 0.6 } }, firstLabel);
         const levelColor: maplibregl.ExpressionSpecification = [
           'match',
           ['get', 'key'],
@@ -499,7 +554,7 @@ export function renderMap(root: HTMLElement): () => void {
           token('--status-warning-bg'),
           token('--status-danger-bg'),
         ];
-        map.addLayer({ id: 'alerts-fill', type: 'fill', source: 'alerts', filter: ['==', ['get', 'drawn'], true], paint: { 'fill-color': levelColor, 'fill-opacity': 0.22 } });
+        map.addLayer({ id: 'alerts-fill', type: 'fill', source: 'alerts', filter: ['==', ['get', 'drawn'], true], paint: { 'fill-color': levelColor, 'fill-opacity': 0.22 } }, firstLabel);
         map.addLayer({ id: 'alerts-line', type: 'line', source: 'alerts', filter: ['==', ['get', 'drawn'], true], paint: { 'line-color': levelColor, 'line-width': 2.5 } });
         map.addLayer({
           id: 'alerts-line-county',
@@ -512,13 +567,13 @@ export function renderMap(root: HTMLElement): () => void {
         map.addLayer({
           id: 'county-labels',
           type: 'symbol',
-          source: 'counties',
+          source: 'county-label-points',
           layout: { 'text-field': ['get', 'name'], 'text-font': ['Noto Sans Bold'], 'text-size': 13, 'text-transform': 'uppercase', 'text-letter-spacing': 0.08 },
           paint: { 'text-color': token('--color-ink'), 'text-halo-color': token('--color-surface'), 'text-halo-width': 2 },
         });
         // The selected tract's outline goes on top of everything except gauges, so it's never hidden.
         map.addLayer({ id: 'tract-selected', type: 'line', source: 'tracts', filter: ['==', ['get', 'geoid'], ''], paint: { 'line-color': token('--color-ink'), 'line-width': 3 } });
-        map.addLayer({ id: 'gauges', type: 'symbol', source: 'gauges', layout: { 'icon-image': ['get', 'icon'], 'icon-allow-overlap': true } });
+        map.addLayer({ id: 'gauges', type: 'symbol', source: 'gauges', layout: { 'icon-image': ['get', 'icon'], 'icon-allow-overlap': true, 'icon-ignore-placement': true } });
         map.addSource('reports', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
         map.addLayer({
           id: 'reports',
@@ -526,6 +581,8 @@ export function renderMap(root: HTMLElement): () => void {
           source: 'reports',
           paint: { 'circle-radius': 6, 'circle-color': token('--status-watch-border'), 'circle-stroke-color': token('--color-ink'), 'circle-stroke-width': 1.5 },
         });
+        // County names go on top of everything, so gauge and report dots never cover them.
+        map.moveLayer('county-labels');
         // Community reports load in the background (simulated ones in Scenario Mode).
         if (FEATURES.reports) {
           const local: Report[] = scenario ? simulatedReports() : [];

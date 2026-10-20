@@ -983,3 +983,11 @@ body {
 .prose-page h2[tabindex='-1']:focus {
   outline: none;
 }
+
+/* When the browser scrolls something into view (keyboard Tab, links to a section), keep it clear of
+   the phone tab bar instead of hiding it underneath (WCAG 2.2, "Focus Not Obscured"). */
+@media (max-width: 59.99rem) {
+  html {
+    scroll-padding-bottom: calc(3.5rem + env(safe-area-inset-bottom, 0px) + var(--space-2));
+  }
+}

@@ -50,15 +50,86 @@ A bottom tab bar with five tabs, each with an icon and a text label:
 
 Scenario Mode must work in the native app too, with the same persistent "SIMULATION — not live data" banner on every screen, and nothing written to the database while it's on.
 
-## 5. It must feel native and look clean (not vibe-coded)
+## 5. Premium look and motion: this app must look and feel like a top App Store app
 
-- Follow the `CLAUDE.md` design system and "never" list. Same calm civic-data look, same status colors, icon + label for every status.
-- Respect safe areas (notch, home bar), set the status bar color, and use native-feeling navigation, transitions, and gestures.
-- Add an app icon and splash screen in our design style.
+This section **overrides the "minimal motion" rule in `CLAUDE.md` for the native app only.** The goal: when judges watch my video, the app should look as smooth and polished as the best apps on their own phones (think of the polish level of Apple Weather, Citymapper, or Things; take inspiration from the quality, never copy their designs or assets). Clean, calm, and credible stays the foundation; the motion and depth make it feel premium. Never let style slow down emergency information.
+
+### 5.1 Visual foundation
+- Keep the `CLAUDE.md` palette, typography, and "never" list (no purple gradients, no gradient text, no emoji icons, no template card grids, no neon).
+- Native apps may use **soft depth**: very subtle shadows/elevation on cards and sheets, and native blur only where the OS uses it (tab bar, sticky headers, map controls). Keep it restrained.
+- Generous spacing on an 8 pt grid, large confident headings, tabular numbers, crisp icons at one stroke weight.
+- **Dark mode** is in scope for the native app (polished apps have it). Design both themes from the same tokens; test contrast in both.
+- Custom app icon and an animated splash-to-home transition in our style.
+- A short, skippable **3-screen onboarding** (what the app does, location permission explained, "not an official warning system / call 911"), shown once. Good for the video.
+
+### 5.2 Motion system (define once in `/mobile/theme/motion.ts`, use everywhere)
+- Use **`react-native-reanimated`** (animations run on the UI thread for 60 fps) and **`react-native-gesture-handler`**. Optional helpers if Expo Go supports them for our SDK: `moti`, `lottie-react-native`, `@shopify/react-native-skia`, `expo-haptics`, `expo-blur`. Verify each before using.
+- Motion tokens: durations (fast 150 ms, base 250 ms, slow 400 ms), standard easing curves, and 2 to 3 named spring configs (gentle, snappy). No random one-off values.
+- Rules: animate only `transform` and `opacity` where possible; no layout jank; every gesture-driven animation follows the finger and can be interrupted; nothing blocks input; nothing loops forever except the subtle Danger indicator.
+- **Respect Reduce Motion** (`AccessibilityInfo.isReduceMotionEnabled` / Reanimated's reduced-motion support): swap movement for simple fades.
+- **Emergency rule:** the 911 button, Danger status, and power-line warning appear instantly with no entrance delay. Animation can follow, never precede, critical info.
+
+### 5.3 Signature animations (build these; they're what makes the video look great)
+1. **Status card:** when the level changes, the card's color and icon morph smoothly between levels, the headline crossfades, and a short haptic plays (light for Watch, medium for Warning, heavy for Danger). At Danger, a slow, subtle pulse on the status icon only.
+2. **River gauge visual:** each gauge shows an animated water-level fill (a smooth rising fill with a gentle wave edge, drawn with SVG or Skia) relative to its flood stages, plus a sparkline that draws itself in from left to right on first view.
+3. **Skeleton loading:** soft shimmer placeholders shaped like the real content, then a smooth crossfade into real data. No spinners on blank screens.
+4. **Lists:** staggered fade-and-rise entrance for alerts, gauges, reports, and route steps (short stagger, about 30 to 50 ms per item, only on first appearance).
+5. **Pull to refresh:** a custom water-ripple or rising-water indicator in our style, with a haptic tick when refresh triggers.
+6. **Tab bar:** icons animate on select (small scale and fill change), with a smooth sliding indicator.
+7. **Buttons and cards:** press-in scale (about 0.97) with a quick spring back, plus a light haptic on primary actions.
+8. **Bottom sheets:** spring-driven, draggable, with snap points and a dimmed backdrop that fades with the drag.
+9. **Map:** smooth camera fly-to when choosing a county or place; layers fade in when toggled; markers pop in with a small spring; tapping a marker smoothly raises its sheet.
+10. **Route reveal:** the route line draws itself along the path on the map, and the route cards slide up in order (fastest, then lower-exposure). The selected route highlights while others fade back.
+11. **Report flow:** category tiles respond to touch; steps slide between each other; on submit, an animated checkmark (Lottie or drawn SVG) with a success haptic.
+12. **Scenario Mode:** the "SIMULATION — not live data" banner slides in from the top and stays; the app's accent shifts subtly so it's obvious you're in simulation.
+13. **Screen transitions:** native stack transitions, and a smooth shared-element-style transition from a list item (for example a gauge) into its detail screen where supported.
+14. **Number changes:** values like river height and rain totals count up/down smoothly when they update.
+
+### 5.4 Native feel and accessibility (still required)
+- Respect safe areas (notch, home bar, Android navigation bar), set status bar style per theme, use platform-appropriate navigation and gestures (swipe back on iOS, back button on Android).
 - Support system text size (Dynamic Type / font scaling) without breaking layouts.
-- Accessibility: `accessibilityLabel` and `accessibilityRole` on every control, screen-reader announcements when status changes, touch targets at least 44 pt, no information by color alone.
-- Light haptic feedback on key actions (for example submitting a report) is fine if supported; keep it subtle.
-- Every state designed: loading skeletons, empty, error, stale, offline, no gauges, no open shelters, routing unavailable, reports unavailable, location permission denied.
+- `accessibilityLabel` and `accessibilityRole` on every control, screen-reader announcements when status changes, touch targets at least 44 pt, no information by color alone, Reduce Motion honored.
+- Every state designed and animated in: loading skeletons, empty, error, stale, offline, no gauges, no open shelters, routing unavailable, reports unavailable, location permission denied.
+
+### 5.5 Polish pass and quality bar
+- Animations must hold 60 fps on my real phone. If something stutters, simplify it rather than ship it.
+- After each phase, give me a short checklist of exactly what to look at on my phone (for example "pull down on Status: you should see the water ripple and feel a tick") so I can report anything that feels off.
+- Do a dedicated **motion and visual polish pass on Thursday 10/22**: consistent timing everywhere, no leftover default styles, aligned spacing, both themes checked.
+- Record in `NOTES.md` which animation libraries you used and why, and explain in plain language how Reanimated keeps animations smooth (UI thread vs JavaScript thread). That's good material for judges.
+
+### 5.6 It must NOT look vibe-coded (hard requirement)
+AI-generated apps have recognizable "tells." Avoid every one of these:
+- Default system blue buttons, default fonts, default React Native/Expo template screens or colors left in.
+- Every screen built from the same rounded white card stacked in a column with identical padding.
+- Generic hero sections, big emoji, stock illustrations, filler welcome text, or "AI-powered" anything.
+- Purple/indigo gradients, gradient text, glowing borders, glassmorphism everywhere.
+- Random, inconsistent spacing, radii, shadows, or font sizes (if a value isn't a token, it's wrong).
+- Animations that are all the same fade, or that bounce for no reason, or that play every time you revisit a screen.
+- Icons from mixed sets or mixed stroke widths; misaligned icons and text.
+- Placeholder-feeling copy ("Lorem," "Item 1," "Click here," "Something went wrong").
+- Center-aligned everything, and walls of text with no hierarchy.
+
+Instead, make it feel **designed on purpose**:
+- **A clear visual identity:** one signature element that ties the app together (for example the water-level motif used in the gauge fills, the pull-to-refresh, the splash, and the status card), used consistently but not overused.
+- **Real hierarchy on every screen:** one obvious most-important thing, then supporting info. Vary layout by purpose (a hero status, a dense data list, a full-bleed map, a focused step-by-step flow) instead of the same card everywhere.
+- **Purposeful motion:** each animation explains something (where an item came from, what changed, what's happening). Animations play on meaningful events, not on every render.
+- **Specific, human copy** written for SC-5 residents ("Catawba River at Rock Hill is 2.1 ft below flood stage and falling").
+- **Details that show care:** consistent optical alignment, proper empty states with a short helpful line, sensible defaults, remembered choices (last county), and nothing that jumps when data loads.
+
+### 5.7 Smart transitions and interactivity
+Make the app feel alive and responsive to touch, not like a static page:
+- **Context-aware transitions:** tapping a gauge expands it into its detail screen from where it sat; opening a hazard slides its guidance in from the card; the map zooms to what you tapped. Going back reverses the motion.
+- **Interactive gauge detail:** drag a finger along the gauge chart to scrub through time, with a moving marker, the exact reading and time shown, and light haptic ticks when crossing a flood-stage line.
+- **Scenario Mode timeline:** a draggable timeline slider that replays the simulated event (for example Helene) hour by hour, with the status card, gauges, and map updating live as you drag. This is a strong demo moment.
+- **Interactive checklist:** the "Do this now" guidance items can be checked off with a satisfying animated check; progress is remembered on the device.
+- **Swipe and long-press:** swipe a report to mark "Still there" or "Fixed"; long-press a gauge or alert for a quick-look preview.
+- **Map interactions:** pinch, pan, and tap feel native; layer toggles are a smooth segmented control or chips with a sliding highlight; tapping a tract shows a sheet whose content animates in.
+- **Route comparison:** swipe between route cards and the map highlights the matching route in sync.
+- **Live feedback:** controls respond within one frame (press states, haptics); anything that loads shows progress in place.
+- Keep every interactive feature reachable without gestures too (buttons and accessibility actions), so screen-reader and switch users can use it.
+
+### 5.8 Self-review before showing me any screen
+Before each checkpoint, review every new screen against sections 5.1 to 5.7 and list for me: what signature motion it has, what interaction it has, and anything you consider "vibe-coded" that you fixed. If something only looks okay, keep improving it before calling it done.
 
 ## 6. Performance on a phone
 

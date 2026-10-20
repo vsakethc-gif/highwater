@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { gaugeName, feet } from '../shared/format';
-import { sparklinePoints } from '../src/components/sparkline';
+import { sparklinePoints } from '../shared/sparkline';
 
 describe('gaugeName', () => {
   it('makes USGS names readable', () => {

@@ -68,11 +68,5 @@ export function subscribe(fn: Listener): () => void {
   return () => listeners.delete(fn);
 }
 
-export function countyName(fips: string): string {
-  return COUNTIES.find((c) => c.fips === fips)?.name ?? 'Unknown';
-}
-
-/** "York County" or "near 155 Johnston St" style label for headings. */
-export function placeLabel(place: Place): string {
-  return place.kind === 'county' ? `${countyName(place.fips)} County` : place.label;
-}
+// Shared with the phone app (shared/places.ts).
+export { countyName, placeLabel } from '../../shared/places';

@@ -1,42 +1,61 @@
 /**
- * Icon.tsx — draws a Lucide icon by name (the same open-source icon set as the website).
- * Only the icons listed here are included in the app. Icons are decorative: the text next
- * to them carries the meaning, so screen readers skip them.
+ * Icon.tsx — draws a Lucide icon by name (the same open-source set as the website), always at one
+ * stroke width (1.75). Icons are decorative: the text next to them carries the meaning, so screen
+ * readers skip them. `filled` gives a soft filled look (used for the selected tab).
  */
 import {
   Activity,
   ArrowRight,
+  BookOpen,
   Check,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   CircleAlert,
   CircleCheck,
+  CircleDot,
   Clock,
   CloudFog,
   CloudLightning,
   CloudOff,
+  CloudRain,
   CloudRainWind,
   Construction,
+  Crosshair,
+  Database,
   DoorOpen,
   ExternalLink,
   Eye,
   Factory,
   Flame,
   FlaskConical,
+  Gauge,
   Grid2x2,
   House,
   Info,
+  Layers,
   LightbulbOff,
   ListChecks,
   LocateFixed,
   Map,
+  MapPin,
   Megaphone,
   Menu,
   MessageSquare,
+  Moon,
+  Navigation,
   OctagonAlert,
+  Pause,
   Phone,
+  Play,
+  RotateCcw,
   Search,
+  Settings,
+  Share2,
   Signpost,
+  Smartphone,
   Snowflake,
+  Sun,
   ThermometerSnowflake,
   ThermometerSun,
   Tornado,
@@ -45,48 +64,72 @@ import {
   TrendingDown,
   TrendingUp,
   TriangleAlert,
+  Vibrate,
   Waves,
   Wind,
   X,
   Zap,
   type LucideIcon,
 } from 'lucide-react-native';
+import { Platform } from 'react-native';
 import { useTheme } from '../theme';
+
+// Hide icons from screen readers (the text beside them says it). These props exist only on phones.
+const HIDDEN = Platform.OS === 'web' ? {} : { accessibilityElementsHidden: true, importantForAccessibility: 'no-hide-descendants' as const };
 
 const ICONS = {
   Activity,
   ArrowRight,
+  BookOpen,
   Check,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   CircleAlert,
   CircleCheck,
+  CircleDot,
   Clock,
   CloudFog,
   CloudLightning,
   CloudOff,
+  CloudRain,
   CloudRainWind,
   Construction,
+  Crosshair,
+  Database,
   DoorOpen,
   ExternalLink,
   Eye,
   Factory,
   Flame,
   FlaskConical,
+  Gauge,
   Grid2x2,
   House,
   Info,
+  Layers,
   LightbulbOff,
   ListChecks,
   LocateFixed,
   Map,
+  MapPin,
   Megaphone,
   Menu,
   MessageSquare,
+  Moon,
+  Navigation,
   OctagonAlert,
+  Pause,
   Phone,
+  Play,
+  RotateCcw,
   Search,
+  Settings,
+  Share2,
   Signpost,
+  Smartphone,
   Snowflake,
+  Sun,
   ThermometerSnowflake,
   ThermometerSun,
   Tornado,
@@ -95,6 +138,7 @@ const ICONS = {
   TrendingDown,
   TrendingUp,
   TriangleAlert,
+  Vibrate,
   Waves,
   Wind,
   X,
@@ -103,9 +147,20 @@ const ICONS = {
 
 export type IconName = keyof typeof ICONS;
 
-export function Icon({ name, size = 18, tint }: { name: IconName; size?: number; tint?: string }) {
+export const STROKE = 1.75;
+
+export function Icon({ name, size = 20, tint, filled }: { name: IconName; size?: number; tint?: string; filled?: boolean }) {
   const { c } = useTheme();
   const Glyph = ICONS[name];
-  // One consistent stroke weight everywhere, like the website.
-  return <Glyph size={size} color={tint ?? c.ink} strokeWidth={2} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" />;
+  const color = tint ?? c.ink;
+  return (
+    <Glyph
+      size={size}
+      color={color}
+      strokeWidth={STROKE}
+      fill={filled ? color : 'none'}
+      fillOpacity={filled ? 0.18 : 0}
+      {...HIDDEN}
+    />
+  );
 }

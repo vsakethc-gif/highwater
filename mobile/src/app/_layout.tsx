@@ -3,32 +3,39 @@
  *   1. Keeps the splash screen up while fonts load and the phone's saved data is read.
  *   2. Plugs the phone into the shared code (installNativePlatform, see src/platform.ts).
  *   3. Fades from the splash screen into the app.
- * Then Expo Router shows either the one-time onboarding or the tabs.
+ * Then Expo Router shows either the one-time onboarding or the tabs, plus the pushed screens
+ * (gauge and alert details) and sheets (place picker, scenario picker).
  */
-// Import only the five font weights we use (the packages' main files would pull in all of them).
+// Import only the font weights we use (the packages' main files would pull in all of them).
+import { Newsreader_500Medium } from '@expo-google-fonts/newsreader/500Medium';
+import { Newsreader_600SemiBold } from '@expo-google-fonts/newsreader/600SemiBold';
 import { PublicSans_400Regular } from '@expo-google-fonts/public-sans/400Regular';
 import { PublicSans_500Medium } from '@expo-google-fonts/public-sans/500Medium';
 import { PublicSans_600SemiBold } from '@expo-google-fonts/public-sans/600SemiBold';
 import { PublicSans_700Bold } from '@expo-google-fonts/public-sans/700Bold';
-import { SourceSerif4_600SemiBold } from '@expo-google-fonts/source-serif-4/600SemiBold';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { Stack } from 'expo-router/stack';
 import { useEffect, useState } from 'react';
-import { useColorScheme } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { installNativePlatform } from '../platform';
 import { AppStateProvider } from '../state';
-import { dark, light } from '../theme/tokens';
+import { radius, useTheme } from '../theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 SplashScreen.setOptions({ fade: true, duration: 400 });
 
 export default function RootLayout() {
-  const [fontsLoaded, fontError] = useFonts({ PublicSans_400Regular, PublicSans_500Medium, PublicSans_600SemiBold, PublicSans_700Bold, SourceSerif4_600SemiBold });
+  const [fontsLoaded, fontError] = useFonts({
+    PublicSans_400Regular,
+    PublicSans_500Medium,
+    PublicSans_600SemiBold,
+    PublicSans_700Bold,
+    Newsreader_500Medium,
+    Newsreader_600SemiBold,
+  });
   const [platformReady, setPlatformReady] = useState(false);
-  const scheme = useColorScheme();
 
   useEffect(() => {
     installNativePlatform().finally(() => setPlatformReady(true));
@@ -41,17 +48,34 @@ export default function RootLayout() {
   }, [ready]);
   if (!ready) return null;
 
-  const bg = scheme === 'dark' ? dark.bg : light.bg;
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: bg }}>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <AppStateProvider>
-          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: bg } }}>
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="onboarding" options={{ animation: 'fade', gestureEnabled: false }} />
-          </Stack>
+          <RootStack />
         </AppStateProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
+  );
+}
+
+function RootStack() {
+  const { c } = useTheme();
+  const sheet = {
+    presentation: 'formSheet' as const,
+    sheetGrabberVisible: true,
+    sheetCornerRadius: radius.sheet,
+    contentStyle: { backgroundColor: c.surface },
+  };
+  return (
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }}>
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="onboarding" options={{ animation: 'fade', gestureEnabled: false }} />
+      <Stack.Screen name="gauge/[id]" />
+      <Stack.Screen name="alert/[id]" />
+      <Stack.Screen name="gallery" />
+      <Stack.Screen name="county" options={{ ...sheet, sheetAllowedDetents: [0.75, 1] }} />
+      <Stack.Screen name="scenario" options={{ ...sheet, sheetAllowedDetents: [0.75, 1] }} />
+    </Stack>
   );
 }

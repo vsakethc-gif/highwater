@@ -5,7 +5,7 @@ export default function MapScreen() {
   return (
     <ComingSoon
       icon="Map"
-      title="District map"
+      title="Map"
       body="The native map of all 8 counties, with river gauges, warning areas, and who lives where, is coming in the next update. The website’s map works now."
       webPath="#/map"
     />

@@ -1,22 +1,24 @@
 /**
- * More tab — Scenario Mode (demo emergencies, including the real Helene replays), and the app's
- * rules, limits, privacy, and credits. The full "How it works" page opens on the website.
+ * More tab (brief section 8.8): Demo & simulation, Learn, Settings, About.
+ * Long-press the version number to open the hidden Design Gallery (for checking the look).
  */
+import Constants from 'expo-constants';
 import { router } from 'expo-router';
-import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import Animated from 'react-native-reanimated';
+import { Linking, Pressable, StyleSheet, Switch, View } from 'react-native';
 import { APP_NAME } from '../../../../shared/config';
-import { platform } from '../../../../shared/platform';
-import { SCENARIOS } from '../../../../shared/scenario/scenario';
-import { Icon } from '../../components/Icon';
-import { Screen, Section, Txt } from '../../components/ui';
-import { useAppState } from '../../state';
-import { font, listItemEntering, radius, space, tapHaptic, useTheme } from '../../theme';
+import { findScenario } from '../../../../shared/scenario/scenario';
+import { SegmentedControl } from '../../components/ui/Chips';
+import { Card, ListRow, SectionHeader } from '../../components/ui/Layout';
+import { LargeTitleScroll, Screen } from '../../components/ui/Screen';
+import { Txt } from '../../components/ui/Text';
+import { useAppState, type Appearance } from '../../state';
+import { haptic, space, useTheme } from '../../theme';
 import { ONBOARDED_KEY } from '../onboarding';
+import { platform } from '../../../../shared/platform';
 
 const SITE = 'https://vsakethc-gif.github.io/highwater/';
 
-const LIMITS = [
+export const LIMITS = [
   'It is not an official warning system. It can be late, wrong, or missing alerts. Official alerts, local officials, and 911 come first.',
   'River gauge readings are provisional, some gauges go offline, and many small creeks have no gauge at all.',
   'FEMA flood zones show long-term risk, not where it is flooding today, and some maps are years old.',
@@ -26,109 +28,110 @@ const LIMITS = [
   'Community reports are unverified, can be wrong, and are not sent to any government agency.',
 ];
 
-function Row({ title, detail, onPress, selected }: { title: string; detail?: string; onPress: () => void; selected?: boolean }) {
-  const { c } = useTheme();
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      style={({ pressed }) => [s.row, { borderColor: selected ? c.accent : c.border, backgroundColor: pressed ? c.sunken : selected ? c.accentTint : c.surface }]}
-    >
-      <View style={{ flex: 1, gap: 2 }}>
-        <Txt variant="label" style={{ fontSize: 16 }}>
-          {title}
-        </Txt>
-        {detail ? <Txt variant="meta">{detail}</Txt> : null}
-      </View>
-      {selected ? <Icon name="Check" tint={c.accent} /> : <Icon name="ArrowRight" tint={c.inkSubtle} />}
-    </Pressable>
-  );
-}
-
 export default function MoreScreen() {
   const { c } = useTheme();
-  const { scenario, setScenario } = useAppState();
+  const { scenario, setScenario, appearance, setAppearance, haptics, setHaptics } = useAppState();
+  const active = findScenario(scenario);
   return (
     <Screen>
-      <ScrollView contentContainerStyle={{ paddingHorizontal: space[2], paddingBottom: 120 }}>
-        <View style={{ paddingTop: space[3] }}>
-          <Txt variant="serifTitle" accessibilityRole="header">
-            More
-          </Txt>
+      <LargeTitleScroll title="More">
+        <View style={s.section}>
+          <SectionHeader title="Demo & simulation" />
+          <Card style={{ paddingVertical: 0 }}>
+            <ListRow icon="FlaskConical" title="Scenario Mode" subtitle={active ? `On: ${active.title}` : 'Replay Hurricane Helene or a made-up emergency'} onPress={() => router.push('/scenario')} last={!active} />
+            {active ? <ListRow icon="X" title="Exit Scenario Mode" subtitle="Back to live data" onPress={() => setScenario(null)} chevron={false} last /> : null}
+          </Card>
         </View>
 
-        <Section title="Scenario Mode">
-          <Txt style={{ marginBottom: space[2], color: c.inkMuted }}>
-            Replay an emergency to see how the app responds. The two Helene replays use real archived alerts and river readings; the others are made up. Everything is labeled SIMULATION, and nothing is saved or sent.
+        <View style={s.section}>
+          <SectionHeader title="Learn" />
+          <Card style={{ paddingVertical: 0 }}>
+            <ListRow icon="BookOpen" title="How it works" subtitle="Every rule, threshold, and source" onPress={() => Linking.openURL(`${SITE}#/methodology`)} />
+            <ListRow icon="Database" title="Data sources and credits" subtitle="NWS, USGS, NOAA, FEMA, Census, Iowa State" onPress={() => Linking.openURL(`${SITE}#/about`)} last />
+          </Card>
+          <Txt variant="caption" tone="muted" style={{ marginTop: space.xxl, marginBottom: space.s }}>
+            What it can’t do
           </Txt>
-          <View style={{ gap: space[1] }}>
-            {SCENARIOS.map((sc, i) => (
-              <Animated.View key={sc.id} entering={listItemEntering(i)}>
-                <Row
-                  title={sc.title}
-                  detail={sc.summary}
-                  selected={scenario === sc.id}
-                  onPress={() => {
-                    tapHaptic();
-                    setScenario(sc.id, sc.county);
-                    router.navigate('/');
-                  }}
-                />
-              </Animated.View>
-            ))}
-            {scenario ? <Row title="Turn off Scenario Mode" detail="Back to live data" onPress={() => setScenario(null)} /> : null}
-          </View>
-        </Section>
-
-        <Section title="How it works">
-          <Txt>
-            {APP_NAME} turns official public data into a status using fixed, written rules: an alert table, river gauges compared with official flood stages, and a rain forecast rule. There’s no AI in the app. Every rule, threshold, and source is listed on the How it works page.
-          </Txt>
-          <Pressable onPress={() => Linking.openURL(`${SITE}#/methodology`)} accessibilityRole="link" style={s.link}>
-            <Txt style={{ color: c.accent, textDecorationLine: 'underline', fontFamily: font.semibold }}>Open How it works</Txt>
-            <Icon name="ExternalLink" size={14} tint={c.accent} />
-          </Pressable>
-        </Section>
-
-        <Section title="What it can’t do">
           {LIMITS.map((l) => (
             <View key={l} style={s.bullet}>
-              <View style={[s.dot, { backgroundColor: c.inkMuted }]} />
-              <Txt style={{ flex: 1 }}>{l}</Txt>
+              <View style={[s.dot, { backgroundColor: c.inkFaint }]} />
+              <Txt variant="callout" tone="muted" style={{ flex: 1 }}>
+                {l}
+              </Txt>
             </View>
           ))}
-        </Section>
+        </View>
 
-        <Section title="Privacy">
-          <Txt>
-            No accounts, no ads, no tracking. If you use your location, it stays on your phone and is sent only to the public services that answer for that spot. It is never stored. Only your chosen county is remembered on this phone.
-          </Txt>
-        </Section>
+        <View style={s.section}>
+          <SectionHeader title="Settings" />
+          <Card style={{ gap: space.l }}>
+            <View style={{ gap: space.s }}>
+              <Txt variant="headline">Appearance</Txt>
+              <SegmentedControl<Appearance>
+                label="Appearance"
+                value={appearance}
+                onChange={setAppearance}
+                options={[
+                  { value: 'system', label: 'System' },
+                  { value: 'light', label: 'Light' },
+                  { value: 'dark', label: 'Dark' },
+                ]}
+              />
+            </View>
+            <View style={[s.switchRow, { borderTopColor: c.hairline }]}>
+              <View style={{ flex: 1 }}>
+                <Txt variant="headline">Haptics</Txt>
+                <Txt variant="footnote">Light vibrations when you tap and when the status changes</Txt>
+              </View>
+              <Switch
+                value={haptics}
+                onValueChange={(on) => {
+                  setHaptics(on);
+                  if (on) haptic.select();
+                }}
+                trackColor={{ true: c.accent, false: c.surfaceSunken }}
+                accessibilityLabel="Haptics"
+              />
+            </View>
+          </Card>
+        </View>
 
-        <Section title="About">
-          <Txt>
-            Built by a high school student in York County for the 2026 Congressional App Challenge. Parts of the code were written with help from an AI coding assistant; see the AI disclosure in the code repository. Data: USGS, NOAA, National Weather Service, FEMA, U.S. Census Bureau, Iowa Environmental Mesonet.
-          </Txt>
-          <Pressable
-            onPress={() => {
-              platform().storage.setItem(ONBOARDED_KEY, '0');
-              router.replace('/onboarding');
-            }}
-            accessibilityRole="button"
-            style={s.link}
-          >
-            <Txt style={{ color: c.accent, textDecorationLine: 'underline', fontFamily: font.semibold }}>Show the introduction again</Txt>
+        <View style={s.section}>
+          <SectionHeader title="About" />
+          <Card style={{ gap: space.m }}>
+            <Txt variant="callout">
+              {`${APP_NAME} turns official public data into a clear status for the 8 counties of South Carolina’s 5th District, using fixed, written rules. There’s no AI in the app.`}
+            </Txt>
+            <Txt variant="callout" tone="muted">
+              Built by a high school student in York County for the 2026 Congressional App Challenge, with help from an AI coding assistant (see the AI disclosure in the code repository).
+            </Txt>
+            <Txt variant="callout" tone="muted">
+              Privacy: no accounts, no ads, no tracking. Your location stays on your phone and is never stored. Only your chosen county and settings are remembered here.
+            </Txt>
+            <ListRow
+              icon="RotateCcw"
+              title="Show the introduction again"
+              onPress={() => {
+                platform().storage.setItem(ONBOARDED_KEY, '0');
+                router.replace('/onboarding');
+              }}
+              last
+            />
+          </Card>
+          <Pressable onLongPress={() => router.push('/gallery')} delayLongPress={600} accessibilityRole="text" accessibilityLabel={`Version ${Constants.expoConfig?.version ?? '1.0.0'}`}>
+            <Txt variant="footnote" style={{ textAlign: 'center', marginTop: space.xxl }}>
+              {`${APP_NAME} ${Constants.expoConfig?.version ?? '1.0.0'} · Not an official warning system`}
+            </Txt>
           </Pressable>
-        </Section>
-      </ScrollView>
+        </View>
+      </LargeTitleScroll>
     </Screen>
   );
 }
 
 const s = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: space[2], padding: space[2], borderWidth: 1, borderRadius: radius.md, minHeight: 56 },
-  link: { flexDirection: 'row', alignItems: 'center', gap: space[0], minHeight: 44, marginTop: space[1] },
-  bullet: { flexDirection: 'row', gap: space[1], alignItems: 'flex-start', marginBottom: space[1] },
-  dot: { width: 6, height: 6, borderRadius: 3, marginTop: 9 },
+  section: { marginTop: space.x3 },
+  bullet: { flexDirection: 'row', gap: space.m, marginBottom: space.s },
+  dot: { width: 5, height: 5, borderRadius: 3, marginTop: 9 },
+  switchRow: { flexDirection: 'row', alignItems: 'center', gap: space.m, paddingTop: space.l, borderTopWidth: StyleSheet.hairlineWidth },
 });

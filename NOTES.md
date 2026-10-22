@@ -64,6 +64,12 @@ Working log for Highwater (originally called SC-5 Ready). "Problems and fixes" b
 - **Built-in data is bundled into the phone app** (about 160 KB, copied from `public/data` before each start), so it works offline from the first launch.
 - **Dark mode** is designed from the same tokens as light mode; in Scenario Mode the accent turns slate, so a simulation never looks like live data.
 
+### Phone app, round 2 (Oct 21, new brief: MOBILE_BRIEF.md)
+- **Design tokens from the brief, contrast-checked** with `mobile/scripts/contrast.mjs` (WCAG formula, every text/background and status pair, both themes). All pass except one value from the brief: light `inkFaint` #68737D was 4.07:1 on the sunken background, so it was darkened to #5F6A74 (4.65:1 there, 5.07:1 on the page). Fonts: Public Sans (UI) and Newsreader (the big status word and titles).
+- **Our own bottom sheet** (Reanimated + Gesture Handler) instead of @gorhom/bottom-sheet, which only promises support for the older gesture library; Expo SDK 58 ships Gesture Handler 3. The place and scenario pickers use the phone's native form sheet instead.
+- **The water line** is one component (`components/ui/WaterLine.tsx`) used by the hero card, gauge tubes, onboarding art, and empty states, so the signature looks identical everywhere.
+- **Hidden Design Gallery** (long-press the version in More) shows every component in every state, replays the animations, and runs a "Demo ready" check.
+
 ## Problems and fixes
 
 - **A gray failed the contrast check.** The first "subtle" gray (`#6b7680`) was 4.37:1 on the page background, under the 4.5:1 WCAG AA minimum. I found it with a small script that computes contrast ratios, then darkened it to `#606b75` (5.13:1). The Normal and Watch badge borders were also too faint, so I darkened them past 3:1.
@@ -123,6 +129,9 @@ Working log for Highwater (originally called SC-5 Ready). "Problems and fixes" b
 - **The selected county was scrolled off-screen.** York is last in the county row, so the chosen chip was hidden. Fix: the row scrolls to the selected county.
 
 - **District map warnings and messy labels (Oct 19).** Testing every map interaction in a browser found: (1) the browser console filled with warnings when zooming, from three layers in the free basemap's style that compare numbers some map features don't have; fix: load the style ourselves and make those comparisons treat a missing number safely (the map looks the same). (2) Our colored neighborhoods were drawn on top of the town names, washing them out; fix: draw them beneath the basemap's labels. (3) County names repeated ("LEE" three times) because they were labeled per map tile; fix: one label point at the center of each county. (4) Cherokee, Union, and York names were hidden by gauge dots; fix: dots no longer block labels, and county names draw on top. (5) On phones, something scrolled into view (for example by the keyboard) could end up under the bottom tab bar; fix: the page keeps a tab-bar-sized gap when scrolling (WCAG 2.2 "Focus Not Obscured").
+- **Self-drawing lines would have broken on phones.** The web trick (pathLength) isn't supported by the phone's SVG library; the TypeScript check caught it. Fix: measure each line's real length and draw it with a dash of that length.
+- **Gesture Handler 3 changed its API** (hooks like usePanGesture instead of Gesture.Pan()). Read the library's own type files and wrote the sheet with the new hooks.
+- **Self-review fixes on the new Status screen:** "Normal" appeared twice (badge and big word), the water line was nearly invisible at Normal, the collapsing header was see-through, and gauge times wrapped onto two lines. All fixed before showing the screen.
 
 ## Open questions for me
 

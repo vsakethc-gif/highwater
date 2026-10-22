@@ -1,241 +1,309 @@
 /**
- * Status tab — "What's going on here, and what should I do?"
+ * Status tab (brief section 8.2) — "What's happening near me, and what do I do?"
  *
- * Flow (the same as the website, using the same shared code):
- *   pick a place → load alerts, gauges, and rain (live or Scenario Mode) → run the hazard engine
- *   → show the status card, why, what to do, and the data underneath.
- * Pull down to refresh; it also refreshes by itself every 10 minutes.
+ *   header: large "Status" title, the county pill (opens the county picker), and the live indicator
+ *   hero:   the status card with the water line, then "Why this status?"
+ *   then:   other active hazards, the "Do this now" checklist, official alerts, rivers near you,
+ *           the rain forecast, quick actions, and the footer with 911 and sources.
+ *
+ * Everything comes from the shared engine through useStatus(). Pull down to refresh.
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { RefreshControl, ScrollView, View } from 'react-native';
-import Animated from 'react-native-reanimated';
+import { router } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { Linking, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { COUNTIES } from '../../../../shared/config';
-import { dataOrNull, loadConditions, type Conditions } from '../../../../shared/data/conditions';
-import { fetchFloodZone, describeZone, type FloodZone } from '../../../../shared/data/fema';
-import type { Alert } from '../../../../shared/data/types';
-import { guidanceFor } from '../../../../shared/guidance/guidance';
-import type { GuidanceBlock } from '../../../../shared/guidance/types';
-import { alertAppliesTo, evaluate } from '../../../../shared/hazards/engine';
-import type { OverallStatus } from '../../../../shared/hazards/types';
-import { districtAverage, type Tract } from '../../../../shared/hazards/vulnerability';
+import { routeAllowed } from '../../../../shared/guidance/guidance';
 import { countyName, placeLabel } from '../../../../shared/places';
-import { checksList, guidanceContext } from '../../../../shared/statusContext';
-import { dateTime, relativeTime } from '../../../../shared/time';
-import { AlertRow, FactsTable, GaugeRow, RainCard, SourceLine } from '../../components/data';
-import { GuidanceView } from '../../components/guidance';
-import { LocationPicker } from '../../components/LocationPicker';
-import { OtherHazards, StatusCard, WhyStatus } from '../../components/status';
-import { Notice, Screen, Section, Skeleton, Txt } from '../../components/ui';
+import { clockTime, relativeTime } from '../../../../shared/time';
+import { RainBars } from '../../components/data/Charts';
+import { AlertRow, ChecklistItem, GaugeRow } from '../../components/data/Rows';
+import { StatusHero, WhyStatus } from '../../components/data/StatusHero';
+import { Icon } from '../../components/Icon';
+import { Button, Pressable } from '../../components/ui/Button';
+import { HazardChip } from '../../components/ui/Chips';
+import { Banner, EmptyState, Notice, Skeleton } from '../../components/ui/Feedback';
+import { Card, ListRow, SectionHeader } from '../../components/ui/Layout';
+import { LargeTitleScroll, Screen } from '../../components/ui/Screen';
+import { Txt } from '../../components/ui/Text';
+import { useStatus, type StatusData } from '../../hooks/useStatus';
 import { useAppState } from '../../state';
-import { fadeIn, font, space, tapHaptic, useTheme } from '../../theme';
-
-const REFRESH_MS = 10 * 60_000;
-
-interface Loaded {
-  c: Conditions;
-  overall: OverallStatus;
-  blocks: GuidanceBlock[];
-  alertsHere: Alert[] | null;
-  checks: string[];
-  zone: FloodZone | null | Error;
-  tracts: Tract[];
-  tract: Tract | null;
-  updatedAt: string;
-}
+import { easing, fadeIn, haptic, radius, space, useMotionReduced, useTheme } from '../../theme';
 
 export default function StatusScreen() {
   const { c } = useTheme();
-  const { place, scenario } = useAppState();
-  const [data, setData] = useState<Loaded | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
-  const loadId = useRef(0);
-
-  const load = useCallback(async () => {
-    const id = ++loadId.current;
-    const conditions = await loadConditions(place, scenario);
-    // FEMA's flood zone for a spot: never wait more than 4 seconds for it.
-    const zone: FloodZone | null | Error =
-      place.kind === 'point' && !scenario
-        ? await Promise.race([fetchFloodZone(place.lat, place.lon).catch((e: Error) => e), new Promise<Error>((r) => setTimeout(() => r(new Error('slow')), 4000))])
-        : null;
-    if (id !== loadId.current) return; // a newer load started (the place changed): drop this one
-
-    const alerts = dataOrNull(conditions.alerts);
-    const alertsHere = alerts ? alerts.filter((a) => alertAppliesTo(a, place)) : null;
-    const evaluated = evaluate({ alerts, gauges: dataOrNull(conditions.gauges), rain: dataOrNull(conditions.rain), now: Date.now() }, place);
-    // A status built from the saved offline copy is never complete, so it can never be an all-clear.
-    const overall: OverallStatus = conditions.savedAt
-      ? { ...evaluated, complete: false, gaps: [`Offline: showing info saved ${relativeTime(conditions.savedAt)} (${dateTime(conditions.savedAt)}). It may be out of date.`, ...evaluated.gaps] }
-      : evaluated;
-    const { ctx, tract, tracts } = await guidanceContext(place, zone instanceof Error ? null : zone);
-    const shown = overall.active.length ? overall.active : overall.all.filter((h) => h.hazard === 'flood');
-    if (id !== loadId.current) return;
-    setData({
-      c: conditions,
-      overall,
-      blocks: shown.map((h) => guidanceFor(h, ctx)),
-      alertsHere,
-      checks: checksList(place, conditions, alertsHere),
-      zone,
-      tracts,
-      tract,
-      updatedAt: new Date().toISOString(),
-    });
-  }, [place, scenario]);
-
-  useEffect(() => {
-    setData(null);
-    load();
-    const timer = setInterval(load, REFRESH_MS);
-    return () => clearInterval(timer);
-  }, [load]);
-
-  const onRefresh = useCallback(async () => {
-    tapHaptic();
-    setRefreshing(true);
-    await load();
-    setRefreshing(false);
-  }, [load]);
-
-  const seat = COUNTIES.find((x) => x.fips === place.fips)?.seat.name ?? 'the county seat';
-  const county = `${countyName(place.fips)} County`;
+  const { place } = useAppState();
+  const { data, refreshing, refresh } = useStatus();
+  const [whyOpen, setWhyOpen] = useState(false);
 
   return (
     <Screen>
-      <ScrollView
-        contentContainerStyle={{ paddingHorizontal: space[2], paddingBottom: 120 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.accent} colors={[c.accent]} progressBackgroundColor={c.surface} />}
+      {data?.c.savedAt ? <Banner kind="offline" title={`Offline · showing info from ${clockTime(data.c.savedAt)}`} detail="Live data will update when you have signal." /> : null}
+      <LargeTitleScroll
+        title="Status"
+        right={data ? <LiveIndicator data={data} /> : null}
+        header={<CountyPill />}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              haptic.press();
+              refresh();
+            }}
+            tintColor={c.accent}
+            colors={[c.accent]}
+            progressBackgroundColor={c.surface}
+          />
+        }
       >
-        <View style={{ paddingTop: space[3], gap: space[0] }}>
-          <Txt variant="eyebrow">Hazard status</Txt>
-          <Txt variant="serifTitle" accessibilityRole="header">
-            {placeLabel(place)}
-          </Txt>
-          {place.kind === 'point' ? <Txt variant="meta">In {county}</Txt> : null}
-        </View>
-        <View style={{ marginTop: space[2] }}>
-          <LocationPicker />
-        </View>
-
         {!data ? (
-          // Placeholders shaped like the real content, so nothing jumps when it arrives.
-          <View>
-            <Skeleton height={300} />
-            <Skeleton height={48} />
-            <Skeleton height={120} style={{ marginTop: space[5] }} />
-          </View>
+          <Loading />
         ) : (
-          <Animated.View entering={fadeIn}>
-            <StatusCard overall={data.overall} top={data.blocks[0]} placeName={placeLabel(place)} updatedAt={data.updatedAt} simulated={data.c.simulated} live={!data.c.simulated && !data.c.savedAt && data.overall.complete} />
-            <OtherHazards active={data.overall.active} />
-            <WhyStatus overall={data.overall} checks={data.checks} />
+          <Animated.View entering={fadeIn} style={{ marginTop: space.l }}>
+            <StatusHero overall={data.overall} top={data.blocks[0]} placeName={placeLabel(place)} onPress={() => setWhyOpen(true)} />
+            <WhyStatus overall={data.overall} checks={data.checks} open={whyOpen} onToggle={() => setWhyOpen(!whyOpen)} />
 
-            <GuidanceView g={data.blocks[0]} />
-
-            <PlaceFacts data={data} />
-
-            <Section title="Official alerts">
-              {data.c.alerts instanceof Error || data.alertsHere === null ? (
-                <Notice tone="error" icon="CloudOff" title="Couldn’t load alerts from the National Weather Service.">
-                  Check official alerts at weather.gov/alerts.
-                </Notice>
-              ) : data.alertsHere.length ? (
-                <>
-                  {data.alertsHere.map((a, i) => (
-                    <AlertRow key={a.id} a={a} index={i} />
+            {data.overall.active.length > 1 ? (
+              <View style={s.section}>
+                <SectionHeader title="Also active here" />
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.s }}>
+                  {data.overall.active.slice(1).map((h) => (
+                    <HazardChip key={h.hazard} hazard={h.hazard} level={h.level} />
                   ))}
-                  <SourceLine loaded={data.c.alerts} />
-                </>
-              ) : (
-                <>
-                  <Notice tone="empty" icon="CircleCheck">{`No active National Weather Service alerts for ${placeLabel(place)} right now.`}</Notice>
-                  <SourceLine loaded={data.c.alerts} />
-                </>
-              )}
-            </Section>
+                </ScrollView>
+              </View>
+            ) : null}
 
-            <Section title="Rain forecast">
+            <DoThisNow data={data} />
+            <Alerts data={data} />
+            <Rivers data={data} />
+
+            <View style={s.section}>
+              <SectionHeader title="Rain forecast" />
               {data.c.rain instanceof Error ? (
-                <Notice tone="error" icon="CloudOff" title="Couldn’t load the rain forecast.">
-                  Alerts and river levels may still be working.
-                </Notice>
+                <Notice title="Couldn’t load the rain forecast." detail="Alerts and river levels may still be working." onRetry={refresh} />
               ) : (
-                <RainCard rain={data.c.rain} where={place.kind === 'point' ? 'this spot' : `${seat} (county seat)`} />
+                <Card>
+                  <RainBars next24={data.c.rain.data.next24h_in} next48={data.c.rain.data.next48h_in} />
+                  <Txt variant="footnote" style={{ marginTop: space.m }}>
+                    {`For ${place.kind === 'point' ? 'this spot' : `${COUNTIES.find((x) => x.fips === place.fips)?.seat.name ?? 'the county seat'}`} · ${data.c.rain.source}. 2 inches or more in 24 hours (dashed line) raises flooding to Watch.`}
+                  </Txt>
+                </Card>
               )}
-            </Section>
+            </View>
 
-            <Section title={`Rivers and streams in ${county}`}>
-              <Txt style={{ marginBottom: space[1] }}>
-                <Txt style={{ fontFamily: font.bold }}>Gage height</Txt> is how high the water surface is at a USGS gauge, in feet. <Txt style={{ fontFamily: font.bold }}>Flood stage</Txt> is the height where the National Weather Service says flooding begins there. The tube beside each gauge shows the water against its flood stage (solid line) and action stage (dashed).
-              </Txt>
-              <Gauges data={data} fips={place.fips} county={county} />
-            </Section>
+            <QuickActions data={data} />
+            <Footer />
           </Animated.View>
         )}
-      </ScrollView>
+      </LargeTitleScroll>
     </Screen>
   );
 }
 
-function Gauges({ data, fips, county }: { data: Loaded; fips: string; county: string }) {
-  if (data.c.gauges instanceof Error) {
-    return (
-      <Notice tone="error" icon="CloudOff" title="Couldn’t load river levels from USGS.">
-        Alerts may still be working. You can also check waterdata.usgs.gov.
-      </Notice>
-    );
-  }
-  const list = data.c.gauges.data.filter((g) => g.county_fips === fips);
-  if (!list.length) return <Notice tone="empty" icon="Waves">{`There are no active USGS stream gauges in ${county}.`}</Notice>;
-  const rank = { major: 4, moderate: 3, minor: 2, action: 1 } as const;
-  list.sort((a, b) => (b.flood_category ? rank[b.flood_category] : 0) - (a.flood_category ? rank[a.flood_category] : 0) || a.name.localeCompare(b.name));
+/** "York County ▾": opens the county picker sheet. Shows a location icon when the place came from GPS. */
+function CountyPill() {
+  const { c } = useTheme();
+  const { place } = useAppState();
   return (
-    <>
-      {list.map((g, i) => (
-        <GaugeRow key={g.site_id} g={g} index={i} />
-      ))}
-      <SourceLine loaded={data.c.gauges} extra={data.c.gauges.source.startsWith('Scenario') ? 'Simulated or replayed readings.' : 'Provisional data: USGS may revise these readings.'} />
-    </>
+    <Pressable onPress={() => router.push('/county')} accessibilityRole="button" accessibilityLabel={`${placeLabel(place)}. Change place`} style={{ alignSelf: 'flex-start' }}>
+      <View style={[s.pill, { backgroundColor: c.surface, borderColor: c.hairline }]}>
+        <Icon name={place.kind === 'point' ? 'Navigation' : 'MapPin'} size={16} tint={c.accent} />
+        <Txt variant="headline">{placeLabel(place)}</Txt>
+        <Icon name="ChevronDown" size={16} tint={c.inkMuted} />
+      </View>
+      {place.kind === 'point' ? (
+        <Txt variant="footnote" style={{ marginTop: space.xs }}>
+          In {countyName(place.fips)} County
+        </Txt>
+      ) : null}
+    </Pressable>
   );
 }
 
-/** "About this spot" (FEMA zone + tract) or "About this county" (who lives here vs. the SC-5 average). */
-function PlaceFacts({ data }: { data: Loaded }) {
-  const { place } = useAppState();
-  const avg = (m: 'pct_65plus' | 'pct_no_vehicle' | 'pct_poverty') => districtAverage(data.tracts, m);
-  const inCounty = data.tracts.filter((t) => t.county_fips === place.fips);
-  const subject = place.kind === 'point' ? data.tract : null;
-  const here = (m: 'pct_65plus' | 'pct_no_vehicle' | 'pct_poverty', w: 'population' | 'households' = 'population') => (subject ? subject[m] : districtAverage(inCounty, m, w));
-  const showPeople = data.tracts.length > 0 && (place.kind === 'county' || subject);
-  if (!showPeople && place.kind === 'county') return null;
+/** "Live · 3 min ago" with a softly pulsing dot; "Simulated", "Offline", or "Some data missing" otherwise. */
+function LiveIndicator({ data }: { data: StatusData }) {
+  const { c } = useTheme();
+  const reduced = useMotionReduced();
+  const ping = useSharedValue(0);
+  const live = !data.c.simulated && !data.c.savedAt && data.overall.complete;
+  useEffect(() => {
+    if (live && !reduced) ping.value = withRepeat(withTiming(1, { duration: 2000, easing: easing.emphasized }), -1, false);
+  }, [live, reduced, ping]);
+  const ring = useAnimatedStyle(() => ({ opacity: 0.5 * (1 - ping.value), transform: [{ scale: 1 + 1.6 * ping.value }] }));
+  const label = data.c.simulated ? 'Simulated' : data.c.savedAt ? `Offline · from ${clockTime(data.c.savedAt)}` : live ? `Live · ${relativeTime(data.updatedAt)}` : 'Some data missing';
+  const dot = data.c.simulated ? c.inkFaint : data.c.savedAt || !live ? c.levels[1].fg : c.levels[0].fg;
   return (
-    <Section title={place.kind === 'point' ? 'About this spot' : 'About this county'}>
-      {place.kind === 'point' ? (
-        <View style={{ gap: space[0], marginBottom: space[3] }}>
-          <Txt variant="label">FEMA flood zone at this spot</Txt>
-          {data.zone instanceof Error ? (
-            <Txt>Couldn’t reach FEMA’s flood map right now.</Txt>
-          ) : data.zone === null ? (
-            <Txt>No digital FEMA flood map covers this spot.</Txt>
-          ) : (
-            <>
-              <Txt variant="subheading">Zone {data.zone.zone}</Txt>
-              <Txt>{describeZone(data.zone)}</Txt>
-            </>
-          )}
-          <Txt variant="meta">Long-term flood risk from FEMA maps, not current flooding, and not an official determination for a property.</Txt>
-        </View>
-      ) : null}
-      {showPeople ? (
-        <FactsTable
-          title={place.kind === 'point' ? 'People in this neighborhood (census tract)' : `People in ${countyName(place.fips)} County`}
-          rows={[
-            { label: 'Age 65 and older', here: here('pct_65plus'), avg: avg('pct_65plus') },
-            { label: 'Households without a car', here: here('pct_no_vehicle', 'households'), avg: avg('pct_no_vehicle') },
-            { label: 'Below the poverty line', here: here('pct_poverty'), avg: avg('pct_poverty') },
-          ]}
-        />
-      ) : null}
-    </Section>
+    <View style={s.live} accessible accessibilityLabel={label}>
+      <View style={{ width: 10, height: 10, alignItems: 'center', justifyContent: 'center' }}>
+        {live ? <Animated.View style={[s.dot, { position: 'absolute', backgroundColor: dot }, ring]} /> : null}
+        <View style={[s.dot, { backgroundColor: dot }]} />
+      </View>
+      <Txt variant="footnote" tone="muted">
+        {label}
+      </Txt>
+    </View>
   );
 }
+
+function Loading() {
+  // Placeholders shaped like the real content, so nothing jumps when it arrives.
+  return (
+    <View style={{ marginTop: space.l, gap: space.m }}>
+      <Skeleton height={248} radius={radius.lg} />
+      <Skeleton height={52} />
+      <Skeleton height={14} width="30%" style={{ marginTop: space.x3 }} />
+      <Skeleton height={60} />
+      <Skeleton height={60} />
+      <Skeleton height={60} />
+    </View>
+  );
+}
+
+function DoThisNow({ data }: { data: StatusData }) {
+  const { c } = useTheme();
+  const g = data.blocks[0];
+  const shelter = g.shelterInPlace && g.level >= 1;
+  return (
+    <View style={s.section}>
+      <SectionHeader title="Do this now" />
+      <View style={{ gap: space.s }}>
+        {shelter ? (
+          <Card style={{ flexDirection: 'row', gap: space.m }}>
+            <Icon name="House" size={22} />
+            <Txt style={{ flex: 1 }}>
+              <Txt variant="headline">Stay where you are and take shelter. </Txt>
+              For this kind of danger, driving away puts you at more risk, so this app doesn’t offer a route out.
+            </Txt>
+          </Card>
+        ) : null}
+        {g.doNow.map((step, i) => (
+          <ChecklistItem key={step} storageKey={`sc5ready.check.${g.hazard}.${g.level}.${i}`} text={step} number={i + 1} />
+        ))}
+      </View>
+      <Txt variant="caption" tone="muted" style={{ marginTop: space.xxl, marginBottom: space.s }}>
+        If it gets worse
+      </Txt>
+      {g.ifWorse.map((line) => (
+        <View key={line} style={s.bullet}>
+          <View style={[s.bulletDot, { backgroundColor: c.inkFaint }]} />
+          <Txt style={{ flex: 1 }}>{line}</Txt>
+        </View>
+      ))}
+      <Txt variant="caption" tone="muted" style={{ marginTop: space.l, marginBottom: space.s }}>
+        Check on others
+      </Txt>
+      <Txt>{g.checkOnOthers}</Txt>
+      <Txt variant="caption" tone="muted" style={{ marginTop: space.l }}>
+        Official guidance
+      </Txt>
+      {g.links.map((l, i) => (
+        <ListRow key={l.url} title={l.label} icon="ExternalLink" onPress={() => Linking.openURL(l.url)} last={i === g.links.length - 1} chevron={false} hint="Opens in your browser" />
+      ))}
+    </View>
+  );
+}
+
+function Alerts({ data }: { data: StatusData }) {
+  const { place } = useAppState();
+  return (
+    <View style={s.section}>
+      <SectionHeader title="Official alerts" />
+      {data.c.alerts instanceof Error || data.alertsHere === null ? (
+        <Notice title="Couldn’t load alerts from the National Weather Service." detail="Check official alerts at weather.gov/alerts." />
+      ) : data.alertsHere.length ? (
+        <Card style={{ paddingVertical: 0 }}>
+          {data.alertsHere.map((a, i) => (
+            <AlertRow key={a.id} a={a} index={i} last={i === data.alertsHere!.length - 1} />
+          ))}
+        </Card>
+      ) : (
+        <Card>
+          <Txt variant="callout">{`No active National Weather Service alerts for ${placeLabel(place)} right now.`}</Txt>
+          <Txt variant="footnote" style={{ marginTop: space.xs }}>{`Checked ${clockTime(data.c.alerts.fetched_at)} · ${data.c.alerts.source}`}</Txt>
+        </Card>
+      )}
+    </View>
+  );
+}
+
+function Rivers({ data }: { data: StatusData }) {
+  const { place } = useAppState();
+  const county = `${countyName(place.fips)} County`;
+  if (data.c.gauges instanceof Error) {
+    return (
+      <View style={s.section}>
+        <SectionHeader title="Rivers near you" />
+        <Notice title="Couldn’t load river levels from USGS." detail="Alerts may still be working. You can also check waterdata.usgs.gov." />
+      </View>
+    );
+  }
+  const list = data.c.gauges.data.filter((g) => g.county_fips === place.fips);
+  const rank = { major: 4, moderate: 3, minor: 2, action: 1 } as const;
+  list.sort((a, b) => (b.flood_category ? rank[b.flood_category] : 0) - (a.flood_category ? rank[a.flood_category] : 0) || Number(b.has_official_stage) - Number(a.has_official_stage) || a.name.localeCompare(b.name));
+  return (
+    <View style={s.section}>
+      <SectionHeader title="Rivers near you" />
+      {list.length ? (
+        <>
+          <Card style={{ paddingVertical: 0 }}>
+            {list.map((g, i) => (
+              <GaugeRow key={g.site_id} g={g} index={i} last={i === list.length - 1} />
+            ))}
+          </Card>
+          <Txt variant="footnote" style={{ marginTop: space.s }}>
+            {`Gage height is how high the water is, in feet. The tube shows it against action stage (dashed) and flood stage (solid). ${data.c.gauges.source.startsWith('Scenario') ? 'Simulated or replayed readings.' : 'Provisional USGS data: readings may be revised.'}`}
+          </Txt>
+        </>
+      ) : (
+        <EmptyState title={`There are no river gauges in ${county}.`} detail="Official alerts and the rain forecast still count. Open the map to see gauges in nearby counties." action="Open the map" onAction={() => router.navigate('/map')} />
+      )}
+    </View>
+  );
+}
+
+function QuickActions({ data }: { data: StatusData }) {
+  const canLeave = routeAllowed(data.blocks);
+  return (
+    <View style={[s.section, { gap: space.s }]}>
+      {canLeave ? <Button label="Plan a route out" icon="Signpost" kind="primary" onPress={() => router.navigate('/route')} /> : null}
+      <View style={{ flexDirection: 'row', gap: space.s }}>
+        <Button label="Report a problem" icon="Megaphone" onPress={() => router.navigate('/report')} style={{ flex: 1 }} compact />
+        <Button label="Open map" icon="Map" onPress={() => router.navigate('/map')} style={{ flex: 1 }} compact />
+      </View>
+    </View>
+  );
+}
+
+function Footer() {
+  const { c } = useTheme();
+  return (
+    <View style={[s.footer, { borderTopColor: c.hairline }]}>
+      <Pressable onPress={() => Linking.openURL('tel:911')} accessibilityRole="button" accessibilityLabel="Call 911" style={{ alignSelf: 'flex-start' }}>
+        <View style={s.call}>
+          <Icon name="Phone" size={18} tint={c.levels[3].fg} />
+          <Txt variant="headline" color={c.levels[3].fg}>
+            Call 911
+          </Txt>
+        </View>
+      </Pressable>
+      <Txt variant="footnote">Not an official warning system. Follow instructions from local officials. Sources: NWS, USGS, FEMA, Census.</Txt>
+      <Pressable onPress={() => router.navigate('/more')} accessibilityRole="link" accessibilityLabel="How it works" style={{ alignSelf: 'flex-start' }}>
+        <Txt variant="footnote" tone="accent" style={{ paddingVertical: space.s }}>
+          How it works ›
+        </Txt>
+      </Pressable>
+    </View>
+  );
+}
+
+const s = StyleSheet.create({
+  section: { marginTop: space.x3 },
+  pill: { flexDirection: 'row', alignItems: 'center', gap: space.s, minHeight: 44, paddingHorizontal: space.l, borderWidth: 1, borderRadius: radius.pill },
+  live: { flexDirection: 'row', alignItems: 'center', gap: space.s },
+  dot: { width: 8, height: 8, borderRadius: 4 },
+  bullet: { flexDirection: 'row', gap: space.m, marginBottom: space.s },
+  bulletDot: { width: 5, height: 5, borderRadius: 3, marginTop: 10 },
+  footer: { marginTop: space.x4, paddingTop: space.l, borderTopWidth: StyleSheet.hairlineWidth, gap: space.s },
+  call: { flexDirection: 'row', alignItems: 'center', gap: space.s, minHeight: 44 },
+});

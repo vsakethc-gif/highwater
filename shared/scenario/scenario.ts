@@ -83,6 +83,9 @@ export function findScenario(id: string | null): ScenarioInfo | null {
   return SCENARIOS.find((s) => s.id === id) ?? null;
 }
 
+/** True for the replays built from real archived data (the Helene scenarios). */
+export const isReplay = (id: string | null): boolean => id !== null && id in REPLAYS;
+
 /** The full scenario (alerts, gauges, rain). Replays are downloaded the first time they're used. */
 export async function loadScenario(id: string | null): Promise<ScenarioFile | null> {
   if (id === null) return null;

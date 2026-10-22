@@ -1,59 +1,51 @@
 /**
- * motion.ts — the app's motion system: every animation uses these values, never one-off numbers.
+ * motion.ts — the motion system (MOBILE_BRIEF.md section 5). Every animation uses these values.
  *
- * How it stays smooth: Reanimated runs animations on the phone's UI thread (the part that draws
- * the screen), not the JavaScript thread (the part that runs our app logic). So even when the app
- * is busy loading data, animations keep running at 60 frames per second.
+ * Why it stays smooth: Reanimated runs animations on the phone's UI thread (the part that draws
+ * the screen) instead of the JavaScript thread (the part running our app logic and loading data).
+ * So even while river data loads, the status card's color change and the water rising stay at 60 fps.
  *
- * Rules: animate only position/scale (transform) and see-through-ness (opacity); short and calm;
- * nothing loops forever except the slow Danger pulse; and when the phone's "Reduce Motion"
- * setting is on, movement becomes a simple fade (see useMotion()).
+ * Rules: animate only transform and opacity; entrances play once per meaningful event; no bounce on
+ * emergency content; and when the phone's Reduce Motion setting is on, movement becomes a short fade
+ * (ReduceMotion.System on every entrance, plus useMotionReduced() for our own effects).
  */
-import * as Haptics from 'expo-haptics';
 import { Easing, FadeIn, FadeInDown, FadeOut, ReduceMotion, useReducedMotion, type WithSpringConfig } from 'react-native-reanimated';
-import type { Level } from '../../../shared/hazards/levels';
 
-export const duration = { fast: 150, base: 250, slow: 400 } as const;
+export const duration = { instant: 0, micro: 120, fast: 200, base: 280, slow: 400, deliberate: 600 } as const;
 
 export const easing = {
-  /** Standard: quick start, gentle stop. */
   standard: Easing.bezier(0.2, 0, 0, 1),
-  /** Entrances: things arrive fast and settle. */
-  out: Easing.bezier(0.16, 1, 0.3, 1),
+  emphasized: Easing.bezier(0.3, 0, 0, 1),
+  exit: Easing.bezier(0.4, 0, 1, 1),
 };
 
 export const spring = {
-  /** Sheets, cards settling into place. */
-  gentle: { damping: 18, stiffness: 140, mass: 1 } satisfies WithSpringConfig,
-  /** Presses, tab indicator, small pops. */
-  snappy: { damping: 20, stiffness: 320, mass: 0.8 } satisfies WithSpringConfig,
+  /** Press feedback, toggles, chips. */
+  snappy: { damping: 18, stiffness: 260, mass: 1 } satisfies WithSpringConfig,
+  /** Cards entering, layout changes. */
+  gentle: { damping: 20, stiffness: 140, mass: 1 } satisfies WithSpringConfig,
+  /** Bottom sheets and drawers. */
+  sheet: { damping: 26, stiffness: 220, mass: 1 } satisfies WithSpringConfig,
+  /** Markers appearing, the success check. Use rarely. */
+  pop: { damping: 12, stiffness: 300, mass: 0.8 } satisfies WithSpringConfig,
 };
 
-/** Delay between items in a list as they arrive (only on first appearance). */
+/** List stagger: 40 ms per item, only the first 8 items are staggered. */
 export const STAGGER_MS = 40;
+export const STAGGER_MAX = 8;
 
-/** Entrance for the i-th item of a list: fade and rise, a little after the one before. */
+/** Entrance for the i-th item of a list: fade and rise, a little after the one before (once, on mount). */
 export function listItemEntering(i: number) {
   return FadeInDown.duration(duration.base)
-    .delay(Math.min(i, 8) * STAGGER_MS)
-    .easing(easing.out)
+    .delay(Math.min(i, STAGGER_MAX) * STAGGER_MS)
+    .easing(easing.emphasized)
     .reduceMotion(ReduceMotion.System);
 }
 
 export const fadeIn = FadeIn.duration(duration.base).reduceMotion(ReduceMotion.System);
 export const fadeOut = FadeOut.duration(duration.fast).reduceMotion(ReduceMotion.System);
+/** Emergency content: a fast fade only, never a bounce or a delay. */
+export const emergencyFade = FadeIn.duration(duration.fast);
 
-/** Light tick for primary actions. */
-export function tapHaptic(): void {
-  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-}
-
-/** A short haptic when the status level changes: stronger for more serious levels. */
-export function levelHaptic(level: Level): void {
-  if (level === 0) return;
-  const style = level === 1 ? Haptics.ImpactFeedbackStyle.Light : level === 2 ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Heavy;
-  Haptics.impactAsync(style).catch(() => {});
-}
-
-/** True when the phone's "Reduce Motion" setting is on: components then skip movement and loops. */
+/** True when the phone's "Reduce Motion" setting is on: skip movement, loops, and wave effects. */
 export const useMotionReduced = useReducedMotion;

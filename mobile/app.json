@@ -41,7 +41,8 @@
         {
           "locationWhenInUsePermission": "Used to show hazards and routes near you. Your location is not stored."
         }
-      ]
+      ],
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": true,

@@ -47,7 +47,7 @@ function TabButton({ name, focused, onPress }: { name: string; focused: boolean;
   );
 }
 
-export function TabBar({ state, navigateToTab }: BottomTabBarProps) {
+export function TabBar({ state, descriptors, navigateToTab }: BottomTabBarProps) {
   const { c, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const [width, setWidth] = useState(0);
@@ -58,11 +58,14 @@ export function TabBar({ state, navigateToTab }: BottomTabBarProps) {
     const sub = AccessibilityInfo.addEventListener('reduceTransparencyChanged', setSolid);
     return () => sub.remove();
   }, []);
-  const tabWidth = width / state.routes.length;
+  // Tabs switched off in features.ts (href: null) are left out of the bar.
+  const visible = state.routes.filter((r) => (descriptors[r.key]?.options as { href?: unknown } | undefined)?.href !== null);
+  const tabWidth = width / Math.max(1, visible.length);
+  const visibleIndex = Math.max(0, visible.findIndex((r) => r.key === state.routes[state.index]?.key));
   const x = useSharedValue(0);
   useEffect(() => {
-    x.value = withSpring(state.index * tabWidth, spring.snappy);
-  }, [state.index, tabWidth, x]);
+    x.value = withSpring(visibleIndex * tabWidth, spring.snappy);
+  }, [visibleIndex, tabWidth, x]);
   const indicator = useAnimatedStyle(() => ({ transform: [{ translateX: x.value }] }));
 
   const content = (
@@ -72,13 +75,13 @@ export function TabBar({ state, navigateToTab }: BottomTabBarProps) {
           <View style={[s.indicatorBar, { backgroundColor: c.accent }]} />
         </Animated.View>
       ) : null}
-      {state.routes.map((route, i) => (
+      {visible.map((route) => (
         <TabButton
           key={route.key}
           name={route.name}
-          focused={state.index === i}
+          focused={state.routes[state.index]?.key === route.key}
           onPress={() => {
-            if (state.index !== i) {
+            if (state.routes[state.index]?.key !== route.key) {
               haptic.select();
               navigateToTab(route.key);
             }

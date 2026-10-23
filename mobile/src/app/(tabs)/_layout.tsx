@@ -7,6 +7,7 @@ import { Redirect } from 'expo-router/build/link/Redirect';
 import { Tabs } from 'expo-router/js-tabs';
 import { platform } from '../../../../shared/platform';
 import { TabBar } from '../../components/TabBar';
+import { TABS_ON } from '../../features';
 import { ONBOARDED_KEY } from '../onboarding';
 
 export default function TabsLayout() {
@@ -14,9 +15,10 @@ export default function TabsLayout() {
   return (
     <Tabs tabBar={(props) => <TabBar {...props} />} screenOptions={{ headerShown: false }}>
       <Tabs.Screen name="index" options={{ title: 'Status' }} />
-      <Tabs.Screen name="map" options={{ title: 'Map' }} />
-      <Tabs.Screen name="route" options={{ title: 'Route' }} />
-      <Tabs.Screen name="report" options={{ title: 'Report' }} />
+      {/* href: null hides a tab that's switched off in features.ts */}
+      <Tabs.Screen name="map" options={{ title: 'Map', href: TABS_ON.map ? undefined : null }} />
+      <Tabs.Screen name="route" options={{ title: 'Route', href: TABS_ON.route ? undefined : null }} />
+      <Tabs.Screen name="report" options={{ title: 'Report', href: TABS_ON.report ? undefined : null }} />
       <Tabs.Screen name="more" options={{ title: 'More' }} />
     </Tabs>
   );

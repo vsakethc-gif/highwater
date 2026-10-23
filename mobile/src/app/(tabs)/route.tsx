@@ -1,13 +1,432 @@
-import { ComingSoon } from '../../components/ComingSoon';
+/**
+ * Route tab (brief section 10 and MOBILE_BRIEF 8.6) — a lower-exposure way out, never a "safe" one.
+ *
+ *   From: your location, or the place you picked on Status.
+ *   To:   the nearest open shelter (FEMA's list), the nearest town center outside the active
+ *         warning areas, or a ZIP code / address you type.
+ *   Then the shared planner (the same code the website uses) asks our Worker for routes, goes around
+ *   warning areas it can, and scores each route. The map shows up to three; swipe the cards to compare.
+ *
+ * For shelter-in-place hazards (tornado, severe storm, extreme cold) there is no planner at all:
+ * leaving is the wrong advice, so the tab shows "stay where you are" guidance instead.
+ */
+import { useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
+import { Keyboard, Linking, Platform, ScrollView, Share, StyleSheet, Switch, TextInput, useWindowDimensions, View } from 'react-native';
+import MapView, { Marker, Polygon, Polyline } from 'react-native-maps';
+import Animated, { FadeIn } from 'react-native-reanimated';
+import * as Location from 'expo-location';
+import { COUNTIES, COUNTY_EM, SCEMD_COUNTY_DIRECTORY } from '../../../../shared/config';
+import { dataOrNull } from '../../../../shared/data/conditions';
+import { loadStatic } from '../../../../shared/data/static';
+import { HAZARDS } from '../../../../shared/hazards/hazards';
+import { routeAllowed } from '../../../../shared/guidance/guidance';
+import { countyName, placeFromZip } from '../../../../shared/places';
+import { fetchReports, reportsAvailable, simulatedReports, type Report } from '../../../../shared/reports/client';
+import { buildAvoidPlan, type LonLat, type PolygonCoords } from '../../../../shared/routing/avoid';
+import { awayFromWarning, byDistance, fetchOpenShelters, type Shelter, type Town } from '../../../../shared/routing/destinations';
+import { appleMapsLink, googleMapsLink } from '../../../../shared/routing/links';
+import { planRoutes, searchAddress, type RoutePlan, type RouteResult } from '../../../../shared/routing/plan';
+import { clockTime, relativeTime } from '../../../../shared/time';
+import { Icon } from '../../components/Icon';
+import { googleDark, googleLight } from '../../components/map/mapStyle';
+import { Button, Pressable } from '../../components/ui/Button';
+import { SegmentedControl } from '../../components/ui/Chips';
+import { Banner, Notice, Skeleton } from '../../components/ui/Feedback';
+import { Card, SectionHeader } from '../../components/ui/Layout';
+import { LargeTitleScroll, Screen } from '../../components/ui/Screen';
+import { Txt } from '../../components/ui/Text';
+import { useStatus, type StatusData } from '../../hooks/useStatus';
+import { useAppState } from '../../state';
+import { font, haptic, listItemEntering, radius, SCREEN_PAD, space, tapTarget, type, useTheme } from '../../theme';
 
-/** Route tab: the lower-exposure route planner arrives Wednesday. */
+type Spot = { point: LonLat; label: string };
+type Choice = 'shelter' | 'away' | 'place';
+
+const SAFETY = 'Routes can’t see every closed or flooded road. Never drive through water. If officials give evacuation directions, follow theirs instead. Call 911 if you are in danger.';
+
 export default function RouteScreen() {
+  const { data } = useStatus();
+  const allowed = data ? routeAllowed(data.blocks) : true;
   return (
-    <ComingSoon
-      icon="Signpost"
-      title="Route"
-      body="Planning a way out that avoids active warning areas is coming in a later update. The website’s route planner works now. Routes can’t see every closed or flooded road: never drive through water, and follow officials’ directions."
-      webPath="#/route"
-    />
+    <Screen>
+      <LargeTitleScroll title="Route">
+        <View style={{ gap: space.l, marginTop: space.s }}>
+          <SafetyCard />
+          {!data ? <Skeleton height={220} /> : allowed ? <Planner data={data} /> : <StayPut hazard={HAZARDS[(data.overall.active.find((h) => !HAZARDS[h.hazard].leaveable) ?? data.overall.active[0])?.hazard ?? 'tornado'].label} />}
+        </View>
+      </LargeTitleScroll>
+    </Screen>
   );
 }
+
+function SafetyCard() {
+  const { c } = useTheme();
+  return (
+    <View style={[s.safety, { backgroundColor: c.levels[1].bg, borderLeftColor: c.levels[1].fg }]}>
+      <Txt variant="callout" color={c.ink}>
+        {SAFETY}
+      </Txt>
+      <Pressable onPress={() => Linking.openURL('tel:911')} accessibilityRole="button" accessibilityLabel="Call 911" style={{ alignSelf: 'flex-start' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.xs, minHeight: tapTarget }}>
+          <Icon name="Phone" size={16} tint={c.levels[3].fg} />
+          <Txt variant="callout" color={c.levels[3].fg} style={{ fontFamily: font.bold }}>
+            Call 911
+          </Txt>
+        </View>
+      </Pressable>
+    </View>
+  );
+}
+
+/** Shelter-in-place hazards: no route planner, on purpose. */
+function StayPut({ hazard }: { hazard: string }) {
+  return (
+    <Card style={{ gap: space.s }}>
+      <Icon name="House" size={28} />
+      <Txt variant="title3" accessibilityRole="header">
+        Stay where you are and take shelter.
+      </Txt>
+      <Txt variant="body" tone="muted">
+        {`For ${hazard.toLowerCase()}, being on the road is more dangerous than staying inside a sturdy building. Go to the lowest floor, into an interior room away from windows. The route planner comes back when this alert ends.`}
+      </Txt>
+    </Card>
+  );
+}
+
+function Planner({ data }: { data: StatusData }) {
+  const { c } = useTheme();
+  const { place, scenario } = useAppState();
+  const alerts = useMemo(() => dataOrNull(data.c.alerts) ?? [], [data]);
+  const avoidPolys = useMemo(() => buildAvoidPlan(alerts).sources.flatMap((x) => x.polygons), [alerts]);
+
+  const placeStart = (): Spot => {
+    if (place.kind === 'point') return { point: [place.lon, place.lat], label: place.label };
+    const seat = COUNTIES.find((k) => k.fips === place.fips)!.seat;
+    return { point: [seat.lon, seat.lat], label: `${seat.name} (${countyName(place.fips)} County seat)` };
+  };
+  const [start, setStart] = useState<Spot>(placeStart);
+  useEffect(() => setStart(placeStart()), [place]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const [choice, setChoice] = useState<Choice>('shelter');
+  const [shelters, setShelters] = useState<Shelter[] | Error | null>(null);
+  const [towns, setTowns] = useState<Town[]>([]);
+  const [typed, setTyped] = useState('');
+  const [placeDest, setPlaceDest] = useState<Spot | null>(null);
+  const [message, setMessage] = useState('');
+  const [avoidFlooded, setAvoidFlooded] = useState(true);
+  const [plan, setPlan] = useState<RoutePlan | Error | null>(null);
+  const [planning, setPlanning] = useState(false);
+  const abort = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    fetchOpenShelters(AbortSignal.timeout(12_000)).then(setShelters, (e: Error) => setShelters(e));
+    loadStatic<Town[]>('towns.json').then(setTowns, () => setTowns([]));
+    return () => abort.current?.abort();
+  }, []);
+
+  // The destination follows the choice and the start point.
+  const nearestShelter = Array.isArray(shelters) && shelters.length ? byDistance(shelters, start.point)[0] : null;
+  const awayTown = choice === 'away' ? awayFromWarning(towns, start.point, avoidPolys) : null;
+  const dest: Spot | null =
+    choice === 'shelter' ? (nearestShelter ? { point: [nearestShelter.lon, nearestShelter.lat], label: `${nearestShelter.name} (open shelter)` } : null)
+    : choice === 'away' ? (awayTown ? { point: [awayTown.lon, awayTown.lat], label: `${awayTown.name} (town center outside the warning area)` } : null)
+    : placeDest;
+
+  useEffect(() => setPlan(null), [start, choice, placeDest]);
+
+  const useMine = async () => {
+    setMessage('');
+    const perm = await Location.requestForegroundPermissionsAsync();
+    if (perm.status !== 'granted') return setMessage('Location is off. Using the place you picked on Status instead.');
+    const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+    setStart({ point: [pos.coords.longitude, pos.coords.latitude], label: 'My location' });
+  };
+
+  const findPlace = async () => {
+    Keyboard.dismiss();
+    const q = typed.trim();
+    if (!q) return;
+    setMessage('');
+    if (/^\d{5}$/.test(q)) {
+      const r = await placeFromZip(q);
+      if (typeof r === 'string') return setMessage(r);
+      if (r.kind === 'point') setPlaceDest({ point: [r.lon, r.lat], label: r.label });
+      return;
+    }
+    try {
+      const matches = await searchAddress(q, AbortSignal.timeout(15_000));
+      if (!matches.length) return setMessage('No match for that address. Try adding the city, or use a ZIP code.');
+      setPlaceDest({ point: [matches[0].lon, matches[0].lat], label: matches[0].label });
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : 'Address search didn’t work. Try a ZIP code.');
+    }
+  };
+
+  const go = async () => {
+    if (!dest) return;
+    abort.current?.abort();
+    const ctl = new AbortController();
+    abort.current = ctl;
+    setPlanning(true);
+    setPlan(null);
+    try {
+      const reports: Report[] = scenario ? simulatedReports() : reportsAvailable() ? await fetchReports().catch(() => []) : [];
+      const result = await planRoutes(start.point, dest.point, alerts, ctl.signal, { reports, avoidFlooded });
+      if (ctl.signal.aborted) return;
+      haptic.success();
+      setPlan(result);
+    } catch (e) {
+      if (ctl.signal.aborted) return;
+      haptic.error();
+      setPlan(e instanceof Error ? e : new Error('Routing is unavailable right now.'));
+    } finally {
+      if (!ctl.signal.aborted) setPlanning(false);
+    }
+  };
+
+  const shelterHelp =
+    shelters instanceof Error ? 'Couldn’t load FEMA’s shelter list right now.'
+    : shelters === null ? 'Checking FEMA’s list…'
+    : shelters.length ? `${shelters.length} open in or near SC-5 · checked ${clockTime(shelters[0].checked_at)}`
+    : 'No shelters are listed as open right now.';
+
+  return (
+    <View style={{ gap: space.l }}>
+      {/* From */}
+      <View style={{ gap: space.s }}>
+        <SectionHeader title="From" />
+        <Card style={{ flexDirection: 'row', alignItems: 'center', gap: space.m }}>
+          <Icon name="CircleDot" tint={c.accent} />
+          <Txt variant="headline" style={{ flex: 1 }} numberOfLines={2}>
+            {start.label}
+          </Txt>
+          <Button label="My location" icon="LocateFixed" compact onPress={useMine} />
+        </Card>
+      </View>
+
+      {/* To */}
+      <View style={{ gap: space.s }}>
+        <SectionHeader title="To" />
+        <SegmentedControl
+          label="Destination"
+          value={choice}
+          onChange={setChoice}
+          options={[
+            { value: 'shelter', label: 'Shelter' },
+            { value: 'away', label: 'Away' },
+            { value: 'place', label: 'A place' },
+          ]}
+        />
+        {choice === 'shelter' ? (
+          <View style={{ gap: space.s }}>
+            <Txt variant="footnote">{shelterHelp}</Txt>
+            {Array.isArray(shelters) && !shelters.length ? (
+              <Card style={{ gap: space.s }}>
+                <Txt variant="callout" tone="muted">
+                  Shelters usually open only when officials expect people to need them. Your county emergency management office announces them.
+                </Txt>
+                <Button label={`${countyName(place.fips)} County Emergency Management`} icon="ExternalLink" compact onPress={() => Linking.openURL(COUNTY_EM[place.fips] ?? SCEMD_COUNTY_DIRECTORY)} />
+              </Card>
+            ) : null}
+            {shelters instanceof Error ? <Button label="All SC county emergency offices" icon="ExternalLink" compact onPress={() => Linking.openURL(SCEMD_COUNTY_DIRECTORY)} /> : null}
+          </View>
+        ) : null}
+        {choice === 'away' && !avoidPolys.length ? <Txt variant="footnote">No active warning areas with a drawn boundary right now, so there’s nothing to get away from.</Txt> : null}
+        {choice === 'away' && avoidPolys.length && !awayTown ? <Txt variant="footnote">We couldn’t find a town center outside the warning area. Choose a place instead.</Txt> : null}
+        {choice === 'place' ? (
+          <View style={[s.input, { backgroundColor: c.surfaceSunken }]}>
+            <Icon name="Search" size={18} tint={c.inkMuted} />
+            <TextInput
+              value={typed}
+              onChangeText={setTyped}
+              placeholder="ZIP code or street address"
+              placeholderTextColor={c.inkFaint}
+              returnKeyType="search"
+              onSubmitEditing={findPlace}
+              accessibilityLabel="Destination ZIP code or address"
+              style={[type.body, { flex: 1, color: c.ink, minHeight: tapTarget }]}
+            />
+            {typed.trim() ? <Button label="Find" kind="text" compact onPress={findPlace} /> : null}
+          </View>
+        ) : null}
+        {dest ? (
+          <Animated.View entering={FadeIn}>
+            <Card style={{ flexDirection: 'row', alignItems: 'center', gap: space.m }}>
+              <Icon name="MapPin" tint={c.accent} />
+              <Txt variant="headline" style={{ flex: 1 }} numberOfLines={2}>
+                {dest.label}
+              </Txt>
+            </Card>
+          </Animated.View>
+        ) : null}
+        {message ? <Txt variant="footnote" color={c.levels[2].fg}>{message}</Txt> : null}
+      </View>
+
+      <View style={s.toggle}>
+        <View style={{ flex: 1 }}>
+          <Txt variant="callout">Avoid community-reported flooded roads</Txt>
+          <Txt variant="footnote">These reports are unverified.</Txt>
+        </View>
+        <Switch value={avoidFlooded} onValueChange={setAvoidFlooded} trackColor={{ true: c.accent, false: c.hairline }} accessibilityLabel="Avoid community-reported flooded roads" />
+      </View>
+
+      <Button label="Plan lower-exposure routes" icon="Navigation" kind="primary" loading={planning} disabled={!dest} onPress={go} />
+
+      {plan instanceof Error ? <Notice title="Routing is unavailable right now." detail={`${plan.message} Use the official evacuation routes from your county, and follow officials’ directions.`} onRetry={go} /> : null}
+      {plan && !(plan instanceof Error) && dest ? <Results plan={plan} start={start} dest={dest} avoidPolys={avoidPolys} /> : null}
+    </View>
+  );
+}
+
+const fmtMin = (sec: number) => {
+  const m = Math.round(sec / 60);
+  return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${m % 60} min`;
+};
+const fmtMi = (m: number) => `${(m / 1609.34).toFixed(1)} mi`;
+
+function Results({ plan, start, dest, avoidPolys }: { plan: RoutePlan; start: Spot; dest: Spot; avoidPolys: PolygonCoords[] }) {
+  const { c, isDark } = useTheme();
+  const { width } = useWindowDimensions();
+  const map = useRef<ComponentRef<typeof MapView>>(null);
+  const best = Math.max(0, plan.routes.findIndex((r) => r.isLowestExposure));
+  const [sel, setSel] = useState(best);
+  const [showSteps, setShowSteps] = useState(false);
+  const route = plan.routes[sel];
+  const fastest = plan.routes.find((r) => r.isFastest) ?? plan.routes[0];
+  const cardW = width - SCREEN_PAD * 2 - 32;
+
+  const fit = () => {
+    const coords = plan.routes.flatMap((r) => r.geometry.coordinates).filter((_, i) => i % 5 === 0).map(([lon, lat]) => ({ latitude: lat, longitude: lon }));
+    map.current?.fitToCoordinates(coords, { edgePadding: { top: 40, bottom: 40, left: 40, right: 40 }, animated: true });
+  };
+
+  if (!plan.routes.length) return <Notice title="No route found." detail="Try a different destination, or follow officials’ evacuation routes." />;
+
+  const share = () =>
+    Share.share({
+      message: `Lower-exposure route from ${start.label} to ${dest.label}: ${fmtMin(route.duration_s)}, ${fmtMi(route.distance_m)}. Open in Google Maps: ${googleMapsLink(start.point, dest.point)} (Google Maps doesn’t avoid our hazard areas.) ${SAFETY}`,
+    });
+
+  return (
+    <Animated.View entering={FadeIn} style={{ gap: space.l }}>
+      {plan.provider === 'osrm-fallback' ? <Banner kind="stale" title="This route does not avoid hazard areas." detail="Our main routing service is unavailable, so this comes from a backup that can’t see warnings." /> : null}
+      {plan.notices.filter((n) => plan.provider !== 'osrm-fallback' || !n.startsWith('This route does not')).map((n) => (
+        <Banner key={n} kind="info" title={n} />
+      ))}
+      {plan.cannotAvoid.length ? <Banner kind="stale" title="Some warning areas couldn’t be avoided." detail={plan.cannotAvoid.join(', ')} /> : null}
+
+      <View style={[s.map, { borderColor: c.hairline }]}>
+        <MapView
+          ref={map}
+          style={StyleSheet.absoluteFill}
+          onMapReady={fit}
+          mapType={Platform.OS === 'ios' ? 'mutedStandard' : 'standard'}
+          customMapStyle={Platform.OS === 'android' ? (isDark ? googleDark : googleLight) : undefined}
+          userInterfaceStyle={isDark ? 'dark' : 'light'}
+          rotateEnabled={false}
+          pitchEnabled={false}
+          accessibilityLabel="Map of the planned routes. The route cards and steps below describe the same routes."
+        >
+          {avoidPolys.map((poly, i) => (
+            <Polygon key={`a${i}`} coordinates={poly[0].map(([lon, lat]) => ({ latitude: lat, longitude: lon }))} fillColor={c.levels[3].fg + '22'} strokeColor={c.levels[3].fg} strokeWidth={1.5} />
+          ))}
+          {plan.routes.map((r, i) =>
+            i === sel ? null : <Polyline key={r.id} coordinates={r.geometry.coordinates.map(([lon, lat]) => ({ latitude: lat, longitude: lon }))} strokeColor={c.inkFaint} strokeWidth={4} tappable onPress={() => setSel(i)} />,
+          )}
+          <Polyline key={`sel-${route.id}`} coordinates={route.geometry.coordinates.map(([lon, lat]) => ({ latitude: lat, longitude: lon }))} strokeColor={c.accent} strokeWidth={6} zIndex={10} />
+          <Marker coordinate={{ latitude: start.point[1], longitude: start.point[0] }} title="Start" pinColor="blue" />
+          <Marker coordinate={{ latitude: dest.point[1], longitude: dest.point[0] }} title={dest.label} />
+        </MapView>
+      </View>
+
+      <ScrollView horizontal snapToInterval={cardW + space.m} decelerationRate="fast" showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.m, paddingRight: space.l }} style={{ marginHorizontal: -SCREEN_PAD }} contentInset={{ left: SCREEN_PAD }} contentOffset={{ x: -SCREEN_PAD, y: 0 }}>
+        {Platform.OS === 'android' ? <View style={{ width: SCREEN_PAD - space.m }} /> : null}
+        {plan.routes.map((r, i) => (
+          <RouteCard key={r.id} r={r} index={i} width={cardW} selected={i === sel} extra={r.duration_s - fastest.duration_s} onPress={() => { haptic.select(); setSel(i); }} />
+        ))}
+      </ScrollView>
+
+      <Txt variant="footnote">{`Planned ${relativeTime(plan.planned_at)} · alerts, shelters and reports as of then · routing by ${plan.provider === 'ors' ? 'OpenRouteService' : 'OSRM (backup)'}`}</Txt>
+
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.s }}>
+        <Button label="Google Maps" icon="ExternalLink" compact onPress={() => Linking.openURL(googleMapsLink(start.point, dest.point))} />
+        <Button label="Apple Maps" icon="ExternalLink" compact onPress={() => Linking.openURL(appleMapsLink(start.point, dest.point))} />
+        <Button label="Share" icon="Share2" compact onPress={share} />
+      </View>
+      <Txt variant="footnote">Google Maps and Apple Maps don’t know about our warning areas and may pick a different road.</Txt>
+
+      <Card style={{ paddingVertical: 0 }}>
+        <Pressable onPress={() => setShowSteps(!showSteps)} accessibilityRole="button" accessibilityState={{ expanded: showSteps }}>
+          <View style={s.stepsHead}>
+            <Txt variant="headline" style={{ flex: 1 }}>{`Turn-by-turn steps (${route.steps.length})`}</Txt>
+            <Icon name={showSteps ? 'ChevronDown' : 'ChevronRight'} tint={c.inkMuted} />
+          </View>
+        </Pressable>
+        {showSteps
+          ? route.steps.map((st, i) => (
+              <View key={i} style={[s.step, { borderTopColor: c.hairline }]}>
+                <Txt variant="footnote" style={{ width: 24, fontVariant: ['tabular-nums'] }}>{`${i + 1}.`}</Txt>
+                <Txt variant="callout" style={{ flex: 1 }}>{st.instruction}</Txt>
+                {st.distance_m > 0 ? <Txt variant="footnote" style={{ fontVariant: ['tabular-nums'] }}>{fmtMi(st.distance_m)}</Txt> : null}
+              </View>
+            ))
+          : null}
+      </Card>
+    </Animated.View>
+  );
+}
+
+function RouteCard({ r, index, width, selected, extra, onPress }: { r: RouteResult; index: number; width: number; selected: boolean; extra: number; onPress: () => void }) {
+  const { c } = useTheme();
+  const tag = r.isLowestExposure ? 'Lower-exposure route' : r.isFastest ? 'Fastest route' : 'Alternative';
+  const rows: [string, string, boolean][] = [
+    ['Active warning areas entered', String(r.alert_area_intersections), r.alert_area_intersections > 0],
+    ['Miles inside warning areas', r.miles_in_warning.toFixed(1), r.miles_in_warning > 0],
+    ['FEMA flood-zone crossings', r.flood_zone_crossings === null ? 'Unknown' : String(r.flood_zone_crossings), (r.flood_zone_crossings ?? 0) > 0],
+    ['Low dips (water can collect)', r.low_dips === null ? 'Unknown' : String(r.low_dips), (r.low_dips ?? 0) > 0],
+    ['Unverified reports nearby', String(r.nearby_unverified_reports), r.nearby_unverified_reports > 0],
+  ];
+  return (
+    <Animated.View entering={listItemEntering(index)}>
+      <Pressable onPress={onPress} accessibilityRole="button" accessibilityState={{ selected }} accessibilityLabel={`${tag}, ${fmtMin(r.duration_s)}, ${fmtMi(r.distance_m)}`} scaleTo={0.98}>
+        <View style={[s.card, { width, backgroundColor: c.surface, borderColor: selected ? c.accent : c.hairline, borderWidth: selected ? 2 : 1 }]}>
+          <Txt variant="footnote" tone={selected ? 'accent' : 'muted'} style={{ fontFamily: font.bold, textTransform: 'uppercase', letterSpacing: 0.6 }}>
+            {tag}
+          </Txt>
+          <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: space.s }}>
+            <Txt variant="numberL">{fmtMin(r.duration_s)}</Txt>
+            <Txt variant="callout" tone="muted">{fmtMi(r.distance_m)}</Txt>
+          </View>
+          <Txt variant="footnote">{extra > 30 ? `${fmtMin(extra)} longer than the fastest` : r.isFastest ? 'Quickest of these routes' : 'About the same time as the fastest'}</Txt>
+          <View style={{ marginTop: space.s }}>
+            {rows.map(([label, value, warn]) => (
+              <View key={label} style={[s.row, { borderTopColor: c.hairline }]}>
+                <Txt variant="footnote" style={{ flex: 1 }}>{label}</Txt>
+                <Txt variant="callout" color={warn ? c.levels[2].fg : c.ink} style={{ fontVariant: ['tabular-nums'], fontFamily: warn ? font.bold : font.medium }}>
+                  {value}
+                </Txt>
+              </View>
+            ))}
+          </View>
+          {r.warnings.map((w) => (
+            <View key={w} style={{ flexDirection: 'row', gap: space.xs, marginTop: space.xs }}>
+              <Icon name="TriangleAlert" size={16} tint={c.levels[2].fg} />
+              <Txt variant="footnote" style={{ flex: 1 }}>{w}</Txt>
+            </View>
+          ))}
+        </View>
+      </Pressable>
+    </Animated.View>
+  );
+}
+
+const s = StyleSheet.create({
+  safety: { borderLeftWidth: 4, borderRadius: radius.sm, padding: space.l, gap: space.xs },
+  input: { flexDirection: 'row', alignItems: 'center', gap: space.s, paddingHorizontal: space.l, borderRadius: radius.sm },
+  toggle: { flexDirection: 'row', alignItems: 'center', gap: space.m },
+  map: { height: 300, borderRadius: radius.md, overflow: 'hidden', borderWidth: 1 },
+  card: { borderRadius: radius.md, padding: space.l, gap: 2 },
+  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: space.xs, borderTopWidth: StyleSheet.hairlineWidth, gap: space.s },
+  stepsHead: { flexDirection: 'row', alignItems: 'center', minHeight: tapTarget + 8 },
+  step: { flexDirection: 'row', gap: space.s, paddingVertical: space.s, borderTopWidth: StyleSheet.hairlineWidth },
+});

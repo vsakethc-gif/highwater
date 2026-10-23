@@ -8,7 +8,7 @@
  */
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
-import { useRef, useState, type ComponentRef } from 'react';
+import { useEffect, useRef, useState, type ComponentRef } from 'react';
 import { Linking, StyleSheet, useWindowDimensions, View } from 'react-native';
 import Animated, { interpolate, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, withSpring, type SharedValue } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -75,7 +75,9 @@ const PAGES = [
 function Dot({ active }: { active: boolean }) {
   const { c } = useTheme();
   const w = useSharedValue(active ? 24 : 8);
-  w.value = withSpring(active ? 24 : 8, spring.snappy);
+  useEffect(() => {
+    w.value = withSpring(active ? 24 : 8, spring.snappy);
+  }, [active, w]);
   const style = useAnimatedStyle(() => ({ width: w.value }));
   return <Animated.View style={[{ height: 8, borderRadius: 4, backgroundColor: active ? c.accent : c.hairline }, style]} />;
 }

@@ -68,6 +68,8 @@ Working log for Highwater (originally called SC-5 Ready). "Problems and fixes" b
 - **Design tokens from the brief, contrast-checked** with `mobile/scripts/contrast.mjs` (WCAG formula, every text/background and status pair, both themes). All pass except one value from the brief: light `inkFaint` #68737D was 4.07:1 on the sunken background, so it was darkened to #5F6A74 (4.65:1 there, 5.07:1 on the page). Fonts: Public Sans (UI) and Newsreader (the big status word and titles).
 - **Our own bottom sheet** (Reanimated + Gesture Handler) instead of @gorhom/bottom-sheet, which only promises support for the older gesture library; Expo SDK 58 ships Gesture Handler 3. The place and scenario pickers use the phone's native form sheet instead.
 - **The water line** is one component (`components/ui/WaterLine.tsx`) used by the hero card, gauge tubes, onboarding art, and empty states, so the signature looks identical everywhere.
+- **Phone Report and Route tabs (Oct 23) reuse the website's shared code**: the same report checks, Worker, planner, scoring and shelter list. The phone only adds its own screens. The "I'm human" check (Turnstile) has no phone version, so the app shows a tiny page from our website (`public/turnstile.html`) inside a web view, and that page hands the one-time token back to the app.
+- **The Worker now accepts requests with no Origin header** (the phone app, which isn't a web page), while web pages from other sites are still refused. A program outside a browser could fake the header anyway, so the real protections are the same for everyone: Turnstile on reports, input checks, and rate limits.
 - **Hidden Design Gallery** (long-press the version in More) shows every component in every state, replays the animations, and runs a "Demo ready" check.
 
 ## Problems and fixes
@@ -132,6 +134,8 @@ Working log for Highwater (originally called SC-5 Ready). "Problems and fixes" b
 - **Self-drawing lines would have broken on phones.** The web trick (pathLength) isn't supported by the phone's SVG library; the TypeScript check caught it. Fix: measure each line's real length and draw it with a dash of that length.
 - **Gesture Handler 3 changed its API** (hooks like usePanGesture instead of Gesture.Pan()). Read the library's own type files and wrote the sheet with the new hooks.
 - **Self-review fixes on the new Status screen:** "Normal" appeared twice (badge and big word), the water line was nearly invisible at Normal, the collapsing header was see-through, and gauge times wrapped onto two lines. All fixed before showing the screen.
+- **The phone app couldn't find a library the shared code uses** (@turf/bbox-clip, which cuts warning areas into tiles for the router). The website has it installed one folder up, but Metro (the phone app's bundler) looks for packages starting from each file's own folder. Diagnosed with a test bundle (`npx expo export`), which named the missing package. Fix: installed it in /mobile and told Metro to also look in /mobile's packages for files in /shared.
+- **An animation warning repeated in the phone log** ("writing to value during render"): the onboarding page dots started their animation while drawing. Fix: start it after drawing, in an effect.
 
 ## Open questions for me
 

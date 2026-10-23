@@ -7,4 +7,8 @@ const path = require('path');
 const config = getDefaultConfig(__dirname);
 config.watchFolders = [...(config.watchFolders ?? []), path.resolve(__dirname, '../shared')];
 
+// Packages that /shared imports (like @turf/bbox-clip) are installed here in /mobile, so files in
+// /shared must look in this folder's node_modules too.
+config.resolver.nodeModulesPaths = [path.resolve(__dirname, 'node_modules')];
+
 module.exports = config;

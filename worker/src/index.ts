@@ -196,8 +196,12 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const origin = request.headers.get('Origin');
     const cors = corsHeaders(origin, env);
-    // Only this app's own pages may use the Worker.
-    if (!cors['Access-Control-Allow-Origin']) return json({ error: 'Not allowed.' }, 403, {});
+    // Web pages: only this app's own pages may use the Worker (browsers always send an Origin header,
+    // and other websites can't fake it). Requests with NO Origin header come from outside a browser,
+    // such as our phone app; they're allowed, because a non-browser program could fake the header
+    // anyway. The real protections apply to everyone: the Turnstile check on reports, input checks,
+    // and rate limits.
+    if (origin !== null && !cors['Access-Control-Allow-Origin']) return json({ error: 'Not allowed.' }, 403, {});
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
 
     const { pathname } = new URL(request.url);

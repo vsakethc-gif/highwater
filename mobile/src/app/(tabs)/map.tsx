@@ -6,6 +6,8 @@
  *   way to color neighborhoods (Vulnerability, Flood zones, or Priority). The map starts plain on
  *   purpose: counties, alerts, and the gauges that have official flood stages. Gauges without a flood
  *   stage appear once you zoom in, so the district view isn't covered in dots.
+ *   The district stands out: everything outside SC-5 is dimmed, each county is lightly tinted in its
+ *   status color (with its name on the map), and tapping a county shows its status.
  *   Tap a neighborhood, gauge, alert area, or report: a bottom sheet rises with its details.
  *   The place pill flies the camera to a county; "List" shows the same information as an accessible list.
  */
@@ -39,7 +41,9 @@ import { SimulationBanner } from '../../components/ui/Screen';
 import { Sheet } from '../../components/ui/Sheet';
 import { Txt } from '../../components/ui/Text';
 import { useMapData, type MapData } from '../../hooks/useMapData';
-import { elevation, haptic, radius, SCREEN_PAD, space, useTheme } from '../../theme';
+import { useAppState } from '../../state';
+import district from '../../data/district.json';
+import { elevation, font, haptic, radius, SCREEN_PAD, space, useTheme } from '../../theme';
 
 type ScoreLayer = 'vulnerability_score' | 'exposure_score' | 'priority_score' | null;
 type Selection =
@@ -50,6 +54,7 @@ type Selection =
   | { kind: 'list' }
   | { kind: 'places' }
   | { kind: 'layers' }
+  | { kind: 'county'; fips: string }
   | null;
 
 const SCORE_LABEL: Record<Exclude<ScoreLayer, null>, string> = { vulnerability_score: 'Vulnerability', exposure_score: 'Flood zones', priority_score: 'Priority' };
@@ -189,17 +194,34 @@ function sheetTitle(sel: Selection): string | undefined {
   if (sel.kind === 'report') return `${categoryInfo(sel.report.category).label} (unverified)`;
   if (sel.kind === 'list') return 'Counties at a glance';
   if (sel.kind === 'layers') return 'Map layers';
+  if (sel.kind === 'county') return `${countyName(sel.fips)} County`;
   return 'Jump to a county';
 }
 
 /** Everything drawn on the map. Memoized pieces keep panning smooth. */
+// The dimming mask: a box around the Carolinas with the district cut out of it.
+const OUTSIDE: LatLng[] = [
+  { latitude: 37.5, longitude: -86 },
+  { latitude: 37.5, longitude: -76 },
+  { latitude: 30.5, longitude: -76 },
+  { latitude: 30.5, longitude: -86 },
+];
+const DISTRICT: LatLng[] = toLatLng(district.outline);
+
 function Layers({ data, layers, score, zoomedIn, onSelect }: { data: MapData; layers: { alerts: boolean; gauges: boolean; reports: boolean }; score: ScoreLayer; zoomedIn: boolean; onSelect: (s: Selection) => void }) {
-  const { c } = useTheme();
+  const { c, isDark } = useTheme();
   const tractShapes = useMemo(
     () => data.tracts.features.flatMap((f) => polygonParts(f.geometry).map((part, i) => ({ key: `${f.properties.geoid}-${i}`, tract: f.properties, outer: toLatLng(part[0]), holes: part.slice(1).map(toLatLng) }))),
     [data.tracts],
   );
-  const countyShapes = useMemo(() => data.counties.features.flatMap((f) => polygonParts(f.geometry).map((part, i) => ({ key: `${f.properties.fips}-${i}`, outer: toLatLng(part[0]) }))), [data.counties]);
+  const countyShapes = useMemo(() => data.counties.features.flatMap((f) => polygonParts(f.geometry).map((part, i) => ({ key: `${f.properties.fips}-${i}`, fips: f.properties.fips, outer: toLatLng(part[0]) }))), [data.counties]);
+  // Fonts are ready before the map draws, but Android paints custom markers once; let the labels
+  // redraw for their first moment so the text is never blank.
+  const [labelsSettling, setLabelsSettling] = useState(true);
+  useEffect(() => {
+    const id = setTimeout(() => setLabelsSettling(false), 800);
+    return () => clearTimeout(id);
+  }, []);
   const alerts = useMemo(() => {
     if (data.c.alerts instanceof Error) return [];
     const out: { key: string; alert: Alert; level: Level; outer: LatLng[] }[] = [];
@@ -230,9 +252,42 @@ function Layers({ data, layers, score, zoomedIn, onSelect }: { data: MapData; la
             />
           ))
         : null}
-      {countyShapes.map((k) => (
-        <Polygon key={k.key} coordinates={k.outer} fillColor="transparent" strokeColor={withAlpha(c.ink, 0.7)} strokeWidth={1} />
-      ))}
+      {/* Dim everything outside the district, like a printed map's inset. */}
+      <Polygon coordinates={OUTSIDE} holes={[DISTRICT]} fillColor={withAlpha(c.bg, isDark ? 0.62 : 0.68)} strokeColor="transparent" strokeWidth={0} />
+      {countyShapes.map((k) => {
+        const level = data.countyStatus[k.fips]?.level ?? 0;
+        return (
+          <Polygon
+            key={k.key}
+            coordinates={k.outer}
+            fillColor={score ? 'transparent' : withAlpha(c.levels[level].fg, level === 0 ? 0.07 : 0.16)}
+            strokeColor={withAlpha(c.ink, 0.55)}
+            strokeWidth={1}
+            tappable={!score}
+            onPress={() => onSelect({ kind: 'county', fips: k.fips })}
+          />
+        );
+      })}
+      <Polygon coordinates={DISTRICT} fillColor="transparent" strokeColor={c.accent} strokeWidth={2.5} />
+      {district.labels.map((l) => {
+        const level = data.countyStatus[l.fips]?.level ?? 0;
+        return (
+          <Marker key={`label-${l.fips}`} coordinate={{ latitude: l.lat, longitude: l.lon }} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={labelsSettling} onPress={() => onSelect({ kind: 'county', fips: l.fips })} accessibilityLabel={`${l.name} County, ${LEVELS[level].name}`}>
+            <View style={s.countyLabel}>
+              <Txt variant="caption" color={c.ink} style={[s.countyName, { textShadowColor: c.bg }]}>
+                {l.name.toUpperCase()}
+              </Txt>
+              {level > 0 ? (
+                <View style={[s.countyLevel, { backgroundColor: c.levels[level].bg, borderColor: c.levels[level].fg }]}>
+                  <Txt variant="caption" color={c.levels[level].fg} style={{ fontFamily: font.bold, fontSize: 10, lineHeight: 12 }}>
+                    {LEVELS[level].name}
+                  </Txt>
+                </View>
+              ) : null}
+            </View>
+          </Marker>
+        );
+      })}
       {layers.alerts
         ? alerts.map((a) => (
             <Polygon key={a.key} coordinates={a.outer} fillColor={withAlpha(c.levels[a.level].fg, 0.18)} strokeColor={c.levels[a.level].fg} strokeWidth={2} tappable onPress={() => onSelect({ kind: 'alert', alert: a.alert })} />
@@ -353,6 +408,9 @@ type LayerState = { alerts: boolean; gauges: boolean; reports: boolean };
 
 function SheetBody({ selection, data, layers, onLayers, score, onScore, onFly }: { selection: NonNullable<Selection>; data: MapData; layers: LayerState; onLayers: (l: LayerState) => void; score: ScoreLayer; onScore: (s: ScoreLayer) => void; onFly: (fips: string) => void }) {
   const { c } = useTheme();
+  if (selection.kind === 'county') {
+    return <CountySheet fips={selection.fips} data={data} />;
+  }
   if (selection.kind === 'layers') {
     const row = (key: keyof LayerState, title: string, detail: string, last = false) => (
       <View style={[s.layerRow, !last && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.hairline }]}>
@@ -502,7 +560,34 @@ function SheetBody({ selection, data, layers, onLayers, score, onScore, onFly }:
   );
 }
 
+/** Tap a county: its status from alerts and gauges, and a shortcut to its full Status page. */
+function CountySheet({ fips, data }: { fips: string; data: MapData }) {
+  const { setPlace } = useAppState();
+  const st = data.countyStatus[fips];
+  const gauges = data.c.gauges instanceof Error ? [] : data.c.gauges.data.filter((g) => g.county_fips === fips);
+  const raised = gauges.filter((g) => g.flood_category).length;
+  return (
+    <View style={{ gap: space.m }}>
+      <StatusBadge level={st.level} />
+      <Txt variant="callout">{st.active.length ? `Active: ${st.active.map((h) => HAZARDS[h.hazard].label).join(', ')}.` : 'No active official alerts here right now.'}</Txt>
+      <Txt variant="footnote">{`${gauges.length} river gauge${gauges.length === 1 ? '' : 's'} in the county${raised ? `, ${raised} at action stage or higher` : ''}. The map leaves out the rain forecast; Status has the full picture.`}</Txt>
+      <Button
+        label={`See Status for ${countyName(fips)} County`}
+        icon="ArrowRight"
+        kind="primary"
+        onPress={() => {
+          setPlace({ kind: 'county', fips });
+          router.navigate('/');
+        }}
+      />
+    </View>
+  );
+}
+
 const s = StyleSheet.create({
+  countyLabel: { alignItems: 'center', gap: 2, paddingHorizontal: 4 },
+  countyName: { fontFamily: font.bold, fontSize: 11, lineHeight: 13, letterSpacing: 1.2, textShadowRadius: 3, textShadowOffset: { width: 0, height: 0 } },
+  countyLevel: { borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: 6, paddingVertical: 1 },
   top: { position: 'absolute', top: 0, left: 0, right: 0 },
   topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: SCREEN_PAD, paddingTop: space.s },
   pill: { flexDirection: 'row', alignItems: 'center', gap: space.s, minHeight: 44, paddingHorizontal: space.l, borderRadius: radius.pill },

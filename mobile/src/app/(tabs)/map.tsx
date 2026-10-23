@@ -2,14 +2,16 @@
  * Map tab (brief section 8.5) — the whole district on a native map (Apple Maps on iPhone, Google Maps
  * on Android).
  *
- *   Layers (chips at the top): official alert areas, river gauges, community reports, and one way to
- *   color neighborhoods (Vulnerability, Flood zones, or Priority).
+ *   Layers (one button opens the list): official alert areas, river gauges, community reports, and one
+ *   way to color neighborhoods (Vulnerability, Flood zones, or Priority). The map starts plain on
+ *   purpose: counties, alerts, and the gauges that have official flood stages. Gauges without a flood
+ *   stage appear once you zoom in, so the district view isn't covered in dots.
  *   Tap a neighborhood, gauge, alert area, or report: a bottom sheet rises with its details.
  *   The place pill flies the camera to a county; "List" shows the same information as an accessible list.
  */
 import { router } from 'expo-router';
 import { useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
-import { Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import MapView, { Marker, Polygon, type LatLng, type Region } from 'react-native-maps';
 import Animated, { FadeIn, ReduceMotion, ZoomIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -30,7 +32,7 @@ import { Icon } from '../../components/Icon';
 import { googleDark, googleLight, RAMP, RAMP_LABELS, RAMP_NONE, rampColor, withAlpha } from '../../components/map/mapStyle';
 import { TAB_BAR_HEIGHT } from '../../components/TabBar';
 import { Button, IconButton, Pressable } from '../../components/ui/Button';
-import { LayerChip, StatusBadge } from '../../components/ui/Chips';
+import { SegmentedControl, StatusBadge } from '../../components/ui/Chips';
 import { Notice } from '../../components/ui/Feedback';
 import { ListRow } from '../../components/ui/Layout';
 import { SimulationBanner } from '../../components/ui/Screen';
@@ -47,6 +49,7 @@ type Selection =
   | { kind: 'report'; report: Report }
   | { kind: 'list' }
   | { kind: 'places' }
+  | { kind: 'layers' }
   | null;
 
 const SCORE_LABEL: Record<Exclude<ScoreLayer, null>, string> = { vulnerability_score: 'Vulnerability', exposure_score: 'Flood zones', priority_score: 'Priority' };
@@ -79,15 +82,14 @@ export default function MapScreen() {
   const { data, error, reload } = useMapData();
   const map = useRef<ComponentRef<typeof MapView>>(null);
   const [layers, setLayers] = useState({ alerts: true, gauges: true, reports: true });
-  const [score, setScore] = useState<ScoreLayer>('vulnerability_score');
+  const [score, setScore] = useState<ScoreLayer>(null);
+  const [zoomedIn, setZoomedIn] = useState(false);
   const [selected, setSelected] = useState<Selection>(null);
   const [legendOpen, setLegendOpen] = useState(false);
   const [moved, setMoved] = useState(false);
 
   const home = useMemo(() => (data ? regionFor(data.counties.features) : null), [data]);
   const flyTo = (r: Region) => map.current?.animateToRegion(r, 450);
-
-  const chooseScore = (s: Exclude<ScoreLayer, null>) => setScore(score === s ? null : s);
 
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
@@ -104,11 +106,14 @@ export default function MapScreen() {
           toolbarEnabled={false}
           rotateEnabled={false}
           pitchEnabled={false}
-          onRegionChangeComplete={() => setMoved(true)}
+          onRegionChangeComplete={(r) => {
+            setMoved(true);
+            setZoomedIn(r.latitudeDelta < 0.6);
+          }}
           onPress={() => setSelected(null)}
-          mapPadding={{ top: insets.top + 110, bottom: TAB_BAR_HEIGHT + insets.bottom, left: 0, right: 0 }}
+          mapPadding={{ top: insets.top + 64, bottom: TAB_BAR_HEIGHT + insets.bottom, left: 0, right: 0 }}
         >
-          {data ? <Layers data={data} layers={layers} score={score} onSelect={(s) => { haptic.select(); setSelected(s); }} /> : null}
+          {data ? <Layers data={data} layers={layers} score={score} zoomedIn={zoomedIn} onSelect={(s) => { haptic.select(); setSelected(s); }} /> : null}
         </MapView>
       ) : null}
 
@@ -124,6 +129,7 @@ export default function MapScreen() {
             </View>
           </Pressable>
           <View style={{ flexDirection: 'row', gap: space.s }}>
+            <IconButton icon="Layers" label="Choose map layers" onPress={() => setSelected({ kind: 'layers' })} filled />
             <IconButton icon="Menu" label="List view of the map" onPress={() => setSelected({ kind: 'list' })} filled />
             {moved && home ? (
               <Animated.View entering={FadeIn.duration(200).reduceMotion(ReduceMotion.System)}>
@@ -132,14 +138,6 @@ export default function MapScreen() {
             ) : null}
           </View>
         </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chips}>
-          <LayerChip label="Alerts" on={layers.alerts} onToggle={() => setLayers({ ...layers, alerts: !layers.alerts })} />
-          <LayerChip label="Rivers" on={layers.gauges} onToggle={() => setLayers({ ...layers, gauges: !layers.gauges })} />
-          {(Object.keys(SCORE_LABEL) as Exclude<ScoreLayer, null>[]).map((k) => (
-            <LayerChip key={k} label={SCORE_LABEL[k]} on={score === k} onToggle={() => chooseScore(k)} />
-          ))}
-          <LayerChip label="Reports" on={layers.reports} onToggle={() => setLayers({ ...layers, reports: !layers.reports })} />
-        </ScrollView>
       </View>
 
       {!data && !error ? (
@@ -150,23 +148,27 @@ export default function MapScreen() {
         </View>
       ) : null}
       {error ? (
-        <View style={{ position: 'absolute', left: SCREEN_PAD, right: SCREEN_PAD, top: insets.top + 180 }}>
+        <View style={{ position: 'absolute', left: SCREEN_PAD, right: SCREEN_PAD, top: insets.top + 120 }}>
           <Notice title={error} detail="The Status tab may still work." onRetry={reload} />
         </View>
       ) : null}
 
       {/* Legend: compact card, tap to open the full key */}
-      {data ? (
+      {data && score ? (
         <View style={[s.legendWrap, { bottom: TAB_BAR_HEIGHT + insets.bottom + space.m }]} pointerEvents="box-none">
           <Legend open={legendOpen} onToggle={() => setLegendOpen(!legendOpen)} score={score} layers={layers} />
         </View>
       ) : null}
 
-      <Sheet open={selected !== null} onClose={() => setSelected(null)} snaps={selected?.kind === 'list' || selected?.kind === 'places' ? [0.6, 0.9] : [0.42, 0.85]} title={sheetTitle(selected)}>
+      <Sheet open={selected !== null} onClose={() => setSelected(null)} snaps={selected?.kind === 'list' || selected?.kind === 'places' ? [0.6, 0.9] : selected?.kind === 'layers' ? [0.62, 0.9] : [0.42, 0.85]} title={sheetTitle(selected)}>
         {data && selected ? (
           <SheetBody
             selection={selected}
             data={data}
+            layers={layers}
+            onLayers={setLayers}
+            score={score}
+            onScore={setScore}
             onFly={(fips) => {
               const f = data.counties.features.filter((x) => x.properties.fips === fips);
               if (f.length) flyTo(regionFor(f));
@@ -186,11 +188,12 @@ function sheetTitle(sel: Selection): string | undefined {
   if (sel.kind === 'alert') return sel.alert.event;
   if (sel.kind === 'report') return `${categoryInfo(sel.report.category).label} (unverified)`;
   if (sel.kind === 'list') return 'Counties at a glance';
+  if (sel.kind === 'layers') return 'Map layers';
   return 'Jump to a county';
 }
 
 /** Everything drawn on the map. Memoized pieces keep panning smooth. */
-function Layers({ data, layers, score, onSelect }: { data: MapData; layers: { alerts: boolean; gauges: boolean; reports: boolean }; score: ScoreLayer; onSelect: (s: Selection) => void }) {
+function Layers({ data, layers, score, zoomedIn, onSelect }: { data: MapData; layers: { alerts: boolean; gauges: boolean; reports: boolean }; score: ScoreLayer; zoomedIn: boolean; onSelect: (s: Selection) => void }) {
   const { c } = useTheme();
   const tractShapes = useMemo(
     () => data.tracts.features.flatMap((f) => polygonParts(f.geometry).map((part, i) => ({ key: `${f.properties.geoid}-${i}`, tract: f.properties, outer: toLatLng(part[0]), holes: part.slice(1).map(toLatLng) }))),
@@ -207,7 +210,8 @@ function Layers({ data, layers, score, onSelect }: { data: MapData; layers: { al
     }
     return out.sort((x, y) => x.level - y.level);
   }, [data.c.alerts]);
-  const gauges = data.c.gauges instanceof Error ? [] : data.c.gauges.data;
+  // At district zoom, only gauges with an official flood stage (the ones that can change a status).
+  const gauges = (data.c.gauges instanceof Error ? [] : data.c.gauges.data).filter((g) => zoomedIn || g.has_official_stage || g.flood_category);
   const reports = data.reports instanceof Error ? [] : data.reports;
 
   return (
@@ -218,20 +222,20 @@ function Layers({ data, layers, score, onSelect }: { data: MapData; layers: { al
               key={t.key}
               coordinates={t.outer}
               holes={t.holes}
-              fillColor={withAlpha(rampColor(t.tract[score]), 0.55)}
-              strokeColor={withAlpha('#ffffff', 0.6)}
-              strokeWidth={0.5}
+              fillColor={withAlpha(rampColor(t.tract[score]), 0.5)}
+              strokeColor="transparent"
+              strokeWidth={0}
               tappable
               onPress={() => onSelect({ kind: 'tract', tract: t.tract })}
             />
           ))
         : null}
       {countyShapes.map((k) => (
-        <Polygon key={k.key} coordinates={k.outer} fillColor="transparent" strokeColor={c.ink} strokeWidth={1.5} />
+        <Polygon key={k.key} coordinates={k.outer} fillColor="transparent" strokeColor={withAlpha(c.ink, 0.7)} strokeWidth={1} />
       ))}
       {layers.alerts
         ? alerts.map((a) => (
-            <Polygon key={a.key} coordinates={a.outer} fillColor={withAlpha(c.levels[a.level].fg, 0.18)} strokeColor={c.levels[a.level].fg} strokeWidth={2.5} tappable onPress={() => onSelect({ kind: 'alert', alert: a.alert })} />
+            <Polygon key={a.key} coordinates={a.outer} fillColor={withAlpha(c.levels[a.level].fg, 0.18)} strokeColor={c.levels[a.level].fg} strokeWidth={2} tappable onPress={() => onSelect({ kind: 'alert', alert: a.alert })} />
           ))
         : null}
       {layers.gauges
@@ -245,7 +249,7 @@ function Layers({ data, layers, score, onSelect }: { data: MapData; layers: { al
         ? reports.map((r) => (
             <Marker key={r.id} coordinate={{ latitude: r.lat, longitude: r.lon }} onPress={() => onSelect({ kind: 'report', report: r })} tracksViewChanges={false} accessibilityLabel={`${categoryInfo(r.category).label}, unverified report`}>
               <View style={[s.reportDot, { backgroundColor: c.levels[1].bg, borderColor: c.levels[1].fg }]}>
-                <Icon name={categoryInfo(r.category).icon} size={12} tint={c.levels[1].fg} />
+                <Icon name={categoryInfo(r.category).icon} size={11} tint={c.levels[1].fg} />
               </View>
             </Marker>
           ))
@@ -345,8 +349,53 @@ function CompareRow({ label, here, avg }: { label: string; here: number | null; 
   );
 }
 
-function SheetBody({ selection, data, onFly }: { selection: NonNullable<Selection>; data: MapData; onFly: (fips: string) => void }) {
+type LayerState = { alerts: boolean; gauges: boolean; reports: boolean };
+
+function SheetBody({ selection, data, layers, onLayers, score, onScore, onFly }: { selection: NonNullable<Selection>; data: MapData; layers: LayerState; onLayers: (l: LayerState) => void; score: ScoreLayer; onScore: (s: ScoreLayer) => void; onFly: (fips: string) => void }) {
   const { c } = useTheme();
+  if (selection.kind === 'layers') {
+    const row = (key: keyof LayerState, title: string, detail: string, last = false) => (
+      <View style={[s.layerRow, !last && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.hairline }]}>
+        <View style={{ flex: 1 }}>
+          <Txt variant="headline">{title}</Txt>
+          <Txt variant="footnote">{detail}</Txt>
+        </View>
+        <Switch
+          value={layers[key]}
+          onValueChange={(v) => {
+            haptic.select();
+            onLayers({ ...layers, [key]: v });
+          }}
+          trackColor={{ true: c.accent, false: c.hairline }}
+          accessibilityLabel={title}
+        />
+      </View>
+    );
+    return (
+      <ScrollView contentContainerStyle={{ paddingBottom: 160 }}>
+        {row('alerts', 'Official alert areas', 'Outlined in the alert level’s color')}
+        {row('gauges', 'River gauges', 'Gauges without a flood stage appear when you zoom in')}
+        {row('reports', 'Community reports', 'Unverified', true)}
+        <Txt variant="headline" style={{ marginTop: space.l, marginBottom: space.s }}>
+          Color neighborhoods by
+        </Txt>
+        <SegmentedControl
+          label="Color neighborhoods by"
+          value={score ?? 'none'}
+          onChange={(v) => onScore(v === 'none' ? null : (v as ScoreLayer))}
+          options={[
+            { value: 'none', label: 'None' },
+            { value: 'vulnerability_score', label: 'Vulnerable' },
+            { value: 'exposure_score', label: 'Flood' },
+            { value: 'priority_score', label: 'Priority' },
+          ]}
+        />
+        <Txt variant="footnote" style={{ marginTop: space.s }}>
+          {score ? SCORE_HELP[score] : 'Neighborhood colors are off, so the map stays easy to read. Choose one to compare Census tracts.'}
+        </Txt>
+      </ScrollView>
+    );
+  }
   const all = data.tracts.features.map((f) => f.properties);
   if (selection.kind === 'tract') {
     const t = selection.tract;
@@ -457,15 +506,15 @@ const s = StyleSheet.create({
   top: { position: 'absolute', top: 0, left: 0, right: 0 },
   topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: SCREEN_PAD, paddingTop: space.s },
   pill: { flexDirection: 'row', alignItems: 'center', gap: space.s, minHeight: 44, paddingHorizontal: space.l, borderRadius: radius.pill },
-  chips: { gap: space.s, paddingHorizontal: SCREEN_PAD, paddingVertical: space.s },
+  layerRow: { flexDirection: 'row', alignItems: 'center', gap: space.m, paddingVertical: space.m },
   center: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
   legendWrap: { position: 'absolute', left: SCREEN_PAD },
   legend: { padding: space.m, borderRadius: radius.md },
   legendRow: { flexDirection: 'row', alignItems: 'center', gap: space.s },
   swatch: { width: 16, height: 12, borderRadius: 3 },
-  gauge: { width: 20, height: 20, borderRadius: 10, borderWidth: 3, alignItems: 'center', justifyContent: 'center' },
+  gauge: { width: 16, height: 16, borderRadius: 8, borderWidth: 2.5, alignItems: 'center', justifyContent: 'center' },
   gaugeCore: { width: 6, height: 6, borderRadius: 3 },
-  reportDot: { width: 22, height: 22, borderRadius: 6, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  reportDot: { width: 20, height: 20, borderRadius: 6, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
   bar: { height: 8, borderRadius: 4, overflow: 'visible' },
   avgMark: { position: 'absolute', top: -3, width: 2, height: 14, borderRadius: 1 },
 });

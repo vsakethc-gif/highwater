@@ -18,6 +18,10 @@ export const googleLight: MapStyleElement[] = [
   { featureType: 'road', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
   { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#cfe0ec' }] },
   { featureType: 'administrative', elementType: 'geometry.stroke', stylers: [{ color: '#c9c3b8' }] },
+  { featureType: 'road.local', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+  { featureType: 'road.arterial', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+  { featureType: 'administrative.land_parcel', stylers: [{ visibility: 'off' }] },
+  { featureType: 'administrative.neighborhood', stylers: [{ visibility: 'off' }] },
 ];
 
 export const googleDark: MapStyleElement[] = [
@@ -31,6 +35,10 @@ export const googleDark: MapStyleElement[] = [
   { featureType: 'road', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
   { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0e2233' }] },
   { featureType: 'administrative', elementType: 'geometry.stroke', stylers: [{ color: '#34424f' }] },
+  { featureType: 'road.local', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+  { featureType: 'road.arterial', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+  { featureType: 'administrative.land_parcel', stylers: [{ visibility: 'off' }] },
+  { featureType: 'administrative.neighborhood', stylers: [{ visibility: 'off' }] },
 ];
 
 /** Neighborhood score colors, 0–19 … 80–100, plus "insufficient data". */

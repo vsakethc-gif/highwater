@@ -5,7 +5,8 @@
  *   Layers (one button opens the list): official alert areas, river gauges, community reports, and one
  *   way to color neighborhoods (Vulnerability, Flood zones, or Priority). The map starts plain on
  *   purpose: counties, alerts, and the gauges that have official flood stages. Gauges without a flood
- *   stage appear once you zoom in, so the district view isn't covered in dots.
+ *   stage appear once you zoom in, so the district view isn't crowded. Each gauge shows its water
+ *   height, trend, and distance to flood stage (or its flood category when it's raised).
  *   The district stands out: everything outside SC-5 is dimmed, each county is lightly tinted in its
  *   status color (with its name on the map), and tapping a county shows its status.
  *   Tap a neighborhood, gauge, alert area, or report: a bottom sheet rises with its details.
@@ -29,7 +30,7 @@ import { categoryInfo } from '../../../../shared/reports/categories';
 import type { Report } from '../../../../shared/reports/client';
 import { countyName } from '../../../../shared/places';
 import { clockTime, relativeTime } from '../../../../shared/time';
-import { CATEGORY, stageSentence } from '../../components/data/Rows';
+import { CATEGORY, stageSentence, TREND } from '../../components/data/Rows';
 import { Icon } from '../../components/Icon';
 import { googleDark, googleLight, RAMP, RAMP_LABELS, RAMP_NONE, rampColor, withAlpha } from '../../components/map/mapStyle';
 import { TAB_BAR_HEIGHT } from '../../components/TabBar';
@@ -219,9 +220,10 @@ function Layers({ data, layers, score, zoomedIn, onSelect }: { data: MapData; la
   // redraw for their first moment so the text is never blank.
   const [labelsSettling, setLabelsSettling] = useState(true);
   useEffect(() => {
+    setLabelsSettling(true);
     const id = setTimeout(() => setLabelsSettling(false), 800);
     return () => clearTimeout(id);
-  }, []);
+  }, [zoomedIn, data]);
   const alerts = useMemo(() => {
     if (data.c.alerts instanceof Error) return [];
     const out: { key: string; alert: Alert; level: Level; outer: LatLng[] }[] = [];
@@ -295,8 +297,8 @@ function Layers({ data, layers, score, zoomedIn, onSelect }: { data: MapData; la
         : null}
       {layers.gauges
         ? gauges.map((g) => (
-            <Marker key={g.site_id} coordinate={{ latitude: g.lat, longitude: g.lon }} onPress={() => onSelect({ kind: 'gauge', gauge: g })} tracksViewChanges={false} accessibilityLabel={`${gaugeName(g.name)} gauge`}>
-              <GaugeDot g={g} />
+            <Marker key={g.site_id} coordinate={{ latitude: g.lat, longitude: g.lon }} onPress={() => onSelect({ kind: 'gauge', gauge: g })} tracksViewChanges={labelsSettling} anchor={{ x: 0.5, y: 1 }} accessibilityLabel={`${gaugeName(g.name)} gauge: ${g.latest ? feet(g.latest.value) : 'no recent reading'}${g.flood_category ? `, ${CATEGORY[g.flood_category].label}` : ''}`}>
+              <GaugePill g={g} />
             </Marker>
           ))
         : null}
@@ -313,15 +315,38 @@ function Layers({ data, layers, score, zoomedIn, onSelect }: { data: MapData; la
   );
 }
 
-/** A gauge marker: a ring in the flood category's color (or blue), filled when it has an official stage. */
-function GaugeDot({ g }: { g: Gauge }) {
+/**
+ * A gauge marker that shows the river's level right on the map: the latest reading and its trend,
+ * and for gauges with an official flood stage, how far the water is from it. The pill's color comes
+ * from the flood category (none, action, minor, moderate/major), with the category word when raised.
+ */
+function GaugePill({ g }: { g: Gauge }) {
   const { c } = useTheme();
-  const level = g.flood_category ? CATEGORY[g.flood_category].level : null;
-  const ring = level ? c.levels[level].fg : c.accent;
+  const cat = g.flood_category ? CATEGORY[g.flood_category] : null;
+  const tone = cat ? c.levels[cat.level] : null;
+  const trend = TREND[g.trend];
+  const toFlood = g.latest && g.stages?.minor != null ? g.stages.minor - g.latest.value : null;
   return (
-    <Animated.View entering={ZoomIn.duration(250).reduceMotion(ReduceMotion.System)} style={[s.gauge, { borderColor: ring, backgroundColor: g.has_official_stage ? ring : c.surface }]}>
-      <View style={[s.gaugeCore, { backgroundColor: c.surface }]} />
-    </Animated.View>
+    <View style={{ alignItems: 'center' }}>
+      <View style={[s.pillGauge, { backgroundColor: tone ? tone.bg : c.surface, borderColor: tone ? tone.fg : g.has_official_stage ? c.accent : c.hairline }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+          <Txt variant="caption" color={tone ? tone.fg : c.ink} style={s.pillValue}>
+            {g.latest ? feet(g.latest.value) : 'No reading'}
+          </Txt>
+          {trend.icon && g.latest ? <Icon name={trend.icon} size={12} tint={tone ? tone.fg : c.inkMuted} /> : null}
+        </View>
+        {cat ? (
+          <Txt variant="caption" color={tone!.fg} style={s.pillSub}>
+            {cat.label}
+          </Txt>
+        ) : toFlood !== null ? (
+          <Txt variant="caption" color={c.inkMuted} style={s.pillSub}>
+            {`${toFlood.toFixed(1)} ft to flood`}
+          </Txt>
+        ) : null}
+      </View>
+      <View style={[s.pillTip, { borderTopColor: tone ? tone.fg : g.has_official_stage ? c.accent : c.hairline }]} />
+    </View>
   );
 }
 
@@ -369,7 +394,7 @@ function Legend({ open, onToggle, score, layers }: { open: boolean; onToggle: ()
             {layers.gauges ? (
               <View style={s.legendRow}>
                 <View style={[s.gauge, { width: 16, height: 16, borderColor: c.accent, backgroundColor: c.accent }]} />
-                <Txt variant="footnote" tone="ink">River gauge (filled = has a flood stage)</Txt>
+                <Txt variant="footnote" tone="ink">River gauge: water height and trend (blue edge = has an official flood stage)</Txt>
               </View>
             ) : null}
             {layers.reports ? (
@@ -585,6 +610,10 @@ function CountySheet({ fips, data }: { fips: string; data: MapData }) {
 }
 
 const s = StyleSheet.create({
+  pillGauge: { borderWidth: 1.5, borderRadius: radius.sm, paddingHorizontal: 6, paddingVertical: 3, alignItems: 'center' },
+  pillValue: { fontFamily: font.bold, fontSize: 12, lineHeight: 15, fontVariant: ['tabular-nums'] },
+  pillSub: { fontFamily: font.medium, fontSize: 10, lineHeight: 12 },
+  pillTip: { width: 0, height: 0, borderLeftWidth: 5, borderRightWidth: 5, borderTopWidth: 6, borderLeftColor: 'transparent', borderRightColor: 'transparent' },
   countyLabel: { alignItems: 'center', gap: 2, paddingHorizontal: 4 },
   countyName: { fontFamily: font.bold, fontSize: 11, lineHeight: 13, letterSpacing: 1.2, textShadowRadius: 3, textShadowOffset: { width: 0, height: 0 } },
   countyLevel: { borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: 6, paddingVertical: 1 },

@@ -18,7 +18,7 @@ import { router } from 'expo-router';
 import { useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
 import { Dimensions, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import MapView, { Marker, Polygon, type LatLng, type Region } from 'react-native-maps';
-import Animated, { FadeIn, FadeOut, ReduceMotion, ZoomIn } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, ReduceMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COUNTIES } from '../../../../shared/config';
 import type { CountyCollection } from '../../../../shared/data/static';
@@ -48,7 +48,7 @@ import { Txt } from '../../components/ui/Text';
 import { useMapData, type MapData } from '../../hooks/useMapData';
 import { useAppState } from '../../state';
 import district from '../../data/district.json';
-import { duration, font, haptic, radius, sceneInk, SCREEN_PAD, space, tapTarget, useTheme } from '../../theme';
+import { duration, font, haptic, popIn, radius, sceneInk, SCREEN_PAD, space, tapTarget, useTheme } from '../../theme';
 
 type ScoreLayer = 'vulnerability_score' | 'exposure_score' | 'priority_score' | null;
 type Selection =
@@ -195,7 +195,7 @@ export default function MapScreen() {
         <View style={s.controls} pointerEvents="box-none">
           <RoundButton icon="Layers" label="Map layers and key" active={selected?.kind === 'layers'} onPress={() => select(selected?.kind === 'layers' ? null : { kind: 'layers' })} />
           {moved && home ? (
-            <Animated.View entering={ZoomIn.duration(duration.fast).reduceMotion(ReduceMotion.System)} exiting={FadeOut.duration(duration.fast)}>
+            <Animated.View entering={popIn()} exiting={FadeOut.duration(140)}>
               <RoundButton
                 icon="Crosshair"
                 label="Show the whole district"
@@ -253,7 +253,7 @@ function selectionKey(sel: Selection): string {
 
 function RoundButton({ icon, label, onPress, active }: { icon: IconName; label: string; onPress: () => void; active?: boolean }) {
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected: !!active }} scaleTo={0.9}>
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected: !!active }} scaleTo={0.95}>
       <Glass floating rounded={tapTarget / 2 + 2} style={[s.round, active && { borderColor: sceneInk.primary }]}>
         <Icon name={icon} size={20} tint={sceneInk.primary} filled={active} />
       </Glass>
@@ -410,7 +410,7 @@ function GaugeMarker({ g, index, focus, dim }: { g: Gauge; index: number; focus:
   const ring = cat ? c.levels[cat.level].fg : g.has_official_stage ? c.accent : c.inkFaint;
   const trend = TREND[g.trend];
   const size = focus ? 52 : 40;
-  const entering = useMemo(() => ZoomIn.delay(Math.min(index, 12) * 25).duration(duration.base).reduceMotion(ReduceMotion.System), [index]);
+  const entering = useMemo(() => popIn(Math.min(index, 12) * 25), [index]);
   return (
     <Animated.View entering={entering} style={{ alignItems: 'center', opacity: dim ? 0.4 : 1, padding: 4 }}>
       <View style={[s.gauge, { width: size, height: size, borderRadius: size / 2, borderColor: ring, backgroundColor: cat ? c.levels[cat.level].bg : c.surface }]}>
@@ -486,7 +486,7 @@ function SheetHeader({ data, selected, onClear, layers, onLayers, score, onScore
           </Txt>
         </Animated.View>
         {selected ? (
-          <Pressable onPress={onClear} accessibilityRole="button" accessibilityLabel="Close details" scaleTo={0.9} hitSlop={6}>
+          <Pressable onPress={onClear} accessibilityRole="button" accessibilityLabel="Close details" scaleTo={0.95} hitSlop={6}>
             <View style={[s.close, { backgroundColor: c.surfaceRaised }]}>
               <Icon name="X" size={18} tint={c.inkMuted} />
             </View>
@@ -517,7 +517,7 @@ function MapChip({ icon, label, on, onPress }: { icon: IconName; label: string; 
       accessibilityRole="switch"
       accessibilityState={{ checked: on }}
       accessibilityLabel={label}
-      scaleTo={0.94}
+      scaleTo={0.96}
     >
       <View style={[s.chip, { backgroundColor: on ? c.accentSoft : c.surfaceRaised, borderColor: on ? c.accent : c.hairline }]}>
         <Icon name={on ? 'Check' : icon} size={15} tint={on ? c.accent : c.inkMuted} />

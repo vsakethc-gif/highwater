@@ -59,7 +59,7 @@ export default function AlertDetail() {
         <StatusBar style="light" />
         <LinearGradient colors={[scene[key].top, scene[key].bottom]} locations={[0, 0.55]} style={StyleSheet.absoluteFill} />
         <View style={[s.top, { paddingTop: insets.top + space.xs }]}>
-          <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Back" scaleTo={0.9}>
+          <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Back" scaleTo={0.95}>
             <Glass floating rounded={tapTarget / 2} style={s.back}>
               <Icon name="ChevronLeft" size={22} tint={sceneInk.primary} />
             </Glass>
@@ -173,7 +173,7 @@ function TimeBar({ start, end, color }: { start: string; end: string | null; col
   const share = e0 && e0 > s0 ? Math.max(0, Math.min(1, (Date.now() - s0) / (e0 - s0))) : null;
   const grow = useSharedValue(0);
   useEffect(() => {
-    grow.set(withTiming(1, { duration: duration.deliberate, easing: easing.emphasized }));
+    grow.set(withTiming(1, { duration: 450, easing: easing.emphasized }));
   }, [grow]);
   const fill = useAnimatedStyle(() => ({ transform: [{ scaleX: grow.get() * (share ?? 0) }] }));
   const begun = Date.now() >= s0;

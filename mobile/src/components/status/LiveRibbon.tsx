@@ -63,7 +63,7 @@ export function LiveRibbon({ data, refreshing, onExitSimulation }: { data: Statu
         </Glass>
       </Pressable>
       {sim ? (
-        <Pressable onPress={onExitSimulation} accessibilityRole="button" accessibilityLabel="Exit Scenario Mode" scaleTo={0.94} hitSlop={6}>
+        <Pressable onPress={onExitSimulation} accessibilityRole="button" accessibilityLabel="Exit Scenario Mode" scaleTo={0.96} hitSlop={6}>
           <Glass rounded={radius.pill} style={[s.pill, { borderColor: sceneInk.sim }]} floating>
             <Txt variant="footnote" color={sceneInk.sim} style={s.text}>
               Exit

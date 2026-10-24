@@ -245,7 +245,7 @@ function Hero({ data, sceneKey, scrollY }: { data: StatusData; sceneKey: SceneKe
 
   // The new word crossfades in and slides up 8 pt (a plain fade with Reduce Motion). No delay, ever.
   const enter = useMemo(
-    () => (reduced ? FadeIn.duration(duration.fast) : FadeInDown.duration(duration.slow).easing(easing.emphasized).withInitialValues({ opacity: 0, transform: [{ translateY: 8 }] }).reduceMotion(ReduceMotion.System)),
+    () => (reduced ? FadeIn.duration(duration.fast) : FadeInDown.duration(duration.base).easing(easing.emphasized).withInitialValues({ opacity: 0, transform: [{ translateY: 8 }] }).reduceMotion(ReduceMotion.System)),
     [reduced],
   );
   const exit = FadeOut.duration(duration.fast);

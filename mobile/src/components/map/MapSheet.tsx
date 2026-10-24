@@ -44,8 +44,9 @@ export function MapSheet({ detent, onDetent, header, children }: { detent: Deten
     // eslint-disable-next-line react-hooks/exhaustive-deps -- stops follow height and insets
   }, [detent, height, insets.top, insets.bottom, reduced]);
 
+  // One light tap when the sheet catches a new height; none when it springs back to the same one.
   const settle = (d: Detent) => {
-    haptic.press();
+    if (d !== detent) haptic.press();
     onDetent(d);
   };
 

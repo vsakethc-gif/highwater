@@ -9,15 +9,39 @@
  * emergency content; and when the phone's Reduce Motion setting is on, movement becomes a short fade
  * (ReduceMotion.System on every entrance, plus useMotionReduced() for our own effects).
  */
-import { Easing, FadeIn, FadeInDown, FadeOut, ReduceMotion, useReducedMotion, type WithSpringConfig } from 'react-native-reanimated';
+import { Easing, FadeIn, FadeInDown, FadeOut, Keyframe, ReduceMotion, useReducedMotion, type WithSpringConfig } from 'react-native-reanimated';
 
 export const duration = { instant: 0, micro: 120, fast: 200, base: 280, slow: 400, deliberate: 600 } as const;
 
+/**
+ * Curves (Oct 24 motion review, from Emil Kowalski's design-engineering rules): the built-in curves are
+ * too soft, so everything uses a strong ease-out (starts fast, so it feels instant) or, for things
+ * moving across the screen, a strong ease-in-out. Nothing on screen uses ease-in: it starts slowly,
+ * exactly when you're watching.
+ */
 export const easing = {
-  standard: Easing.bezier(0.2, 0, 0, 1),
-  emphasized: Easing.bezier(0.3, 0, 0, 1),
-  exit: Easing.bezier(0.4, 0, 1, 1),
+  /** Entering, settling, state changes. */
+  standard: Easing.bezier(0.23, 1, 0.32, 1),
+  emphasized: Easing.bezier(0.16, 1, 0.3, 1),
+  /** Leaving: still ease-out, just a little quicker to finish. */
+  exit: Easing.bezier(0.23, 1, 0.32, 1),
+  /** Moving from one place on screen to another (the tab pill, the timeline thumb). */
+  move: Easing.bezier(0.77, 0, 0.175, 1),
 };
+
+/**
+ * Something popping in (map markers, a round button): from 85% size and invisible, never from
+ * nothing (scale 0 looks like it came from nowhere).
+ */
+export function popIn(delay = 0) {
+  return new Keyframe({
+    0: { opacity: 0, transform: [{ scale: 0.85 }] },
+    100: { opacity: 1, transform: [{ scale: 1 }], easing: Easing.bezier(0.23, 1, 0.32, 1) },
+  })
+    .duration(220)
+    .delay(delay)
+    .reduceMotion(ReduceMotion.System);
+}
 
 export const spring = {
   /** Press feedback, toggles, chips. */

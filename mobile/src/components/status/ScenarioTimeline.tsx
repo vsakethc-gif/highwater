@@ -13,7 +13,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring, type SharedValue } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming, type SharedValue } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { LEVELS, type Level } from '../../../../shared/hazards/levels';
 import type { TimelineStep } from '../../../../shared/scenario/scenario';
@@ -80,6 +80,7 @@ export function ScenarioTimeline({
     .minDistance(0)
     .onBegin((e) => {
       dragging.set(true);
+      held.set(withTiming(1, { duration: 120 }));
       scheduleOnRN(stopPlaying);
       const p = Math.max(0, Math.min(1, e.x / Math.max(1, width)));
       pos.set(p);
@@ -105,16 +106,18 @@ export function ScenarioTimeline({
       const i = step.get();
       pos.set(withSpring(i / last, spring.gentle));
       waterLevel.set(withSpring(i, spring.gentle));
+      held.set(withTiming(0, { duration: 160 }));
       dragging.set(false);
     });
 
-  const thumb = useAnimatedStyle(() => ({ transform: [{ translateX: pos.get() * width }] }));
+  const held = useSharedValue(0);
+  const thumb = useAnimatedStyle(() => ({ transform: [{ translateX: pos.get() * width }, { scale: 1 + 0.18 * held.get() }] }));
   const fill = useAnimatedStyle(() => ({ transform: [{ scaleX: pos.get() }] }));
 
   const current = steps[index];
   return (
     <Glass rounded={radius.lg} style={s.bar} floating>
-      <Pressable onPress={() => setPlaying((p) => !p)} accessibilityRole="button" accessibilityLabel={playing ? 'Pause the storm replay' : 'Play the storm replay'} scaleTo={0.9}>
+      <Pressable onPress={() => setPlaying((p) => !p)} accessibilityRole="button" accessibilityLabel={playing ? 'Pause the storm replay' : 'Play the storm replay'} scaleTo={0.95}>
         <View style={s.play}>
           <Icon name={playing ? 'Pause' : 'Play'} size={20} tint={sceneInk.primary} filled />
         </View>

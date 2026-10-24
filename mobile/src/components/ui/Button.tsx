@@ -11,6 +11,7 @@
 import { useEffect, type ReactNode } from 'react';
 import { Pressable as RNPressable, StyleSheet, View, type PressableProps, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSpring, withTiming } from 'react-native-reanimated';
+import { easing as curves } from '../../theme/motion';
 import { duration, easing, font, haptic, radius, space, spring, tapTarget, useMotionReduced, useTheme } from '../../theme';
 import { Icon, type IconName } from '../Icon';
 import { Txt } from './Text';
@@ -24,7 +25,8 @@ export function Pressable({ children, style, scaleTo = 0.97, onPressIn, onPressO
       <RNPressable
         {...rest}
         onPressIn={(e) => {
-          scale.value = withSpring(scaleTo, spring.snappy);
+          // Touch-down answers at once (120 ms ease-out); letting go springs back.
+          scale.value = withTiming(scaleTo, { duration: 120, easing: curves.standard });
           onPressIn?.(e);
         }}
         onPressOut={(e) => {
@@ -124,7 +126,7 @@ function LoadingBar({ color }: { color: string }) {
 export function IconButton({ icon, label, onPress, tint, style, filled }: { icon: IconName; label: string; onPress: () => void; tint?: string; style?: StyleProp<ViewStyle>; filled?: boolean }) {
   const { c } = useTheme();
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} scaleTo={0.92} style={style}>
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} scaleTo={0.95} style={style}>
       <View style={[s.iconButton, { backgroundColor: filled ? c.surface : 'transparent', borderColor: filled ? c.hairline : 'transparent' }]}>
         <Icon name={icon} tint={tint ?? c.ink} />
       </View>

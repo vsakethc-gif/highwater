@@ -66,7 +66,7 @@ export default function GaugeDetail() {
         <StatusBar style="light" />
         <LinearGradient colors={[scene[key].top, scene[key].bottom]} locations={[0, 0.6]} style={StyleSheet.absoluteFill} />
         <View style={[s.top, { paddingTop: insets.top + space.xs }]}>
-          <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Back" scaleTo={0.9}>
+          <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Back" scaleTo={0.95}>
             <Glass floating rounded={tapTarget / 2} style={s.back}>
               <Icon name="ChevronLeft" size={22} tint={sceneInk.primary} />
             </Glass>
@@ -94,7 +94,7 @@ function Detail({ g, source, sceneKey }: { g: Gauge; source: string; sceneKey: S
   const [scrub, setScrub] = useState<Reading | null>(null);
   const shown = scrub ?? g.latest;
   const simulated = source.startsWith('Scenario');
-  const rise = useMemo(() => FadeInDown.duration(duration.slow).easing(easing.emphasized).withInitialValues({ opacity: 0, transform: [{ translateY: 10 }] }).reduceMotion(ReduceMotion.System), []);
+  const rise = useMemo(() => FadeInDown.duration(duration.base).easing(easing.emphasized).withInitialValues({ opacity: 0, transform: [{ translateY: 10 }] }).reduceMotion(ReduceMotion.System), []);
 
   return (
     <View>

@@ -131,7 +131,7 @@ export function ChecklistItem({ storageKey, text, number, flush, last }: { stora
   const [done, setDone] = useState(() => platform().storage.getItem(storageKey) === '1');
   const draw = useSharedValue(done ? 1 : 0);
   useEffect(() => {
-    draw.value = withTiming(done ? 1 : 0, { duration: done ? duration.slow : duration.fast, easing: easing.emphasized });
+    draw.value = withTiming(done ? 1 : 0, { duration: done ? duration.base : duration.fast, easing: easing.emphasized });
   }, [done, draw]);
   // Length of the check mark path below (two straight strokes), so the dash can 'draw' it.
   const CHECK_LEN = Math.hypot(11, 11) + Math.hypot(5, 5);

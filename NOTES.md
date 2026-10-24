@@ -95,6 +95,16 @@ Working log for Highwater (originally called SC-5 Ready). "Problems and fixes" b
 
 - **Route tab switched off on the phone (Oct 24, your call):** after testing it, you found the route planner not useful on the phone, so `TABS_ON.route` is false in `mobile/src/features.ts`. The tab and Status's "Plan a route out" tile are hidden; the code is kept, and setting the flag back to true restores both. The website's route planner is unchanged. The demo script now shows the Map instead.
 
+### Motion review with emil-design-eng (Oct 24)
+Reviewed every animation against Emil Kowalski's design-engineering rules (the skill is web/CSS; the same principles were applied to Reanimated):
+- **Stronger curves.** The old ease-out curves were soft. Now a strong ease-out (0.23, 1, 0.32, 1) for entering and settling, a strong ease-in-out for things crossing the screen, and no ease-in anywhere (the old "exit" curve was ease-in).
+- **Press feedback answers at touch-down.** Buttons and cards shrink in 120 ms ease-out the moment you touch them, then spring back when you let go (before, a spring took a moment to get going). Press scales are 0.95 to 0.98; the deepest ones (0.9) were too much.
+- **Nothing appears from nothing.** Map markers and the recenter button used to grow from size 0; now they pop in from 85% with a fade (220 ms, 25 ms apart).
+- **UI motion stays under 300 ms.** The level word and the gauge number now rise in 280 ms (were 400), the checklist tick 280 ms, the alert time bar 450 ms (was 600). The scene's sky crossfade stays at 400 ms on purpose: it's the atmosphere, not a control.
+- **Haptics only when something happens.** The map sheet taps once when it catches a new height, not when it springs back to the same one.
+- **You can feel you've grabbed it.** The storm timeline thumb grows a little while your finger is on it.
+- **Kept on purpose:** the tab crossfade (you asked for smooth transitions; the skill would leave tab switches unanimated because they happen so often), and entrances replaying on each visit (you asked; the stagger is short, 40 ms per module).
+
 ## Problems and fixes
 
 - **A gray failed the contrast check.** The first "subtle" gray (`#6b7680`) was 4.37:1 on the page background, under the 4.5:1 WCAG AA minimum. I found it with a small script that computes contrast ratios, then darkened it to `#606b75` (5.13:1). The Normal and Watch badge borders were also too faint, so I darkened them past 3:1.

@@ -9,10 +9,11 @@
 // Import only the font weights we use (the packages' main files would pull in all of them).
 import { Newsreader_500Medium } from '@expo-google-fonts/newsreader/500Medium';
 import { Newsreader_600SemiBold } from '@expo-google-fonts/newsreader/600SemiBold';
-import { PublicSans_400Regular } from '@expo-google-fonts/public-sans/400Regular';
-import { PublicSans_500Medium } from '@expo-google-fonts/public-sans/500Medium';
-import { PublicSans_600SemiBold } from '@expo-google-fonts/public-sans/600SemiBold';
-import { PublicSans_700Bold } from '@expo-google-fonts/public-sans/700Bold';
+// Atkinson Hyperlegible Next (Braille Institute): made to be easy to read for people with low vision.
+import { AtkinsonHyperlegibleNext_400Regular } from '@expo-google-fonts/atkinson-hyperlegible-next/400Regular';
+import { AtkinsonHyperlegibleNext_500Medium } from '@expo-google-fonts/atkinson-hyperlegible-next/500Medium';
+import { AtkinsonHyperlegibleNext_600SemiBold } from '@expo-google-fonts/atkinson-hyperlegible-next/600SemiBold';
+import { AtkinsonHyperlegibleNext_700Bold } from '@expo-google-fonts/atkinson-hyperlegible-next/700Bold';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { Stack } from 'expo-router/stack';
@@ -28,10 +29,10 @@ SplashScreen.setOptions({ fade: true, duration: 400 });
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
-    PublicSans_400Regular,
-    PublicSans_500Medium,
-    PublicSans_600SemiBold,
-    PublicSans_700Bold,
+    AtkinsonHyperlegibleNext_400Regular,
+    AtkinsonHyperlegibleNext_500Medium,
+    AtkinsonHyperlegibleNext_600SemiBold,
+    AtkinsonHyperlegibleNext_700Bold,
     Newsreader_500Medium,
     Newsreader_600SemiBold,
   });

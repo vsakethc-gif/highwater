@@ -14,8 +14,8 @@ const ratio = (a, b) => {
 const THEMES = {
   light: { bg: '#F7F5F0', surface: '#FFFFFF', surfaceSunken: '#EFEBE3', ink: '#0F1A24', inkMuted: '#47535E', inkFaint: '#5F6A74', accent: '#0B4F7A', accentSoft: '#DCE9F2', onAccent: '#FFFFFF',
     status: [['#17694F', '#D6F0E4', '#14775A', '#FFFFFF'], ['#7F5100', '#FCE7B0', '#F2B41E', '#0F1A24'], ['#AE3A00', '#FDD8C2', '#C4490A', '#FFFFFF'], ['#A30D2A', '#F9D0D8', '#B5102F', '#FFFFFF']] },
-  dark: { bg: '#0A0F14', surface: '#121921', surfaceSunken: '#18212B', ink: '#EEF2F5', inkMuted: '#A3AFBA', inkFaint: '#7F8B97', accent: '#6BB6E8', accentSoft: '#16324A', onAccent: '#0A0F14',
-    status: [['#6FD3B4', '#0F3328', '#1B7A5F', '#FFFFFF'], ['#F5C55A', '#3D2D08', '#E0A41A', '#0B1117'], ['#FF9A63', '#44200C', '#C9500F', '#FFFFFF'], ['#FF8296', '#4A1220', '#B0182F', '#FFFFFF']] },
+  dark: { bg: '#070B10', surface: '#111821', surfaceSunken: '#18222D', ink: '#F2F5F8', inkMuted: '#A7B2BD', inkFaint: '#8A96A2', accent: '#5EC8E5', accentSoft: '#0E2C38', onAccent: '#070B10',
+    status: [['#6FD3C2', '#0E2D29', '#17766A', '#FFFFFF'], ['#F4D35E', '#33290A', '#E2B92C', '#070B10'], ['#FF9A4D', '#3D1E0B', '#BD4A0C', '#FFFFFF'], ['#FF7A93', '#40121D', '#B0182F', '#FFFFFF']] },
 };
 const NAMES = ['Normal', 'Watch', 'Warning', 'Danger'];
 let fails = 0;
@@ -38,7 +38,7 @@ for (const [theme, t] of Object.entries(THEMES)) {
 // The Status 'living scene' (REDESIGN.md 2.1): white text at 100% / 72% / 62% and the level accent,
 // checked against the lightest part of each gradient (its top) and against a module (7% white) on it.
 const mix = (fg, bg, a) => '#' + [1, 3, 5].map((i) => Math.round(parseInt(fg.slice(i, i + 2), 16) * a + parseInt(bg.slice(i, i + 2), 16) * (1 - a)).toString(16).padStart(2, '0')).join('');
-const SCENES = { Normal: ['#0F2C42', '#8FD3C7'], Watch: ['#4A3512', '#F2C46B'], Warning: ['#5C220E', '#FF9F6E'], Danger: ['#5E1020', '#FF8A9B'], Unknown: ['#2A3138', '#C9D2DA'] };
+const SCENES = { Normal: ['#0C2438', '#6FD3C2'], Watch: ['#3B2A0A', '#F4D35E'], Warning: ['#4A1C0A', '#FF9A4D'], Danger: ['#4D0D1B', '#FF7A93'], Unknown: ['#232A31', '#C9D2DA'] };
 console.log('\nSCENE');
 for (const [name, [top, accent]] of Object.entries(SCENES)) {
   const module = mix('#FFFFFF', top, 0.07);

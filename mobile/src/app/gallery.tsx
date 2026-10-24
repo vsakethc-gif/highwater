@@ -63,7 +63,7 @@ export default function Gallery() {
 
   const live = latestStatus();
   const checks: [string, boolean][] = [
-    ['Fonts loaded (Public Sans + Newsreader)', Font.isLoaded('PublicSans_400Regular') && Font.isLoaded('Newsreader_600SemiBold')],
+    ['Fonts loaded (Atkinson Hyperlegible Next + Newsreader)', Font.isLoaded('AtkinsonHyperlegibleNext_400Regular') && Font.isLoaded('Newsreader_600SemiBold')],
     ['Live data loaded on Status', !!live && !live.c.simulated && !(live.c.alerts instanceof Error)],
     ['Scenario Mode available (incl. Helene replays)', SCENARIOS.length >= 8],
     ['Production-style build (no debug overlays)', !__DEV__],

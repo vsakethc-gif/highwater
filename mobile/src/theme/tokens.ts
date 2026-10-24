@@ -1,6 +1,10 @@
 /**
  * tokens.ts — the phone app's design tokens (MOBILE_BRIEF.md section 4). Screens use ONLY these.
  *
+ * Oct 24: the "Night Tide" design system (design-system/highwater/MASTER.md, chosen from three options
+ * generated with UI UX Pro Max): near-black surfaces, one cyan accent, teal / yellow / orange / rose
+ * status colors that step in brightness (color-blind friendly), and Atkinson Hyperlegible Next for UI.
+ *
  * Every text/background pair was checked with scripts/contrast.mjs (WCAG): body text ≥ 4.5:1,
  * large text and icons ≥ 3:1, in both themes. One change from the brief: light inkFaint was
  * #68737D (4.07:1 on surfaceSunken), darkened to #5F6A74 (≥ 4.65:1 everywhere).
@@ -72,27 +76,27 @@ export const light: Palette = {
 export const dark: Palette = {
   // REDESIGN.md 2.2 dark surfaces. inkFaint is #7F8B97, a hair lighter than the brief's #7C8894
   // (which measured 4.50:1 on surfaceRaised, right at the line); now ≥ 4.7:1 everywhere.
-  bg: '#0A0F14',
-  surface: '#121921',
-  surfaceSunken: '#18212B',
-  surfaceRaised: '#18212B',
-  ink: '#EEF2F5',
-  inkMuted: '#A3AFBA',
-  inkFaint: '#7F8B97',
+  bg: '#070B10',
+  surface: '#111821',
+  surfaceSunken: '#18222D',
+  surfaceRaised: '#18222D',
+  ink: '#F2F5F8',
+  inkMuted: '#A7B2BD',
+  inkFaint: '#8A96A2',
   hairline: 'rgba(255,255,255,0.08)',
-  accent: '#6BB6E8',
-  accentSoft: '#16324A',
-  onAccent: '#0A0F14',
-  waterTop: '#2C6E9C',
-  waterBottom: '#1B4767',
+  accent: '#5EC8E5',
+  accentSoft: '#0E2C38',
+  onAccent: '#070B10',
+  waterTop: '#2E86B0',
+  waterBottom: '#16455F',
   simBg: '#E9EEF2',
   simFg: '#0B1117',
   shadow: '#000000',
   levels: {
-    0: { fg: '#6FD3B4', bg: '#0F3328', band: '#1B7A5F', onBand: '#FFFFFF' },
-    1: { fg: '#F5C55A', bg: '#3D2D08', band: '#E0A41A', onBand: '#0B1117' },
-    2: { fg: '#FF9A63', bg: '#44200C', band: '#C9500F', onBand: '#FFFFFF' },
-    3: { fg: '#FF8296', bg: '#4A1220', band: '#B0182F', onBand: '#FFFFFF' },
+    0: { fg: '#6FD3C2', bg: '#0E2D29', band: '#17766A', onBand: '#FFFFFF' }, // Normal, teal
+    1: { fg: '#F4D35E', bg: '#33290A', band: '#E2B92C', onBand: '#070B10' }, // Watch, yellow
+    2: { fg: '#FF9A4D', bg: '#3D1E0B', band: '#BD4A0C', onBand: '#FFFFFF' }, // Warning, orange
+    3: { fg: '#FF7A93', bg: '#40121D', band: '#B0182F', onBand: '#FFFFFF' }, // Danger, rose
   },
 };
 
@@ -110,10 +114,10 @@ export const tapTarget = 44;
 
 /** Font families, as loaded in app/_layout.tsx. */
 export const font = {
-  regular: 'PublicSans_400Regular',
-  medium: 'PublicSans_500Medium',
-  semibold: 'PublicSans_600SemiBold',
-  bold: 'PublicSans_700Bold',
+  regular: 'AtkinsonHyperlegibleNext_400Regular',
+  medium: 'AtkinsonHyperlegibleNext_500Medium',
+  semibold: 'AtkinsonHyperlegibleNext_600SemiBold',
+  bold: 'AtkinsonHyperlegibleNext_700Bold',
   serif: 'Newsreader_600SemiBold',
   serifMedium: 'Newsreader_500Medium',
 };
@@ -166,11 +170,11 @@ export interface ScenePalette {
 }
 
 export const scene: Record<SceneKey, ScenePalette> = {
-  0: { top: '#0F2C42', bottom: '#061520', accent: '#8FD3C7', water: 'rgba(46,108,147,0.55)', waterBack: 'rgba(46,108,147,0.30)' },
-  1: { top: '#4A3512', bottom: '#130D05', accent: '#F2C46B', water: 'rgba(156,116,40,0.50)', waterBack: 'rgba(156,116,40,0.28)' },
-  2: { top: '#5C220E', bottom: '#160805', accent: '#FF9F6E', water: 'rgba(180,80,30,0.50)', waterBack: 'rgba(180,80,30,0.28)' },
-  3: { top: '#5E1020', bottom: '#15040A', accent: '#FF8A9B', water: 'rgba(176,42,67,0.50)', waterBack: 'rgba(176,42,67,0.28)' },
-  unknown: { top: '#2A3138', bottom: '#0B0E11', accent: '#C9D2DA', water: 'rgba(120,134,148,0.40)', waterBack: 'rgba(120,134,148,0.22)' },
+  0: { top: '#0C2438', bottom: '#03080D', accent: '#6FD3C2', water: 'rgba(56,150,196,0.55)', waterBack: 'rgba(56,150,196,0.28)' },
+  1: { top: '#3B2A0A', bottom: '#0B0803', accent: '#F4D35E', water: 'rgba(196,150,46,0.50)', waterBack: 'rgba(196,150,46,0.26)' },
+  2: { top: '#4A1C0A', bottom: '#0E0503', accent: '#FF9A4D', water: 'rgba(214,98,36,0.50)', waterBack: 'rgba(214,98,36,0.26)' },
+  3: { top: '#4D0D1B', bottom: '#0D0307', accent: '#FF7A93', water: 'rgba(206,52,86,0.50)', waterBack: 'rgba(206,52,86,0.26)' },
+  unknown: { top: '#232A31', bottom: '#07090B', accent: '#C9D2DA', water: 'rgba(130,144,158,0.40)', waterBack: 'rgba(130,144,158,0.20)' },
 };
 
 /**
@@ -186,9 +190,9 @@ export const sceneInk = {
   moduleBorder: 'rgba(255,255,255,0.10)',
   /** Backing for floating chrome (ribbon, timeline) when there's no blur. */
   floating: 'rgba(8,12,16,0.95)',
-  /** Live dot (green-teal), out-of-date / offline dot (amber), simulation (violet). */
-  live: '#8FD3C7',
-  amber: '#F2C46B',
+  /** Live dot (teal), out-of-date / offline dot (yellow), simulation (violet). */
+  live: '#6FD3C2',
+  amber: '#F4D35E',
   sim: '#C7B8FF',
   /** Darkens the scene as you scroll, so modules stay readable. */
   shade: '#000000',
@@ -213,7 +217,7 @@ export function scenePalette(key: SceneKey): Palette {
     hairline: sceneInk.moduleBorder,
     accent: scene[key].accent,
     accentSoft: 'rgba(255,255,255,0.12)',
-    onAccent: '#0A0F14',
+    onAccent: '#070B10',
   };
 }
 

@@ -9,7 +9,7 @@ import { useEffect, type ReactNode } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { ReduceMotion, SlideInUp, useAnimatedStyle, useSharedValue, withRepeat, withTiming, Easing } from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
-import { duration, radius, space, useMotionReduced, useTheme } from '../../theme';
+import { duration, font, radius, space, useMotionReduced, useTheme } from '../../theme';
 import { Icon, type IconName } from '../Icon';
 import { Button, Pressable } from './Button';
 import { Txt } from './Text';
@@ -35,7 +35,7 @@ export function Banner({ kind, title, detail, action, onAction }: { kind: Banner
     >
       <Icon name={l.icon} tint={l.fg} size={18} />
       <View style={{ flex: 1 }}>
-        <Txt variant="footnote" color={l.fg} style={{ fontFamily: 'PublicSans_700Bold' }}>
+        <Txt variant="footnote" color={l.fg} style={{ fontFamily: font.bold }}>
           {title}
         </Txt>
         {detail ? (

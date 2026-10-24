@@ -17,7 +17,7 @@ import { Banner, Notice } from './Feedback';
 import { Txt } from './Text';
 
 /** Catches a crash inside one tab and shows a recovery card with Retry. */
-class TabErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+export class TabErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() {
     return { failed: true };

@@ -19,6 +19,7 @@ import floodWatch from './scenarios/york-flood-watch.json';
 import tornado from './scenarios/lancaster-tornado-warning.json';
 import heat from './scenarios/cherokee-extreme-heat.json';
 import tropical from './scenarios/kershaw-tropical-storm.json';
+import calm from './scenarios/york-calm.json';
 
 interface ScenarioAlert {
   event: string;
@@ -79,8 +80,32 @@ const REPLAYS: Record<string, { info: ScenarioInfo; load: () => Promise<Scenario
 /** Every scenario for the picker: the two real-data replays first. */
 export const SCENARIOS: ScenarioInfo[] = [...Object.values(REPLAYS).map((r) => r.info), ...SYNTHETIC];
 
+/**
+ * The storm timeline (phone app): four made-up moments of one storm over York County, from calm to a
+ * Flash Flood Emergency. Dragging the timeline steps through them, so a viewer sees Normal → Watch →
+ * Warning → Danger. The calm step is used only here, so it isn't listed in SCENARIOS.
+ */
+export interface TimelineStep {
+  id: string;
+  /** The simulated moment, e.g. "Sat · 4 AM". */
+  time: string;
+}
+export const STORM_TIMELINE: { title: string; steps: TimelineStep[] } = {
+  title: 'Made-up storm over York County',
+  steps: [
+    { id: 'york-calm', time: 'Fri · 6 PM' },
+    { id: 'york-flood-watch', time: 'Fri · 9 PM' },
+    { id: 'york-flood-warning', time: 'Sat · 4 AM' },
+    { id: 'york-flash-flood-emergency', time: 'Sat · 7 AM' },
+  ],
+};
+const TIMELINE_ONLY = [calm] as ScenarioFile[];
+
+/** Which step of the storm timeline a scenario is (-1 when it isn't part of it). */
+export const timelineIndex = (id: string | null): number => STORM_TIMELINE.steps.findIndex((s) => s.id === id);
+
 export function findScenario(id: string | null): ScenarioInfo | null {
-  return SCENARIOS.find((s) => s.id === id) ?? null;
+  return SCENARIOS.find((s) => s.id === id) ?? TIMELINE_ONLY.find((s) => s.id === id) ?? null;
 }
 
 /** True for the replays built from real archived data (the Helene scenarios). */
@@ -90,7 +115,7 @@ export const isReplay = (id: string | null): boolean => id !== null && id in REP
 export async function loadScenario(id: string | null): Promise<ScenarioFile | null> {
   if (id === null) return null;
   if (id in REPLAYS) return REPLAYS[id].load();
-  return SYNTHETIC.find((s) => s.id === id) ?? null;
+  return SYNTHETIC.find((s) => s.id === id) ?? TIMELINE_ONLY.find((s) => s.id === id) ?? null;
 }
 
 const minutes = (now: number, offset: number) => new Date(now + offset * 60_000).toISOString();

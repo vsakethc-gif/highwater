@@ -14,6 +14,9 @@ Working log for Highwater (originally called SC-5 Ready). "Problems and fixes" b
 - **Live site:** https://vsakethc-gif.github.io/highwater/ (repo: https://github.com/vsakethc-gif/highwater). Renamed from SC-5 Ready on 2026-10-18; the Cloudflare Worker and Turnstile widget kept their original sc5-ready names.
 - **The repo must be public:** GitHub Pages is free only for public repositories, and the judges may want to read the code anyway.
 
+- **Dark-first phone app (REDESIGN.md, Oct 23):** new installs start in Dark. Anyone can still pick System or Light in More → Settings. The brief says "dark by default" and also "keep light working"; this is the reading that does both.
+- **The storm timeline is made up, not Helene.** Scrubbing needs one storm with a Normal, Watch, Warning and Danger moment. The real Helene replays only have two moments (Sept 27 and Sept 29), so the timeline uses four made-up York County moments (a new calm one plus the existing Watch, Warning and Flash Flood Emergency scenarios). It is labeled "Made-up storm" and "SIMULATED" everywhere.
+
 ## Decisions
 
 - **Vite + plain TypeScript, no React.** Fewer concepts to learn and explain, and a smaller download. A tiny helper (`src/lib/dom.ts`) builds page elements and always inserts text safely.
@@ -71,6 +74,14 @@ Working log for Highwater (originally called SC-5 Ready). "Problems and fixes" b
 - **Phone Report and Route tabs (Oct 23) reuse the website's shared code**: the same report checks, Worker, planner, scoring and shelter list. The phone only adds its own screens. The "I'm human" check (Turnstile) has no phone version, so the app shows a tiny page from our website (`public/turnstile.html`) inside a web view, and that page hands the one-time token back to the app.
 - **The Worker now accepts requests with no Origin header** (the phone app, which isn't a web page), while web pages from other sites are still refused. A program outside a browser could fake the header anyway, so the real protections are the same for everyone: Turnstile on reports, input checks, and rate limits.
 - **Hidden Design Gallery** (long-press the version in More) shows every component in every state, replays the animations, and runs a "Demo ready" check.
+
+### Phone app, round 3 (Oct 23 night, REDESIGN.md "Living Status")
+- **Patterns borrowed, never assets.** Apple Weather: the home screen is the condition, a huge level word, translucent modules with small uppercase labels, the hero condensing as you scroll. Flighty: the live status ribbon at the top and the alert time bars. Stock and video apps: a timeline you drag with a finger. Everything is drawn by us in code.
+- **The scene is SVG + Reanimated, not Skia.** Skia isn't installed, and every new native library adds risk the night before the freeze. Two SVG waves sliding sideways and 3 rain layers (instead of 80 separate streaks) keep it to a handful of moving parts, all on the UI thread.
+- **Two sky "slots" for the level change.** The new level's colors are always written into the slot that is hidden, then the screen fades over to it, so colors never jump on the slot you're looking at. The water has a copy in each slot and fades with the sky.
+- **Scene text contrast.** White, 72% white and the level accent pass 4.5:1 on every scene. The brief's 55% white for small labels failed inside a module on Watch (4.10:1), so labels and times use 62% white (4.77:1 or better). All checked by `mobile/scripts/contrast.mjs` (it now checks the scene too). The brief's dark `inkFaint` #7C8894 was 4.50:1 on raised surfaces, right at the line, so it's #7F8B97.
+- **Floating chrome is opaque without blur.** On Android (and with Reduce Transparency) there's no blur, so the ribbon and the timeline use a 95% opaque dark backing; otherwise text scrolling underneath showed through.
+- **Impeccable critique findings applied:** at Normal the hero said "Flooding" in the accent color, which read as if flooding was happening; it now says "No active alerts here," and the compact title drops the hazard at Normal. Not applied: impeccable's ban on small uppercase labels above headings, because the brief asks for Weather-style module labels (the brief wins).
 
 ## Problems and fixes
 
@@ -136,6 +147,10 @@ Working log for Highwater (originally called SC-5 Ready). "Problems and fixes" b
 - **Self-review fixes on the new Status screen:** "Normal" appeared twice (badge and big word), the water line was nearly invisible at Normal, the collapsing header was see-through, and gauge times wrapped onto two lines. All fixed before showing the screen.
 - **The phone app couldn't find a library the shared code uses** (@turf/bbox-clip, which cuts warning areas into tiles for the router). The website has it installed one folder up, but Metro (the phone app's bundler) looks for packages starting from each file's own folder. Diagnosed with a test bundle (`npx expo export`), which named the missing package. Fix: installed it in /mobile and told Metro to also look in /mobile's packages for files in /shared.
 - **An animation warning repeated in the phone log** ("writing to value during render"): the onboarding page dots started their animation while drawing. Fix: start it after drawing, in an effect.
+
+- **The phone app wouldn't open in a browser preview** (to check the redesign before phone testing): the Map tab's map library has no web version. Fix: a tiny stand-in map used only for browser previews (`mobile/scripts/web-stubs/react-native-maps.js`, wired in `metro.config.js`); the phone always uses the real map.
+- **Scrubbing the storm timeline flashed loading placeholders** between steps, because each step is a new "place + scenario" key. Fix: while moving between timeline steps of the same place, the screen keeps showing the current picture until the next step is ready (`useStatus.ts`).
+- **React Compiler lint caught two things in the new code:** reading the clock while drawing (the alert time bar now uses the time the status loaded) and setting state inside an effect (the sky slots now update while rendering, React's own pattern for "a prop changed").
 
 ## Open questions for me
 

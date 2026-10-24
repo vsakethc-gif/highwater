@@ -122,8 +122,11 @@ export function AlertRow({ a, index, last }: { a: Alert; index: number; last?: b
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
-/** One step you can tick off: the check draws itself, the row quiets down, success haptic. Remembered on the phone. */
-export function ChecklistItem({ storageKey, text, number }: { storageKey: string; text: string; number: number }) {
+/**
+ * One step you can tick off: the check draws itself, the row quiets down, success haptic. Remembered on
+ * the phone. `flush` drops the card look, for lists inside a Status module (a hairline between rows).
+ */
+export function ChecklistItem({ storageKey, text, number, flush, last }: { storageKey: string; text: string; number: number; flush?: boolean; last?: boolean }) {
   const { c } = useTheme();
   const [done, setDone] = useState(() => platform().storage.getItem(storageKey) === '1');
   const draw = useSharedValue(done ? 1 : 0);
@@ -149,7 +152,7 @@ export function ChecklistItem({ storageKey, text, number }: { storageKey: string
       accessibilityLabel={text}
       scaleTo={0.985}
     >
-      <View style={[s.check, { borderColor: c.hairline, backgroundColor: c.surface }]}>
+      <View style={flush ? [s.checkFlush, !last && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.hairline }] : [s.check, { borderColor: c.hairline, backgroundColor: c.surface }]}>
         <View style={[s.box, { borderColor: done ? c.accent : c.inkFaint }]}>
           <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: c.accent, borderRadius: 14 }, fillStyle]} />
           {done ? null : <Txt variant="footnote" tone="accent">{number}</Txt>}
@@ -170,5 +173,6 @@ const s = StyleSheet.create({
   noVessel: { width: 24, height: 56, borderRadius: 12, borderWidth: 1, borderStyle: 'dashed' },
   alertIcon: { width: 40, height: 40, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
   check: { flexDirection: 'row', alignItems: 'center', gap: space.m, padding: space.l, borderWidth: 1, borderRadius: radius.md, minHeight: 60 },
+  checkFlush: { flexDirection: 'row', alignItems: 'center', gap: space.m, paddingVertical: space.m, minHeight: 56 },
   box: { width: 28, height: 28, borderRadius: 14, borderWidth: 2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
 });

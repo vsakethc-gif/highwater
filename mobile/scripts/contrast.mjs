@@ -14,7 +14,7 @@ const ratio = (a, b) => {
 const THEMES = {
   light: { bg: '#F7F5F0', surface: '#FFFFFF', surfaceSunken: '#EFEBE3', ink: '#0F1A24', inkMuted: '#47535E', inkFaint: '#5F6A74', accent: '#0B4F7A', accentSoft: '#DCE9F2', onAccent: '#FFFFFF',
     status: [['#17694F', '#D6F0E4', '#14775A', '#FFFFFF'], ['#7F5100', '#FCE7B0', '#F2B41E', '#0F1A24'], ['#AE3A00', '#FDD8C2', '#C4490A', '#FFFFFF'], ['#A30D2A', '#F9D0D8', '#B5102F', '#FFFFFF']] },
-  dark: { bg: '#0B1117', surface: '#121A22', surfaceSunken: '#18222C', ink: '#E9EEF2', inkMuted: '#A9B5C0', inkFaint: '#8794A0', accent: '#6BB6E8', accentSoft: '#16324A', onAccent: '#0B1117',
+  dark: { bg: '#0A0F14', surface: '#121921', surfaceSunken: '#18212B', ink: '#EEF2F5', inkMuted: '#A3AFBA', inkFaint: '#7F8B97', accent: '#6BB6E8', accentSoft: '#16324A', onAccent: '#0A0F14',
     status: [['#6FD3B4', '#0F3328', '#1B7A5F', '#FFFFFF'], ['#F5C55A', '#3D2D08', '#E0A41A', '#0B1117'], ['#FF9A63', '#44200C', '#C9500F', '#FFFFFF'], ['#FF8296', '#4A1220', '#B0182F', '#FFFFFF']] },
 };
 const NAMES = ['Normal', 'Watch', 'Warning', 'Danger'];
@@ -33,6 +33,22 @@ for (const [theme, t] of Object.entries(THEMES)) {
     const ok = r >= need;
     if (!ok) fails++;
     console.log(`${ok ? ' ok ' : 'FAIL'}  ${r.toFixed(2).padStart(5)}:1  (need ${need})  ${name}`);
+  }
+}
+// The Status 'living scene' (REDESIGN.md 2.1): white text at 100% / 72% / 62% and the level accent,
+// checked against the lightest part of each gradient (its top) and against a module (7% white) on it.
+const mix = (fg, bg, a) => '#' + [1, 3, 5].map((i) => Math.round(parseInt(fg.slice(i, i + 2), 16) * a + parseInt(bg.slice(i, i + 2), 16) * (1 - a)).toString(16).padStart(2, '0')).join('');
+const SCENES = { Normal: ['#0F2C42', '#8FD3C7'], Watch: ['#4A3512', '#F2C46B'], Warning: ['#5C220E', '#FF9F6E'], Danger: ['#5E1020', '#FF8A9B'], Unknown: ['#2A3138', '#C9D2DA'] };
+console.log('\nSCENE');
+for (const [name, [top, accent]] of Object.entries(SCENES)) {
+  const module = mix('#FFFFFF', top, 0.07);
+  for (const [bgName, bg] of [['sky', top], ['module', module]]) {
+    for (const [what, fg] of [['white', '#FFFFFF'], ['72% white', mix('#FFFFFF', bg, 0.72)], ['62% white', mix('#FFFFFF', bg, 0.62)], ['accent', accent]]) {
+      const r = ratio(fg, bg);
+      const ok = r >= 4.5;
+      if (!ok) fails++;
+      console.log(`${ok ? ' ok ' : 'FAIL'}  ${r.toFixed(2).padStart(5)}:1  (need 4.5)  ${what} on ${name} ${bgName}`);
+    }
   }
 }
 console.log(`\n${fails} failing pair(s)`);

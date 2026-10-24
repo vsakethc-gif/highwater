@@ -90,6 +90,17 @@ Evidence of my own work and a study guide for judging. Fill in "What I did" in y
 - The route planner's map now loads only when needed; the route page went from 76 to 96 on Lighthouse.
 - Refreshed the gauge list (still 39 gauges), and updated and pinned the deploy setup.
 
+### Friday, October 23, 2026 (night): "Living Status" redesign of the phone Status screen
+
+**What I did** *(edit this in your own words)*
+- Wrote the redesign brief (REDESIGN.md): which apps to learn from and which pattern to take from each.
+- _Add: what you noticed testing the storm timeline on your phone._
+
+**What was built**
+- The Status screen is now a living scene: its sky, water line, rain and glow change with the level.
+- A storm timeline in Scenario Mode: drag it and the scene goes Normal → Watch → Warning → Danger.
+- The hero shrinks into a compact bar as you scroll; pulling down lifts the water and refreshes.
+
 ## Concepts
 
 ### Lighthouse and layout shift
@@ -247,3 +258,10 @@ A check that a real person, not a bot, is using the page. Cloudflare Turnstile u
 
 ### Hashing
 Turning text into a scrambled fingerprint that can't be turned back. We store a hash of a random device ID (mixed with a secret "salt"), so we can count reports per device without knowing whose device it is.
+
+### The living scene (how the Status background animates)
+The background is layers drawn in code: a color gradient (the "sky"), two wavy shapes (the water), thin lines (rain), and a soft red glow at Danger. Each moving part has a "shared value", a number that lives on the phone's UI thread, the lane of work that draws the screen. The water's height is one shared value from 0 (Normal) to 3 (Danger); the waves slide sideways by changing another. Because the UI thread moves them, the animation stays smooth even while the JavaScript thread is busy loading river data. When the storm timeline is dragged, the finger writes straight into the water's shared value, which is why the water follows the finger without lag.
+
+### Crossfade
+Showing two versions stacked and fading the top one in. The scene keeps two sky "slots" and always paints the new level into the hidden one before fading over, so colors never jump.
+

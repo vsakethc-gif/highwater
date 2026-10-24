@@ -6,7 +6,7 @@
 import { router } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
-import { isReplay, SCENARIOS } from '../../../shared/scenario/scenario';
+import { isReplay, SCENARIOS, STORM_TIMELINE, timelineIndex } from '../../../shared/scenario/scenario';
 import { Icon } from '../components/Icon';
 import { Button, Pressable } from '../components/ui/Button';
 import { Txt } from '../components/ui/Text';
@@ -24,11 +24,42 @@ export default function ScenarioPicker() {
       <Txt variant="callout" tone="muted">
         Replay an emergency to see how the app responds. Everything is labeled SIMULATION, and nothing is saved or sent.
       </Txt>
+      {/* The storm timeline: drag through one storm from calm to Danger, right on the Status screen. */}
+      <Animated.View entering={listItemEntering(0)}>
+        <Pressable
+          onPress={() => {
+            haptic.select();
+            setScenario(STORM_TIMELINE.steps[0].id, '45091');
+            router.back();
+            router.navigate('/');
+          }}
+          accessibilityRole="button"
+          accessibilityState={{ selected: timelineIndex(scenario) >= 0 }}
+          accessibilityLabel={`Replay a storm. ${STORM_TIMELINE.title}. Drag the timeline on Status from calm to a Flash Flood Emergency.`}
+          scaleTo={0.985}
+        >
+          <View style={[s.card, { borderColor: timelineIndex(scenario) >= 0 ? c.accent : c.hairline, backgroundColor: timelineIndex(scenario) >= 0 ? c.accentSoft : c.bg }]}>
+            <View style={{ flexDirection: 'row', gap: space.s, alignItems: 'center' }}>
+              <View style={[s.tag, { backgroundColor: c.simBg }]}>
+                <Icon name="FlaskConical" size={12} tint={c.simFg} />
+                <Txt variant="caption" color={c.simFg}>
+                  Simulation
+                </Txt>
+              </View>
+              {timelineIndex(scenario) >= 0 ? <Icon name="Check" size={18} tint={c.accent} /> : null}
+            </View>
+            <Txt variant="headline">Replay a storm</Txt>
+            <Txt variant="callout" tone="muted">
+              {`${STORM_TIMELINE.title}. Drag the timeline on Status and watch it go from calm to a Flash Flood Emergency.`}
+            </Txt>
+          </View>
+        </Pressable>
+      </Animated.View>
       {SCENARIOS.map((sc, i) => {
         const selected = scenario === sc.id;
         const real = isReplay(sc.id);
         return (
-          <Animated.View key={sc.id} entering={listItemEntering(i)}>
+          <Animated.View key={sc.id} entering={listItemEntering(i + 1)}>
             <Pressable
               onPress={() => {
                 haptic.select();

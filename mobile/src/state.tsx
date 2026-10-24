@@ -1,6 +1,7 @@
 /**
  * state.tsx — what the person has chosen, shared by every tab (read it with useAppState()):
- * their place, Scenario Mode, and settings (appearance, haptics).
+ * their place, Scenario Mode, settings (appearance, haptics), and the Status scene's current look
+ * (so the floating tab bar can pick up its tint).
  *
  * Privacy: an exact location (GPS or ZIP) is kept only in memory. Only a county choice and the
  * settings are remembered on the phone. Scenario Mode turns off when the app closes.
@@ -8,6 +9,7 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 import { COUNTIES, DEFAULT_COUNTY_FIPS } from '../../shared/config';
 import type { Place } from '../../shared/hazards/types';
+import type { SceneKey } from './theme/tokens';
 import { platform } from '../../shared/platform';
 import { HAPTICS_KEY } from './theme/haptics';
 
@@ -22,6 +24,9 @@ interface AppState {
   scenario: string | null;
   appearance: Appearance;
   haptics: boolean;
+  /** The Status scene's level (null until it has loaded). */
+  sceneKey: SceneKey | null;
+  setSceneKey: (k: SceneKey | null) => void;
   setPlace: (p: Place) => void;
   setScenario: (id: string | null, county?: string) => void;
   setAppearance: (a: Appearance) => void;
@@ -40,9 +45,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [scenario, setScenarioState] = useState<string | null>(null);
   const [appearance, setAppearanceState] = useState<Appearance>(() => {
     const a = saved(APPEARANCE_KEY);
-    return a === 'light' || a === 'dark' ? a : 'system';
+    // Dark-first (REDESIGN.md 1): Dark unless the person picked System or Light in More → Settings.
+    return a === 'light' || a === 'system' ? a : 'dark';
   });
   const [haptics, setHapticsState] = useState(() => saved(HAPTICS_KEY) !== 'off');
+  const [sceneKey, setSceneKey] = useState<SceneKey | null>(null);
 
   const setPlace = useCallback((p: Place) => {
     setPlaceState(p);
@@ -69,8 +76,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ place, scenario, appearance, haptics, setPlace, setScenario, setAppearance, setHaptics }),
-    [place, scenario, appearance, haptics, setPlace, setScenario, setAppearance, setHaptics],
+    () => ({ place, scenario, appearance, haptics, sceneKey, setSceneKey, setPlace, setScenario, setAppearance, setHaptics }),
+    [place, scenario, appearance, haptics, sceneKey, setPlace, setScenario, setAppearance, setHaptics],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

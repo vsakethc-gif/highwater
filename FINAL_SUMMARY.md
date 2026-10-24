@@ -305,6 +305,21 @@ Languages: **TypeScript, HTML, CSS, SQL**, and JavaScript for scripts.
 
 ---
 
+## 13b. The phone app's "Living Status" design
+
+**The idea in one line:** the phone's Status screen doesn't show a status card, it *is* the status. The whole background is a scene that matches the level: calm night-blue water at Normal, amber dusk at Watch, burnt orange with higher, moving water at Warning, and deep red with the highest water and a slowly pulsing glow at Danger. If rain is forecast, thin rain streaks fall behind everything.
+
+**Why it fits a hazard app:** a worried person can read the situation from across the room before reading a word, and the rising water is the hazard itself, not decoration. Color is never the only signal: the level is always written as a giant word, with the hazard, a headline and the reasons underneath.
+
+**Patterns we learned from (in our own words; we copied no artwork):**
+- Apple Weather: the screen is the condition; information sits on top in see-through cards with small labels; the big title shrinks into a slim bar as you scroll.
+- Flighty (a flight tracker): a small "LIVE · Updated 3 min ago" ribbon so you always know how fresh the data is, and time bars that show how far through an alert we are.
+- Stock and video apps: a bar you drag with your finger to move through time. Our storm timeline uses this so judges can watch Normal turn into Danger.
+
+**How it works:** the scene is drawn with SVG shapes and moved by Reanimated on the phone's UI thread (see LEARNING.md, "The living scene"). It pauses when you leave the tab or the app goes to the background, and with Reduce Motion on, the water and rain stand still and level changes become a simple fade.
+
+**Honesty rules kept:** Scenario Mode turns the ribbon violet ("SIMULATION · not live data") with a dashed violet line at the top, and the timeline says "SIMULATED" and "Made-up storm." When some data didn't load, the scene turns a neutral gray and says "Can't confirm," so missing data never looks like a calm all-clear.
+
 ## 14. Likely judge questions, with answers
 
 **Q: Is this AI? How does it decide the status?**

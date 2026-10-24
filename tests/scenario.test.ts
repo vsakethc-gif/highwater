@@ -119,3 +119,23 @@ describe('Hurricane Helene replays (real data)', () => {
     expect(scenarioGauges(s, SITES, NOW).find((g) => g.site_id === empty.site_id)!.latest).toBeNull();
   });
 });
+
+describe('Storm timeline (phone app Scenario timeline)', () => {
+  it('steps through Normal → Watch → Warning → Danger in order, all in York County', async () => {
+    const { STORM_TIMELINE, findScenario, timelineIndex } = await import('../shared/scenario/scenario');
+    const levels: number[] = [];
+    for (const step of STORM_TIMELINE.steps) {
+      const s = (await loadScenario(step.id))!;
+      expect(s.county).toBe('45091');
+      expect(findScenario(step.id)?.id).toBe(step.id);
+      const status = evaluate({ alerts: scenarioAlerts(s, NOW), gauges: scenarioGauges(s, SITES, NOW), rain: scenarioRain(s, NOW), now: NOW }, { kind: 'county', fips: s.county });
+      expect(status.complete).toBe(true);
+      levels.push(status.level);
+    }
+    expect(levels).toEqual([0, 1, 2, 3]);
+    expect(timelineIndex('york-flood-warning')).toBe(2);
+    expect(timelineIndex('lancaster-tornado-warning')).toBe(-1);
+    // The calm step is timeline-only: not offered in the scenario picker.
+    expect(SCENARIOS.some((x) => x.id === 'york-calm')).toBe(false);
+  });
+});

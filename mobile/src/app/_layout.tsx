@@ -4,7 +4,7 @@
  *   2. Plugs the phone into the shared code (installNativePlatform, see src/platform.ts).
  *   3. Fades from the splash screen into the app.
  * Then Expo Router shows either the one-time onboarding or the tabs, plus the pushed screens
- * (gauge and alert details) and sheets (place picker, scenario picker).
+ * (gauge and alert details) and sheets (place picker, scenario picker, data sources).
  */
 // Import only the font weights we use (the packages' main files would pull in all of them).
 import { Newsreader_500Medium } from '@expo-google-fonts/newsreader/500Medium';
@@ -76,6 +76,7 @@ function RootStack() {
       <Stack.Screen name="gallery" />
       <Stack.Screen name="county" options={{ ...sheet, sheetAllowedDetents: [0.75, 1] }} />
       <Stack.Screen name="scenario" options={{ ...sheet, sheetAllowedDetents: [0.75, 1] }} />
+      <Stack.Screen name="sources" options={{ ...sheet, sheetAllowedDetents: [0.5, 1] }} />
     </Stack>
   );
 }

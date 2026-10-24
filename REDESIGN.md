@@ -6,6 +6,22 @@ Do not break the web app. Do not change the data, engine or security code unless
 
 ---
 
+## How to work: the build loop for EVERY screen (read this first)
+
+Two skill sets are installed. Use them on every screen, in this order, and report each step at the checkpoint:
+
+1. **Plan with `expo-overview`** (routes to the right Expo skill) and **`expo-design-system`**: confirm tokens for this screen exist in the theme (add any from section 2 that are missing). No hardcoded colors, spacing or fonts.
+2. **Build with `expo-native-ui`** (layout, native controls, effects, safe areas) and **`expo-router`** (navigation, sheets, headers). Follow this brief's layout for the screen.
+3. **Animate with `expo-animation`**: implement only the motion this brief lists for the screen, following its decision order (should it animate, which thread, spring vs timing, gesture handoff, Reduce Motion fallback).
+4. **Critique with `/impeccable critique`**: apply the findings that fit this brief's direction; ignore any that push toward a different style.
+5. **Refine with `/impeccable layout` and `/impeccable typeset`**: fix cramped spacing, hierarchy and type. **The screen must feel spacious, not squished:** generous margins (20 pt screen padding minimum), clear gaps between modules (at least 16 pt), and one obvious focal point.
+6. **Polish with `/impeccable polish`**, then re-run the **`expo-design-system` audit** for drift.
+7. **Self-review** against sections 8 and 9, then stop for my phone test.
+
+Before the feature freeze, run `/impeccable audit` on the whole app and fix anything that reads as AI-generated. Details on each skill are in section 11. If a skill isn't available, tell me instead of skipping silently.
+
+---
+
 ## 0. Why we're redesigning and the approach
 
 The current phone app works, but it doesn't look like the best apps on people's phones. We're going to **learn from apps that are clearly doing something right and combine their best patterns into our own design.** We borrow *patterns* (how a screen is laid out, how things move, how a gesture feels). We never copy *assets* (logos, icons, illustrations, artwork, exact color schemes, fonts we don't have rights to, or pixel-for-pixel screens). Every visual element here is drawn by us in code.

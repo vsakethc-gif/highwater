@@ -25,6 +25,8 @@ export interface Palette {
   bg: string;
   surface: string;
   surfaceSunken: string;
+  /** A step above surface: grouped rows, pressed cells, sheets on dark. */
+  surfaceRaised: string;
   ink: string;
   inkMuted: string;
   inkFaint: string;
@@ -46,6 +48,7 @@ export const light: Palette = {
   bg: '#F7F5F0', // warm off-white
   surface: '#FFFFFF',
   surfaceSunken: '#EFEBE3',
+  surfaceRaised: '#FFFFFF',
   ink: '#0F1A24',
   inkMuted: '#47535E',
   inkFaint: '#5F6A74',
@@ -67,16 +70,19 @@ export const light: Palette = {
 };
 
 export const dark: Palette = {
-  bg: '#0B1117',
-  surface: '#121A22',
-  surfaceSunken: '#18222C',
-  ink: '#E9EEF2',
-  inkMuted: '#A9B5C0',
-  inkFaint: '#8794A0',
-  hairline: '#22303B',
+  // REDESIGN.md 2.2 dark surfaces. inkFaint is #7F8B97, a hair lighter than the brief's #7C8894
+  // (which measured 4.50:1 on surfaceRaised, right at the line); now ≥ 4.7:1 everywhere.
+  bg: '#0A0F14',
+  surface: '#121921',
+  surfaceSunken: '#18212B',
+  surfaceRaised: '#18212B',
+  ink: '#EEF2F5',
+  inkMuted: '#A3AFBA',
+  inkFaint: '#7F8B97',
+  hairline: 'rgba(255,255,255,0.08)',
   accent: '#6BB6E8',
   accentSoft: '#16324A',
-  onAccent: '#0B1117',
+  onAccent: '#0A0F14',
   waterTop: '#2C6E9C',
   waterBottom: '#1B4767',
   simBg: '#E9EEF2',
@@ -97,7 +103,7 @@ export const simulationAccent = { light: { accent: '#3D5866', accentSoft: '#E3E9
 export const space = { xxs: 2, xs: 4, s: 8, m: 12, l: 16, xl: 20, xxl: 24, x3: 32, x4: 40, x5: 48, x6: 64 } as const;
 export const SCREEN_PAD = space.xl;
 
-export const radius = { sm: 8, md: 14, lg: 20, sheet: 28, pill: 999 } as const;
+export const radius = { sm: 8, md: 14, module: 18, lg: 20, sheet: 28, pill: 999 } as const;
 
 /** Minimum touch target. */
 export const tapTarget = 44;
@@ -126,6 +132,10 @@ export const type = {
   numberXL: { fontFamily: font.semibold, fontSize: 48, lineHeight: 52, fontVariant: ['tabular-nums'], letterSpacing: -1 },
   numberL: { fontFamily: font.semibold, fontSize: 28, lineHeight: 32, fontVariant: ['tabular-nums'], letterSpacing: -0.4 },
   serifTitle: { fontFamily: font.serif, fontSize: 30, lineHeight: 36, letterSpacing: -0.4 },
+  /** The Status scene's giant level word ("Warning"). Capped on small phones in the hero. */
+  sceneWord: { fontFamily: font.serif, fontSize: 64, lineHeight: 68, letterSpacing: -1.2 },
+  /** Small uppercase label on each Status module ("WHY THIS STATUS"), Weather style. */
+  moduleLabel: { fontFamily: font.semibold, fontSize: 12, lineHeight: 16, letterSpacing: 0.6, textTransform: 'uppercase' },
 } satisfies Record<string, TextStyle>;
 
 export type TypeStyle = keyof typeof type;
@@ -136,4 +146,73 @@ export function elevation(p: Palette, isDark: boolean, level: 1 | 2) {
   return level === 1
     ? { shadowColor: p.shadow, shadowOpacity: 0.06, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 }
     : { shadowColor: p.shadow, shadowOpacity: 0.1, shadowRadius: 24, shadowOffset: { width: 0, height: 8 }, elevation: 8 };
+}
+
+/* ------------------------------------------------------------------------------------------------
+ * The Status "living scene" (REDESIGN.md section 2.1). Each level has its own atmosphere: a vertical
+ * gradient, an accent for highlights, and a tint for the water line. These gradients are the ONLY
+ * gradients allowed in the app. "unknown" is a neutral slate for "we can't confirm conditions", so
+ * missing data never looks like a calm, all-clear night.
+ * ---------------------------------------------------------------------------------------------- */
+export type SceneKey = Level | 'unknown';
+
+export interface ScenePalette {
+  top: string;
+  bottom: string;
+  accent: string;
+  /** The water line's front wave and the deeper back wave. */
+  water: string;
+  waterBack: string;
+}
+
+export const scene: Record<SceneKey, ScenePalette> = {
+  0: { top: '#0F2C42', bottom: '#061520', accent: '#8FD3C7', water: 'rgba(46,108,147,0.55)', waterBack: 'rgba(46,108,147,0.30)' },
+  1: { top: '#4A3512', bottom: '#130D05', accent: '#F2C46B', water: 'rgba(156,116,40,0.50)', waterBack: 'rgba(156,116,40,0.28)' },
+  2: { top: '#5C220E', bottom: '#160805', accent: '#FF9F6E', water: 'rgba(180,80,30,0.50)', waterBack: 'rgba(180,80,30,0.28)' },
+  3: { top: '#5E1020', bottom: '#15040A', accent: '#FF8A9B', water: 'rgba(176,42,67,0.50)', waterBack: 'rgba(176,42,67,0.28)' },
+  unknown: { top: '#2A3138', bottom: '#0B0E11', accent: '#C9D2DA', water: 'rgba(120,134,148,0.40)', waterBack: 'rgba(120,134,148,0.22)' },
+};
+
+/**
+ * Text and surfaces on the scene. Checked in scripts/contrast.mjs against the lightest part of each
+ * gradient AND against a module on it. The brief's 55% white for meta text measured 4.10:1 inside a
+ * module on Watch, so meta and labels use 62% white (≥ 4.7:1 everywhere).
+ */
+export const sceneInk = {
+  primary: '#FFFFFF',
+  secondary: 'rgba(255,255,255,0.72)',
+  meta: 'rgba(255,255,255,0.62)',
+  module: 'rgba(255,255,255,0.07)',
+  moduleBorder: 'rgba(255,255,255,0.10)',
+  /** Backing for floating chrome (ribbon, timeline) when there's no blur. */
+  floating: 'rgba(8,12,16,0.95)',
+  /** Live dot (green-teal), out-of-date / offline dot (amber), simulation (violet). */
+  live: '#8FD3C7',
+  amber: '#F2C46B',
+  sim: '#C7B8FF',
+  /** Darkens the scene as you scroll, so modules stay readable. */
+  shade: '#000000',
+  /** The soft red glow breathing at the top of the screen at Danger. */
+  glow: 'rgba(255,77,106,0.55)',
+} as const;
+
+/** How high the water line sits, as a share of screen height from the bottom (REDESIGN.md 4). */
+export const SCENE_WATER: Record<Level, number> = { 0: 0.18, 1: 0.26, 2: 0.34, 3: 0.42 };
+
+/** The palette components see while drawn on the scene: dark, with white ink and the level's accent. */
+export function scenePalette(key: SceneKey): Palette {
+  return {
+    ...dark,
+    bg: scene[key].bottom,
+    surface: sceneInk.module,
+    surfaceSunken: 'rgba(255,255,255,0.08)',
+    surfaceRaised: 'rgba(255,255,255,0.12)',
+    ink: sceneInk.primary,
+    inkMuted: sceneInk.secondary,
+    inkFaint: sceneInk.meta,
+    hairline: sceneInk.moduleBorder,
+    accent: scene[key].accent,
+    accentSoft: 'rgba(255,255,255,0.12)',
+    onAccent: '#0A0F14',
+  };
 }

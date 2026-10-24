@@ -17,6 +17,7 @@ import type { GuidanceBlock } from '../../../shared/guidance/types';
 import { alertAppliesTo, evaluate } from '../../../shared/hazards/engine';
 import type { OverallStatus, Place } from '../../../shared/hazards/types';
 import type { Tract } from '../../../shared/hazards/vulnerability';
+import { timelineIndex } from '../../../shared/scenario/scenario';
 import { checksList, guidanceContext } from '../../../shared/statusContext';
 import { dateTime, relativeTime } from '../../../shared/time';
 import { useAppState } from '../state';
@@ -41,6 +42,18 @@ let latest: StatusData | null = null;
 export const latestStatus = (): StatusData | null => latest;
 
 const keyOf = (place: Place, scenario: string | null) => `${scenario ?? 'live'}|${place.kind}|${place.fips}|${place.kind === 'point' ? `${place.lat},${place.lon}` : ''}`;
+
+/**
+ * What to show while a new key loads. Normally nothing (placeholders), so one place's status never
+ * appears under another place's name. One exception: moving between storm timeline steps (same place,
+ * still simulated) keeps the current picture until the next step arrives, so scrubbing never flashes.
+ */
+function shownWhileLoading(key: string, scenario: string | null): StatusData | null {
+  if (!latest) return null;
+  if (latest.key === key) return latest;
+  const samePlace = latest.key.slice(latest.key.indexOf('|')) === key.slice(key.indexOf('|'));
+  return samePlace && timelineIndex(scenario) >= 0 && latest.c.simulated ? latest : null;
+}
 
 async function loadStatus(place: Place, scenario: string | null): Promise<StatusData> {
   const conditions = await loadConditions(place, scenario);
@@ -75,7 +88,7 @@ async function loadStatus(place: Place, scenario: string | null): Promise<Status
 export function useStatus(): { data: StatusData | null; refreshing: boolean; refresh: () => Promise<void> } {
   const { place, scenario } = useAppState();
   const key = keyOf(place, scenario);
-  const [data, setData] = useState<StatusData | null>(() => (latest?.key === key ? latest : null));
+  const [data, setData] = useState<StatusData | null>(() => shownWhileLoading(key, scenario));
   const [refreshing, setRefreshing] = useState(false);
   const loadId = useRef(0);
 
@@ -92,10 +105,11 @@ export function useStatus(): { data: StatusData | null; refreshing: boolean; ref
   }, [place, scenario]);
 
   useEffect(() => {
-    setData(latest?.key === key ? latest : null);
+    setData(shownWhileLoading(key, scenario));
     load();
     const timer = setInterval(load, REFRESH_MS);
     return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `scenario` is part of `key`
   }, [key, load]);
 
   const refresh = useCallback(async () => {

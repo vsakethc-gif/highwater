@@ -105,6 +105,16 @@ Reviewed every animation against Emil Kowalski's design-engineering rules (the s
 - **You can feel you've grabbed it.** The storm timeline thumb grows a little while your finger is on it.
 - **Kept on purpose:** the tab crossfade (you asked for smooth transitions; the skill would leave tab switches unanimated because they happen so often), and entrances replaying on each visit (you asked; the stagger is short, 40 ms per module).
 
+### Animation review fixes (Oct 24, second pass with emil-design-eng)
+Rules for this pass: only faster, smoother or more purposeful; signature moments untouched (scene color change, water rising, route line drawing, Scenario timeline); Reduce Motion, haptics and the UI thread kept; emergency information instant.
+- **Emergency information is now truly instant.** Danger modules, the Danger level word, a Danger alert's header and the power-line warning had a 200 ms fade; now they have no entrance at all.
+- **No animation on the most repeated action.** Switching tabs no longer crossfades (it happens 100+ times a day); the sliding pill already shows where you went. The pill now eases across in 220 ms (ease-in-out) instead of a spring that wobbled, and it retargets smoothly if you tap fast. Same for the segmented control.
+- **Return visits are quicker.** Coming back to Status or More still replays the entrance, but in 180 ms with a 25 ms stagger (first visit: 280 ms, 40 ms).
+- **Sheets keep your flick's speed.** After a drag, the map sheet used to restart its settle spring from zero (a tiny hitch); now the flick's velocity carries through. The sheet spring settles in about 300 ms without wobble (was about 400 ms), and the other bottom sheet carries velocity too.
+- **Shorter UI timings:** map detail crossfade 180 ms in / 120 ms out (was 280/200), level badge color 240 ms (was 400), sparkline draw 300 ms with no delay (was 720 ms total; they replay on every visit now), rain bars 280 ms, gauge chart draw 500 ms (was 900), alert expander chevron 200 ms, step slides 240 ms with a strong ease-out, the loading bar's back-and-forth uses ease-in-out.
+- **Crash fixed:** the storm timeline crashed when opened ("Cannot access 'held' before initialization") because the thumb-grow value from the previous motion pass was declared after the gesture that used it. Found while testing this pass in the browser; fixed by declaring it first.
+- **Three small feedback animations added:** (1) when the level changes, the hero's headline and context line crossfade (200 ms) with the level word instead of snapping; (2) the live ribbon's label crossfades (160 ms) between LIVE, UPDATING… and back, so a refresh is visible; (3) the Report pinned button's label crossfades (160 ms) between "Use this spot" and "Send report", so you notice the step changed. The headline crossfade is skipped at Danger, so emergency text never waits.
+
 ## Problems and fixes
 
 - **A gray failed the contrast check.** The first "subtle" gray (`#6b7680`) was 4.37:1 on the page background, under the 4.5:1 WCAG AA minimum. I found it with a small script that computes contrast ratios, then darkened it to `#606b75` (5.13:1). The Normal and Watch badge borders were also too faint, so I darkened them past 3:1.

@@ -48,6 +48,8 @@ export function ScenarioTimeline({
   const [width, setWidth] = useState(0);
   const pos = useSharedValue(index / last); // 0..1 along the track
   const step = useSharedValue(index);
+  /** 1 while a finger is on the bar: the thumb grows a little so you can feel you've got hold of it. */
+  const held = useSharedValue(0);
   const [playing, setPlaying] = useState(false);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -110,7 +112,6 @@ export function ScenarioTimeline({
       dragging.set(false);
     });
 
-  const held = useSharedValue(0);
   const thumb = useAnimatedStyle(() => ({ transform: [{ translateX: pos.get() * width }, { scale: 1 + 0.18 * held.get() }] }));
   const fill = useAnimatedStyle(() => ({ transform: [{ scaleX: pos.get() }] }));
 

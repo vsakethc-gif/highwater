@@ -25,7 +25,7 @@ export function StatusBadge({ level, size = 'm', pulse }: { level: Level; size?:
   const morph = useSharedValue<number>(level);
   const beat = useSharedValue(1);
   useEffect(() => {
-    morph.value = withTiming(level, { duration: duration.slow, easing: easing.standard });
+    morph.value = withTiming(level, { duration: 240, easing: easing.standard });
   }, [level, morph]);
   useEffect(() => {
     if (pulse && level === 3 && !reduced) beat.value = withRepeat(withSequence(withTiming(1.06, { duration: 800 }), withTiming(1, { duration: 800 })), -1, false);
@@ -113,7 +113,7 @@ export function SegmentedControl<T extends string>({ options, value, onChange, l
   const segment = width / options.length;
   const x = useSharedValue(index * segment);
   useEffect(() => {
-    x.value = withSpring(index * segment, spring.snappy);
+    x.value = withTiming(index * segment, { duration: 200, easing: easing.move });
   }, [index, segment, x]);
   const thumb = useAnimatedStyle(() => ({ transform: [{ translateX: x.value }] }));
   return (

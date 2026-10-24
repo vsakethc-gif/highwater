@@ -67,7 +67,7 @@ export function Sheet({
       const projected = y.value + e.velocityY * 0.12;
       let best = stops[0];
       for (const s of stops) if (Math.abs(s - projected) < Math.abs(best - projected)) best = s;
-      y.value = withSpring(best, spring.sheet);
+      y.value = withSpring(best, { ...spring.sheet, velocity: e.velocityY });
     },
   });
 

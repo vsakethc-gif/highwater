@@ -72,7 +72,7 @@ export default function AlertDetail() {
         ) : (
           <ScrollView contentContainerStyle={{ paddingHorizontal: SCREEN_PAD, paddingBottom: insets.bottom + space.x5, gap: space.l }}>
             {/* Header band: icon, level, event name, time bar. Appears at once: emergency info never waits. */}
-            <Animated.View entering={FadeIn.duration(duration.fast)} style={s.band}>
+            <Animated.View entering={rule.level === 3 ? undefined : FadeIn.duration(duration.fast)} style={s.band}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.m }}>
                 <View style={[s.icon, { borderColor: scene[rule.level].accent }]}>
                   <Icon name={HAZARDS[rule.hazard].icon} size={28} tint={scene[rule.level].accent} />
@@ -196,7 +196,7 @@ function TimeBar({ start, end, color }: { start: string; end: string | null; col
 function Expander({ label, open, onToggle }: { label: string; open: boolean; onToggle: () => void }) {
   const turn = useSharedValue(open ? 1 : 0);
   useEffect(() => {
-    turn.set(withTiming(open ? 1 : 0, { duration: duration.base, easing: easing.standard }));
+    turn.set(withTiming(open ? 1 : 0, { duration: 200, easing: easing.standard }));
   }, [open, turn]);
   const chevron = useAnimatedStyle(() => ({ transform: [{ rotate: `${turn.get() * 180}deg` }] }));
   return (

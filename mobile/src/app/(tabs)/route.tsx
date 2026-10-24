@@ -218,7 +218,7 @@ function Planner({ data }: { data: StatusData }) {
     progress.value = withTiming((index + 1) / 3, { duration: duration.base, easing: easing.standard });
   }, [index, progress]);
   const bar = useAnimatedStyle(() => ({ transform: [{ scaleX: progress.value }] }));
-  const enter = FadeInRight.duration(duration.base).reduceMotion(ReduceMotion.System);
+  const enter = FadeInRight.duration(240).easing(easing.standard).reduceMotion(ReduceMotion.System);
 
   return (
     <View style={{ gap: space.l }}>
@@ -255,7 +255,7 @@ function Planner({ data }: { data: StatusData }) {
           <OptionCard icon="Signpost" title="Away from the warning area" detail={awayHelp} selected={choice === 'away'} disabled={!avoidPolys.length} onPress={() => setChoice('away')} />
           <OptionCard icon="Search" title="A place I choose" detail="A ZIP code or street address." selected={choice === 'place'} onPress={() => setChoice('place')} />
           {choice === 'place' ? (
-            <Animated.View entering={FadeIn} style={[s.input, { backgroundColor: c.surfaceSunken }]}>
+            <Animated.View entering={FadeIn.duration(duration.fast)} style={[s.input, { backgroundColor: c.surfaceSunken }]}>
               <Icon name="Search" size={18} tint={c.inkMuted} />
               <TextInput
                 value={typed}
@@ -272,7 +272,7 @@ function Planner({ data }: { data: StatusData }) {
           ) : null}
           {message ? <Txt variant="footnote" color={c.levels[2].fg}>{message}</Txt> : null}
           {dest ? (
-            <Animated.View entering={FadeIn} style={[s.destRow, { borderColor: c.accent, backgroundColor: c.accentSoft }]}>
+            <Animated.View entering={FadeIn.duration(duration.fast)} style={[s.destRow, { borderColor: c.accent, backgroundColor: c.accentSoft }]}>
               <Icon name="MapPin" tint={c.accent} />
               <Txt variant="headline" style={{ flex: 1 }} numberOfLines={2}>
                 {dest.label}
@@ -405,7 +405,7 @@ function Results({ plan, start, dest, avoidPolys }: { plan: RoutePlan; start: Sp
     });
 
   return (
-    <Animated.View entering={FadeIn} style={{ gap: space.l }}>
+    <Animated.View entering={FadeIn.duration(duration.fast)} style={{ gap: space.l }}>
       {plan.provider === 'osrm-fallback' ? <Banner kind="stale" title="This route does not avoid hazard areas." detail="Our main routing service is unavailable, so this comes from a backup that can’t see warnings." /> : null}
       {plan.notices.filter((n) => plan.provider !== 'osrm-fallback' || !n.startsWith('This route does not')).map((n) => (
         <Banner key={n} kind="info" title={n} />

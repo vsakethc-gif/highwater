@@ -49,7 +49,7 @@ export default function MoreScreen() {
     <Screen>
       <LargeTitleScroll title="More">
         <View key={visit}>
-          <Animated.View entering={moduleEntering(0, false)} style={{ marginTop: space.l }}>
+          <Animated.View entering={moduleEntering(0, false, visit > 0)} style={{ marginTop: space.l }}>
             <StormCard
               on={replaying}
               onPress={() => {
@@ -60,7 +60,7 @@ export default function MoreScreen() {
             />
           </Animated.View>
 
-          <Animated.View entering={moduleEntering(1, false)} style={s.section}>
+          <Animated.View entering={moduleEntering(1, false, visit > 0)} style={s.section}>
             <SectionHeader title="Demo & simulation" />
             <Card style={{ paddingVertical: 0 }}>
               <ListRow icon="FlaskConical" tile={tiles.violet} title="More scenarios" subtitle={active ? `On: ${active.title}` : 'Hurricane Helene replays, a tornado, extreme heat, and more'} onPress={() => router.push('/scenario')} last={!active} />
@@ -68,7 +68,7 @@ export default function MoreScreen() {
             </Card>
           </Animated.View>
 
-          <Animated.View entering={moduleEntering(2, false)} style={s.section}>
+          <Animated.View entering={moduleEntering(2, false, visit > 0)} style={s.section}>
             <SectionHeader title="Learn" />
             <Card style={{ paddingVertical: 0 }}>
               <ListRow icon="BookOpen" tile={tiles.blue} title="How it works" subtitle="Every rule, threshold, and source" onPress={() => Linking.openURL(`${SITE}#/methodology`)} />
@@ -87,7 +87,7 @@ export default function MoreScreen() {
             ))}
           </Animated.View>
 
-          <Animated.View entering={moduleEntering(3, false)} style={s.section}>
+          <Animated.View entering={moduleEntering(3, false, visit > 0)} style={s.section}>
             <SectionHeader title="Settings" />
             <Card style={{ gap: space.l }}>
               <View style={{ gap: space.s }}>
@@ -122,7 +122,7 @@ export default function MoreScreen() {
             </Card>
           </Animated.View>
 
-          <Animated.View entering={moduleEntering(4, false)} style={s.section}>
+          <Animated.View entering={moduleEntering(4, false, visit > 0)} style={s.section}>
             <SectionHeader title="About" />
             <Card style={{ gap: space.m }}>
               <Wordmark size={44} motto />

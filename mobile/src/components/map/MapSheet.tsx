@@ -9,7 +9,7 @@
  * raises it to half. The sheet's position is one number on the UI thread that the finger moves 1:1,
  * then a spring settles it, so it stays smooth while the map is busy.
  */
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
@@ -38,15 +38,23 @@ export function MapSheet({ detent, onDetent, header, children }: { detent: Deten
   const y = useSharedValue(stops[detent]);
   const start = useSharedValue(stops[detent]);
   const [headerH, setHeaderH] = useState(PEEK);
+  // Set when a drag picked the height: its spring (carrying the finger's speed) is already running,
+  // so the effect below must not restart it from zero.
+  const fromDrag = useRef<Detent | null>(null);
 
   useEffect(() => {
+    const skip = fromDrag.current === detent;
+    fromDrag.current = null;
+    if (skip) return;
     y.set(reduced ? withTiming(stops[detent], { duration: duration.fast }) : withSpring(stops[detent], spring.sheet));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- stops follow height and insets
   }, [detent, height, insets.top, insets.bottom, reduced]);
 
   // One light tap when the sheet catches a new height; none when it springs back to the same one.
   const settle = (d: Detent) => {
-    if (d !== detent) haptic.press();
+    if (d === detent) return; // sprang back to the same height: nothing changes
+    haptic.press();
+    fromDrag.current = d;
     onDetent(d);
   };
 

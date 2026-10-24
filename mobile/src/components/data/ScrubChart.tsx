@@ -36,7 +36,7 @@ export function ScrubChart({ series, stages, height = 200, onScrub, bare }: { se
   const reduced = useMotionReduced();
   const draw = useSharedValue(reduced ? 1 : 0);
   useEffect(() => {
-    if (!reduced) draw.set(withTiming(1, { duration: duration.deliberate + 300, easing: easing.emphasized }));
+    if (!reduced) draw.set(withTiming(1, { duration: 500, easing: easing.emphasized }));
   }, [draw, reduced]);
   const [width, setWidth] = useState(0);
   const [index, setIndex] = useState<number | null>(null);

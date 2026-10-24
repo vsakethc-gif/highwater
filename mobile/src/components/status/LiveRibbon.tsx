@@ -11,7 +11,7 @@
 import { router } from 'expo-router';
 import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
-import Animated, { cancelAnimation, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import Animated, { cancelAnimation, FadeIn, ReduceMotion, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { clockTime, relativeTime } from '../../../../shared/time';
 import type { StatusData } from '../../hooks/useStatus';
 import { easing, font, radius, sceneInk, space, useMotionReduced } from '../../theme';
@@ -57,9 +57,11 @@ export function LiveRibbon({ data, refreshing, onExitSimulation }: { data: Statu
       <Pressable onPress={() => router.push('/sources')} accessibilityRole="button" accessibilityLabel={`${label}. Shows data sources and times`} scaleTo={0.96} disabled={!data} hitSlop={6}>
         <Glass rounded={radius.pill} style={[s.pill, sim && { borderColor: sceneInk.sim }]} floating>
           <Dot color={color} ping={live && !refreshing} />
-          <Txt variant="footnote" color={sim ? sceneInk.sim : sceneInk.primary} style={s.text} numberOfLines={1}>
-            {label}
-          </Txt>
+          <Animated.View key={label} entering={FadeIn.duration(160).reduceMotion(ReduceMotion.System)}>
+            <Txt variant="footnote" color={sim ? sceneInk.sim : sceneInk.primary} style={s.text} numberOfLines={1}>
+              {label}
+            </Txt>
+          </Animated.View>
         </Glass>
       </Pressable>
       {sim ? (

@@ -10,21 +10,29 @@
  * appear at once (emergency information never waits for an animation).
  */
 import { BlurView } from 'expo-blur';
-import { useMemo, type ReactNode } from 'react';
+import { createContext, use, useMemo, type ReactNode } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import Animated, { FadeIn, FadeInDown, ReduceMotion } from 'react-native-reanimated';
+import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { duration, easing, radius, sceneInk, space, STAGGER_MS, useReduceTransparency } from '../../theme';
 import { Icon, type IconName } from '../Icon';
 import { Txt } from '../ui/Text';
 
-export function moduleEntering(index: number, urgent: boolean) {
-  if (urgent) return FadeIn.duration(duration.fast);
-  return FadeInDown.duration(duration.base)
-    .delay(index * STAGGER_MS)
+/**
+ * The entrance for the i-th module. Danger: none (emergency information appears instantly).
+ * `quick` is for coming back to a tab you've already seen: the same rise, but shorter and tighter,
+ * because you see it many times a day.
+ */
+export function moduleEntering(index: number, urgent: boolean, quick = false) {
+  if (urgent) return undefined;
+  return FadeInDown.duration(quick ? 180 : duration.base)
+    .delay(index * (quick ? 25 : STAGGER_MS))
     .easing(easing.emphasized)
-    .withInitialValues({ opacity: 0, transform: [{ translateY: 12 }] })
+    .withInitialValues({ opacity: 0, transform: [{ translateY: quick ? 6 : 12 }] })
     .reduceMotion(ReduceMotion.System);
 }
+
+/** True inside a screen you've come back to (see useFocusReplay): modules use the quick entrance. */
+export const QuickEntrance = createContext(false);
 
 /**
  * The glass panel on its own (used by the modules, the action tiles, the ribbon and the timeline).
@@ -62,7 +70,8 @@ export function Module({
   /** False for modules whose rows run edge to edge with their own padding. */
   padded?: boolean;
 }) {
-  const entering = useMemo(() => moduleEntering(index, urgent), [index, urgent]);
+  const quick = use(QuickEntrance);
+  const entering = useMemo(() => moduleEntering(index, urgent, quick), [index, urgent, quick]);
   return (
     <Animated.View entering={entering}>
       <Glass>

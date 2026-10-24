@@ -62,7 +62,7 @@ export default function ReportScreen() {
         {mode === 'new' ? <NewReport onPin={setPin} /> : <NearMe />}
       </LargeTitleScroll>
       {mode === 'new' && pin ? (
-        <Animated.View entering={FadeIn.duration(duration.fast)} style={[s.pinned, { bottom: tabBarClearance(insets.bottom) + space.s, backgroundColor: c.bg }]}>
+        <Animated.View key={pin.label} entering={FadeIn.duration(160).reduceMotion(ReduceMotion.System)} style={[s.pinned, { bottom: tabBarClearance(insets.bottom) + space.s, backgroundColor: c.bg }]}>
           <Button label={pin.label} icon={pin.icon} kind="primary" disabled={pin.disabled} loading={pin.loading} onPress={pin.onPress} />
         </Animated.View>
       ) : null}
@@ -153,7 +153,7 @@ function NewReport({ onPin }: { onPin: (p: PinnedAction | null) => void }) {
       </Pressable>
 
       {step === 'category' ? (
-        <Animated.View key="category" entering={FadeInRight.duration(duration.base).reduceMotion(ReduceMotion.System)}>
+        <Animated.View key="category" entering={FadeInRight.duration(240).easing(easing.standard).reduceMotion(ReduceMotion.System)}>
           <Txt variant="title3" style={{ marginBottom: space.m }} accessibilityRole="header">
             What’s the problem?
           </Txt>
@@ -179,7 +179,7 @@ function NewReport({ onPin }: { onPin: (p: PinnedAction | null) => void }) {
       ) : null}
 
       {step === 'where' && category ? (
-        <Animated.View key="where" entering={FadeInRight.duration(duration.base).reduceMotion(ReduceMotion.System)} style={{ gap: space.m }}>
+        <Animated.View key="where" entering={FadeInRight.duration(240).easing(easing.standard).reduceMotion(ReduceMotion.System)} style={{ gap: space.m }}>
           <StepHeader title="Where is it?" detail="Move the map so the pin sits on the problem." onBack={() => setStep('category')} />
           <PinMap
             start={place.kind === 'point' ? { lat: place.lat, lon: place.lon } : (() => { const seat = COUNTIES.find((k) => k.fips === place.fips)!.seat; return { lat: seat.lat, lon: seat.lon }; })()}
@@ -190,7 +190,7 @@ function NewReport({ onPin }: { onPin: (p: PinnedAction | null) => void }) {
       ) : null}
 
       {step === 'details' && category && spot ? (
-        <Animated.View key="details" entering={FadeInRight.duration(duration.base).reduceMotion(ReduceMotion.System)} style={{ gap: space.m }}>
+        <Animated.View key="details" entering={FadeInRight.duration(240).easing(easing.standard).reduceMotion(ReduceMotion.System)} style={{ gap: space.m }}>
           <StepHeader title="Anything to add?" detail={`${category.label} · ${countyName(spot.fips)} County`} onBack={() => setStep('where')} />
           <View style={[s.noteBox, { backgroundColor: c.surface, borderColor: c.hairline }]}>
             <TextInput

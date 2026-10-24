@@ -232,7 +232,7 @@ export default function MapScreen() {
           header={<SheetHeader data={data} selected={selected} onClear={clear} layers={layers} onLayers={setLayers} score={score} onScore={setScore} />}
         >
           {/* The body crossfades whenever what it shows changes. */}
-          <Animated.View key={selectionKey(selected)} entering={FadeIn.duration(duration.base).reduceMotion(ReduceMotion.System)} exiting={FadeOut.duration(duration.fast)} style={{ flex: 1 }}>
+          <Animated.View key={selectionKey(selected)} entering={FadeIn.duration(180).reduceMotion(ReduceMotion.System)} exiting={FadeOut.duration(120)} style={{ flex: 1 }}>
             <SheetBody selection={selected} data={data} score={score} onSelect={select} />
           </Animated.View>
         </MapSheet>
@@ -474,7 +474,7 @@ function SheetHeader({ data, selected, onClear, layers, onLayers, score, onScore
   return (
     <View style={{ gap: space.m, paddingBottom: space.m }}>
       <View style={s.headRow}>
-        <Animated.View key={title} entering={FadeIn.duration(duration.base).reduceMotion(ReduceMotion.System)} style={{ flex: 1, gap: 2 }}>
+        <Animated.View key={title} entering={FadeIn.duration(180).reduceMotion(ReduceMotion.System)} style={{ flex: 1, gap: 2 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.s }}>
             <Txt variant="title3" numberOfLines={1} style={{ flexShrink: 1 }} accessibilityRole="header">
               {title}

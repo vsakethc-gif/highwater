@@ -24,7 +24,7 @@ export function Sparkline({ series, width = 96, height = 28, reference }: { seri
   const reduced = useMotionReduced();
   const draw = useSharedValue(reduced ? 1 : 0);
   useEffect(() => {
-    if (!reduced) draw.value = withDelay(120, withTiming(1, { duration: duration.slow + 200, easing: easing.emphasized }));
+    if (!reduced) draw.value = withTiming(1, { duration: 300, easing: easing.emphasized });
   }, [draw, reduced]);
   const points = sparklinePoints(series, width, height);
   const pts = points ? points.split(' ').map((p) => p.split(',').map(Number)) : [];
@@ -103,7 +103,7 @@ function Bar({ label, inches, max, index }: { label: string; inches: number; max
   const { c } = useTheme();
   const grow = useSharedValue(0);
   useEffect(() => {
-    grow.value = withDelay(index * 60, withTiming(1, { duration: duration.slow, easing: easing.emphasized }));
+    grow.value = withDelay(index * 40, withTiming(1, { duration: duration.base, easing: easing.emphasized }));
   }, [grow, index]);
   const H = 72;
   const h = Math.max(3, (inches / max) * H);

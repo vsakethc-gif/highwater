@@ -32,7 +32,7 @@ import { ChecklistItem, GaugeRow } from '../../components/data/Rows';
 import { Icon, type IconName } from '../../components/Icon';
 import { StatusScene } from '../../components/scene/StatusScene';
 import { LiveRibbon } from '../../components/status/LiveRibbon';
-import { Glass, Module, moduleEntering } from '../../components/status/Module';
+import { Glass, Module, moduleEntering, QuickEntrance } from '../../components/status/Module';
 import { ScenarioTimeline } from '../../components/status/ScenarioTimeline';
 import { AlertTimeRow, TriggerLine } from '../../components/status/StatusRows';
 import { tabBarClearance } from '../../components/TabBar';
@@ -147,10 +147,12 @@ export default function StatusScreen() {
             }
           >
             {data ? (
-              <View key={visit}>
-                <Hero data={data} sceneKey={key} scrollY={scrollY} />
-                <Modules data={data} />
-              </View>
+              <QuickEntrance value={visit > 0}>
+                <View key={visit}>
+                  <Hero data={data} sceneKey={key} scrollY={scrollY} />
+                  <Modules data={data} quick={visit > 0} />
+                </View>
+              </QuickEntrance>
             ) : (
               <Loading />
             )}
@@ -245,10 +247,10 @@ function Hero({ data, sceneKey, scrollY }: { data: StatusData; sceneKey: SceneKe
 
   // The new word crossfades in and slides up 8 pt (a plain fade with Reduce Motion). No delay, ever.
   const enter = useMemo(
-    () => (reduced ? FadeIn.duration(duration.fast) : FadeInDown.duration(duration.base).easing(easing.emphasized).withInitialValues({ opacity: 0, transform: [{ translateY: 8 }] }).reduceMotion(ReduceMotion.System)),
-    [reduced],
+    () => (level === 3 ? undefined : reduced ? FadeIn.duration(duration.fast) : FadeInDown.duration(duration.base).easing(easing.emphasized).withInitialValues({ opacity: 0, transform: [{ translateY: 8 }] }).reduceMotion(ReduceMotion.System)),
+    [reduced, level],
   );
-  const exit = FadeOut.duration(duration.fast);
+  const exit = FadeOut.duration(140);
 
   const gauges = data.c.gauges instanceof Error ? null : data.c.gauges.data.filter((g) => g.county_fips === place.fips);
   const rising = gauges ? gauges.filter((g) => g.trend === 'rising').length : 0;
@@ -295,6 +297,7 @@ function Hero({ data, sceneKey, scrollY }: { data: StatusData; sceneKey: SceneKe
       </Animated.View>
 
       <Animated.View style={[{ gap: space.m, marginTop: space.s }, fadeEarly]}>
+        <Animated.View key={`${top.whatsHappening}|${context}`} entering={level === 3 ? undefined : FadeIn.duration(200).reduceMotion(ReduceMotion.System)} style={{ gap: space.m }}>
         <Txt variant="headline" color={sceneInk.secondary} style={{ fontFamily: font.medium }}>
           {unconfirmed ? `We can’t confirm conditions for ${placeLabel(place)} right now. Check weather.gov and local news.` : top.whatsHappening}
         </Txt>
@@ -303,6 +306,7 @@ function Hero({ data, sceneKey, scrollY }: { data: StatusData; sceneKey: SceneKe
             {context}
           </Txt>
         ) : null}
+        </Animated.View>
         {data.overall.active.length > 1 ? (
           <View style={s.chips}>
             {data.overall.active.slice(1).map((h) => (
@@ -337,7 +341,7 @@ function Loading() {
   );
 }
 
-function Modules({ data }: { data: StatusData }) {
+function Modules({ data, quick }: { data: StatusData; quick: boolean }) {
   const urgent = data.overall.level === 3;
   // The route tile shows only where leaving makes sense AND the Route tab is switched on.
   const canLeave = TABS_ON.route && routeAllowed(data.blocks);
@@ -348,7 +352,7 @@ function Modules({ data }: { data: StatusData }) {
       <RiversModule data={data} index={2} urgent={urgent} />
       <AlertsModule data={data} index={3} urgent={urgent} />
       <RainModule data={data} index={4} urgent={urgent} />
-      <Animated.View entering={moduleEntering(5, urgent)} style={{ gap: MODULE_GAP }}>
+      <Animated.View entering={moduleEntering(5, urgent, quick)} style={{ gap: MODULE_GAP }}>
         <View style={s.tiles}>
           {canLeave ? <ActionTile icon="Signpost" title="Plan a route out" detail="Lower-exposure routes and open shelters" onPress={() => router.navigate('/route')} /> : null}
           <ActionTile icon="Megaphone" title="Report a problem" detail="Flooded road, downed tree, streetlight out" onPress={() => router.navigate('/report')} />

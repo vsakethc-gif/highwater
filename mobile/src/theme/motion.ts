@@ -48,8 +48,8 @@ export const spring = {
   snappy: { damping: 18, stiffness: 260, mass: 1 } satisfies WithSpringConfig,
   /** Cards entering, layout changes. */
   gentle: { damping: 20, stiffness: 140, mass: 1 } satisfies WithSpringConfig,
-  /** Bottom sheets and drawers. */
-  sheet: { damping: 26, stiffness: 220, mass: 1 } satisfies WithSpringConfig,
+  /** Bottom sheets and drawers: settles in about 300 ms, no wobble. */
+  sheet: { damping: 34, stiffness: 340, mass: 1 } satisfies WithSpringConfig,
   /** Markers appearing, the success check. Use rarely. */
   pop: { damping: 12, stiffness: 300, mass: 0.8 } satisfies WithSpringConfig,
 };
@@ -68,8 +68,8 @@ export function listItemEntering(i: number) {
 
 export const fadeIn = FadeIn.duration(duration.base).reduceMotion(ReduceMotion.System);
 export const fadeOut = FadeOut.duration(duration.fast).reduceMotion(ReduceMotion.System);
-/** Emergency content: a fast fade only, never a bounce or a delay. */
-export const emergencyFade = FadeIn.duration(duration.fast);
+/** Emergency content (911, Danger, the power-line warning) appears instantly: no entrance at all. */
+export const emergencyFade = undefined;
 
 /** True when the phone's "Reduce Motion" setting is on: skip movement, loops, and wave effects. */
 export const useMotionReduced = useReducedMotion;

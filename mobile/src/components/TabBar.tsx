@@ -9,9 +9,9 @@ import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import { BlurView } from 'expo-blur';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { elevation, font, haptic, radius, scene, sceneInk, space, spring, useReduceTransparency, useTheme, type SceneKey } from '../theme';
+import { easing, elevation, font, haptic, radius, scene, sceneInk, space, spring, useReduceTransparency, useTheme, type SceneKey } from '../theme';
 import { useAppState } from '../state';
 import { Icon, type IconName } from './Icon';
 import { Txt } from './ui/Text';
@@ -77,7 +77,9 @@ export function TabBar({ state, descriptors, navigateToTab }: BottomTabBarProps)
   const visibleIndex = Math.max(0, visible.findIndex((r) => r.key === state.routes[state.index]?.key));
   const x = useSharedValue(0);
   useEffect(() => {
-    x.value = withSpring(visibleIndex * tabWidth, spring.snappy);
+    // Ease-in-out, 220 ms: it moves across the bar, so it eases in and out; a spring here wobbled.
+    // withTiming starts from wherever the pill is, so tapping fast retargets it smoothly.
+    x.value = withTiming(visibleIndex * tabWidth, { duration: 220, easing: easing.move });
   }, [visibleIndex, tabWidth, x]);
   const indicator = useAnimatedStyle(() => ({ transform: [{ translateX: x.value }] }));
 

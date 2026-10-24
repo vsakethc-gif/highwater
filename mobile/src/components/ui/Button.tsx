@@ -111,7 +111,7 @@ function LoadingBar({ color }: { color: string }) {
   const x = useSharedValue(0);
   const reduced = useMotionReduced();
   useEffect(() => {
-    x.value = reduced ? 0.5 : withRepeat(withTiming(1, { duration: 900, easing: easing.standard }), -1, true);
+    x.value = reduced ? 0.5 : withRepeat(withTiming(1, { duration: 900, easing: easing.move }), -1, true);
   }, [x, reduced]);
   const style = useAnimatedStyle(() => ({ transform: [{ translateX: -18 + 36 * x.value }] }));
   return (

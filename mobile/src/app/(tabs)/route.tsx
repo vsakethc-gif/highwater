@@ -1,5 +1,7 @@
 /**
  * Route tab (brief section 10 and MOBILE_BRIEF 8.6) — a lower-exposure way out, never a "safe" one.
+ * Three steps, one question per screen with big choices: 1. where you start, 2. where to go,
+ * 3. the routes. A progress bar shows the step; Back links step backward without losing choices.
  *
  *   From: your location, or the place you picked on Status.
  *   To:   the nearest open shelter (FEMA's list), the nearest town center outside the active
@@ -13,7 +15,7 @@
 import { useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
 import { Keyboard, Linking, Platform, ScrollView, Share, StyleSheet, Switch, TextInput, useWindowDimensions, View } from 'react-native';
 import MapView, { Marker, Polygon, Polyline } from 'react-native-maps';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInRight, ReduceMotion, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import * as Location from 'expo-location';
 import { COUNTIES, COUNTY_EM, SCEMD_COUNTY_DIRECTORY } from '../../../../shared/config';
 import { dataOrNull } from '../../../../shared/data/conditions';
@@ -27,17 +29,16 @@ import { awayFromWarning, byDistance, fetchOpenShelters, type Shelter, type Town
 import { appleMapsLink, googleMapsLink } from '../../../../shared/routing/links';
 import { planRoutes, searchAddress, type RoutePlan, type RouteResult } from '../../../../shared/routing/plan';
 import { clockTime, relativeTime } from '../../../../shared/time';
-import { Icon } from '../../components/Icon';
+import { Icon, type IconName } from '../../components/Icon';
 import { googleDark, googleLight } from '../../components/map/mapStyle';
 import { Button, Pressable } from '../../components/ui/Button';
-import { SegmentedControl } from '../../components/ui/Chips';
 import { Banner, Notice, Skeleton } from '../../components/ui/Feedback';
-import { Card, SectionHeader } from '../../components/ui/Layout';
+import { Card } from '../../components/ui/Layout';
 import { LargeTitleScroll, Screen } from '../../components/ui/Screen';
 import { Txt } from '../../components/ui/Text';
 import { useStatus, type StatusData } from '../../hooks/useStatus';
 import { useAppState } from '../../state';
-import { font, haptic, listItemEntering, radius, SCREEN_PAD, space, tapTarget, type, useTheme } from '../../theme';
+import { duration, easing, font, haptic, listItemEntering, radius, SCREEN_PAD, space, tapTarget, type, useTheme } from '../../theme';
 
 type Spot = { point: LonLat; label: string };
 type Choice = 'shelter' | 'away' | 'place';
@@ -107,6 +108,7 @@ function Planner({ data }: { data: StatusData }) {
   const [start, setStart] = useState<Spot>(placeStart);
   useEffect(() => setStart(placeStart()), [place]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const [step, setStep] = useState<'from' | 'to' | 'results'>('from');
   const [choice, setChoice] = useState<Choice>('shelter');
   const [shelters, setShelters] = useState<Shelter[] | Error | null>(null);
   const [towns, setTowns] = useState<Town[]>([]);
@@ -133,6 +135,10 @@ function Planner({ data }: { data: StatusData }) {
     : placeDest;
 
   useEffect(() => setPlan(null), [start, choice, placeDest]);
+  // If the shelter list comes back empty, don't leave "shelter" chosen.
+  useEffect(() => {
+    if (Array.isArray(shelters) && !shelters.length && choice === 'shelter') setChoice('place');
+  }, [shelters, choice]);
 
   const useMine = async () => {
     setMessage('');
@@ -140,6 +146,7 @@ function Planner({ data }: { data: StatusData }) {
     if (perm.status !== 'granted') return setMessage('Location is off. Using the place you picked on Status instead.');
     const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
     setStart({ point: [pos.coords.longitude, pos.coords.latitude], label: 'My location' });
+    setStep('to');
   };
 
   const findPlace = async () => {
@@ -175,6 +182,7 @@ function Planner({ data }: { data: StatusData }) {
       if (ctl.signal.aborted) return;
       haptic.success();
       setPlan(result);
+      setStep('results');
     } catch (e) {
       if (ctl.signal.aborted) return;
       haptic.error();
@@ -187,94 +195,148 @@ function Planner({ data }: { data: StatusData }) {
   const shelterHelp =
     shelters instanceof Error ? 'Couldn’t load FEMA’s shelter list right now.'
     : shelters === null ? 'Checking FEMA’s list…'
-    : shelters.length ? `${shelters.length} open in or near SC-5 · checked ${clockTime(shelters[0].checked_at)}`
+    : nearestShelter ? `${nearestShelter.name}, ${(nearestShelter.km / 1.609).toFixed(1)} mi away · ${shelters.length} open in or near SC-5 · checked ${clockTime(nearestShelter.checked_at)}`
     : 'No shelters are listed as open right now.';
+  const awayHelp = !avoidPolys.length
+    ? 'No active warning areas with a drawn boundary right now.'
+    : choice === 'away' && !awayTown
+      ? 'No town center found outside the warning area.'
+      : 'The nearest town center outside the active warning areas.';
+
+  const index = { from: 0, to: 1, results: 2 }[step];
+  const progress = useSharedValue(1 / 3);
+  useEffect(() => {
+    progress.value = withTiming((index + 1) / 3, { duration: duration.base, easing: easing.standard });
+  }, [index, progress]);
+  const bar = useAnimatedStyle(() => ({ transform: [{ scaleX: progress.value }] }));
+  const enter = FadeInRight.duration(duration.base).reduceMotion(ReduceMotion.System);
 
   return (
     <View style={{ gap: space.l }}>
-      {/* From */}
-      <View style={{ gap: space.s }}>
-        <SectionHeader title="From" />
-        <Card style={{ flexDirection: 'row', alignItems: 'center', gap: space.m }}>
-          <Icon name="CircleDot" tint={c.accent} />
-          <Txt variant="headline" style={{ flex: 1 }} numberOfLines={2}>
-            {start.label}
-          </Txt>
-          <Button label="My location" icon="LocateFixed" compact onPress={useMine} />
-        </Card>
+      <View style={[s.progress, { backgroundColor: c.surfaceSunken }]} accessible accessibilityLabel={`Step ${index + 1} of 3`}>
+        <Animated.View style={[s.progressFill, { backgroundColor: c.accent }, bar]} />
       </View>
 
-      {/* To */}
-      <View style={{ gap: space.s }}>
-        <SectionHeader title="To" />
-        <SegmentedControl
-          label="Destination"
-          value={choice}
-          onChange={setChoice}
-          options={[
-            { value: 'shelter', label: 'Shelter' },
-            { value: 'away', label: 'Away' },
-            { value: 'place', label: 'A place' },
-          ]}
-        />
-        {choice === 'shelter' ? (
-          <View style={{ gap: space.s }}>
-            <Txt variant="footnote">{shelterHelp}</Txt>
-            {Array.isArray(shelters) && !shelters.length ? (
-              <Card style={{ gap: space.s }}>
-                <Txt variant="callout" tone="muted">
-                  Shelters usually open only when officials expect people to need them. Your county emergency management office announces them.
-                </Txt>
-                <Button label={`${countyName(place.fips)} County Emergency Management`} icon="ExternalLink" compact onPress={() => Linking.openURL(COUNTY_EM[place.fips] ?? SCEMD_COUNTY_DIRECTORY)} />
-              </Card>
-            ) : null}
-            {shelters instanceof Error ? <Button label="All SC county emergency offices" icon="ExternalLink" compact onPress={() => Linking.openURL(SCEMD_COUNTY_DIRECTORY)} /> : null}
-          </View>
-        ) : null}
-        {choice === 'away' && !avoidPolys.length ? <Txt variant="footnote">No active warning areas with a drawn boundary right now, so there’s nothing to get away from.</Txt> : null}
-        {choice === 'away' && avoidPolys.length && !awayTown ? <Txt variant="footnote">We couldn’t find a town center outside the warning area. Choose a place instead.</Txt> : null}
-        {choice === 'place' ? (
-          <View style={[s.input, { backgroundColor: c.surfaceSunken }]}>
-            <Icon name="Search" size={18} tint={c.inkMuted} />
-            <TextInput
-              value={typed}
-              onChangeText={setTyped}
-              placeholder="ZIP code or street address"
-              placeholderTextColor={c.inkFaint}
-              returnKeyType="search"
-              onSubmitEditing={findPlace}
-              accessibilityLabel="Destination ZIP code or address"
-              style={[type.body, { flex: 1, color: c.ink, minHeight: tapTarget }]}
-            />
-            {typed.trim() ? <Button label="Find" kind="text" compact onPress={findPlace} /> : null}
-          </View>
-        ) : null}
-        {dest ? (
-          <Animated.View entering={FadeIn}>
-            <Card style={{ flexDirection: 'row', alignItems: 'center', gap: space.m }}>
+      {step === 'from' ? (
+        <Animated.View key="from" entering={enter} style={{ gap: space.m }}>
+          <Txt variant="title2" accessibilityRole="header">
+            Where are you starting?
+          </Txt>
+          <OptionCard icon="LocateFixed" title="My location" detail="Uses your phone’s location. It’s only sent to the routing service for this trip." onPress={useMine} />
+          <OptionCard
+            icon="MapPin"
+            title={start.label === 'My location' ? 'My location (found)' : start.label}
+            detail={start.label === 'My location' ? 'Continue from where you are now.' : 'The place you picked on Status.'}
+            onPress={() => setStep('to')}
+          />
+          {message ? <Txt variant="footnote" color={c.levels[2].fg}>{message}</Txt> : null}
+        </Animated.View>
+      ) : null}
+
+      {step === 'to' ? (
+        <Animated.View key="to" entering={enter} style={{ gap: space.m }}>
+          <BackLink onPress={() => setStep('from')} label={`From ${start.label}`} />
+          <Txt variant="title2" accessibilityRole="header">
+            Where do you want to go?
+          </Txt>
+          <OptionCard icon="House" title="Nearest open shelter" detail={shelterHelp} selected={choice === 'shelter'} disabled={!nearestShelter} onPress={() => setChoice('shelter')} />
+          {Array.isArray(shelters) && !shelters.length ? (
+            <Button label={`${countyName(place.fips)} County Emergency Management`} icon="ExternalLink" compact onPress={() => Linking.openURL(COUNTY_EM[place.fips] ?? SCEMD_COUNTY_DIRECTORY)} hint="Shelters open only when officials announce them" />
+          ) : null}
+          <OptionCard icon="Signpost" title="Away from the warning area" detail={awayHelp} selected={choice === 'away'} disabled={!avoidPolys.length} onPress={() => setChoice('away')} />
+          <OptionCard icon="Search" title="A place I choose" detail="A ZIP code or street address." selected={choice === 'place'} onPress={() => setChoice('place')} />
+          {choice === 'place' ? (
+            <Animated.View entering={FadeIn} style={[s.input, { backgroundColor: c.surfaceSunken }]}>
+              <Icon name="Search" size={18} tint={c.inkMuted} />
+              <TextInput
+                value={typed}
+                onChangeText={setTyped}
+                placeholder="ZIP code or street address"
+                placeholderTextColor={c.inkFaint}
+                returnKeyType="search"
+                onSubmitEditing={findPlace}
+                accessibilityLabel="Destination ZIP code or address"
+                style={[type.body, { flex: 1, color: c.ink, minHeight: tapTarget }]}
+              />
+              {typed.trim() ? <Button label="Find" kind="text" compact onPress={findPlace} /> : null}
+            </Animated.View>
+          ) : null}
+          {message ? <Txt variant="footnote" color={c.levels[2].fg}>{message}</Txt> : null}
+          {dest ? (
+            <Animated.View entering={FadeIn} style={[s.destRow, { borderColor: c.accent, backgroundColor: c.accentSoft }]}>
               <Icon name="MapPin" tint={c.accent} />
               <Txt variant="headline" style={{ flex: 1 }} numberOfLines={2}>
                 {dest.label}
               </Txt>
-            </Card>
-          </Animated.View>
-        ) : null}
-        {message ? <Txt variant="footnote" color={c.levels[2].fg}>{message}</Txt> : null}
-      </View>
+            </Animated.View>
+          ) : null}
+          <View style={s.toggle}>
+            <View style={{ flex: 1 }}>
+              <Txt variant="callout">Avoid community-reported flooded roads</Txt>
+              <Txt variant="footnote">These reports are unverified.</Txt>
+            </View>
+            <Switch value={avoidFlooded} onValueChange={setAvoidFlooded} trackColor={{ true: c.accent, false: c.hairline }} accessibilityLabel="Avoid community-reported flooded roads" />
+          </View>
+          <Button label="Plan lower-exposure routes" icon="Navigation" kind="primary" loading={planning} disabled={!dest} onPress={go} />
+          {plan instanceof Error ? <Notice title="Routing is unavailable right now." detail={`${plan.message} Use the official evacuation routes from your county, and follow officials’ directions.`} onRetry={go} /> : null}
+        </Animated.View>
+      ) : null}
 
-      <View style={s.toggle}>
-        <View style={{ flex: 1 }}>
-          <Txt variant="callout">Avoid community-reported flooded roads</Txt>
-          <Txt variant="footnote">These reports are unverified.</Txt>
-        </View>
-        <Switch value={avoidFlooded} onValueChange={setAvoidFlooded} trackColor={{ true: c.accent, false: c.hairline }} accessibilityLabel="Avoid community-reported flooded roads" />
-      </View>
-
-      <Button label="Plan lower-exposure routes" icon="Navigation" kind="primary" loading={planning} disabled={!dest} onPress={go} />
-
-      {plan instanceof Error ? <Notice title="Routing is unavailable right now." detail={`${plan.message} Use the official evacuation routes from your county, and follow officials’ directions.`} onRetry={go} /> : null}
-      {plan && !(plan instanceof Error) && dest ? <Results plan={plan} start={start} dest={dest} avoidPolys={avoidPolys} /> : null}
+      {step === 'results' && plan && !(plan instanceof Error) && dest ? (
+        <Animated.View key="results" entering={enter} style={{ gap: space.m }}>
+          <BackLink onPress={() => setStep('to')} label="Change destination" />
+          <Txt variant="title2" accessibilityRole="header">
+            Lower-exposure routes
+          </Txt>
+          <Txt variant="callout" tone="muted">{`${start.label} → ${dest.label}`}</Txt>
+          <Results plan={plan} start={start} dest={dest} avoidPolys={avoidPolys} />
+          <Button label="Plan another trip" kind="text" onPress={() => setStep('from')} />
+        </Animated.View>
+      ) : null}
     </View>
+  );
+}
+
+/** A big tappable choice: icon, title, one line of detail; outlined in blue when chosen. */
+function OptionCard({ icon, title, detail, selected, disabled, onPress }: { icon: IconName; title: string; detail: string; selected?: boolean; disabled?: boolean; onPress: () => void }) {
+  const { c } = useTheme();
+  return (
+    <Pressable
+      onPress={() => {
+        if (disabled) return;
+        haptic.select();
+        onPress();
+      }}
+      accessibilityRole="button"
+      accessibilityState={{ selected: !!selected, disabled: !!disabled }}
+      accessibilityLabel={`${title}. ${detail}`}
+      scaleTo={0.98}
+    >
+      <View style={[s.option, { backgroundColor: selected ? c.accentSoft : c.surface, borderColor: selected ? c.accent : c.hairline, opacity: disabled ? 0.55 : 1 }]}>
+        <View style={[s.optionIcon, { backgroundColor: selected ? c.accent : c.surfaceSunken }]}>
+          <Icon name={icon} size={22} tint={selected ? c.onAccent : c.ink} />
+        </View>
+        <View style={{ flex: 1, gap: 2 }}>
+          <Txt variant="headline">{title}</Txt>
+          <Txt variant="footnote">{detail}</Txt>
+        </View>
+        <Icon name={selected ? 'CircleCheck' : 'ChevronRight'} size={20} tint={selected ? c.accent : c.inkFaint} />
+      </View>
+    </Pressable>
+  );
+}
+
+function BackLink({ onPress, label }: { onPress: () => void; label: string }) {
+  const { c } = useTheme();
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`Back: ${label}`} style={{ alignSelf: 'flex-start' }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2, minHeight: tapTarget }}>
+        <Icon name="ChevronLeft" size={18} tint={c.accent} />
+        <Txt variant="callout" tone="accent" numberOfLines={1}>
+          {label}
+        </Txt>
+      </View>
+    </Pressable>
   );
 }
 
@@ -421,6 +483,11 @@ function RouteCard({ r, index, width, selected, extra, onPress }: { r: RouteResu
 }
 
 const s = StyleSheet.create({
+  progress: { height: 4, borderRadius: 2, overflow: 'hidden' },
+  progressFill: { height: 4, width: '100%', transformOrigin: 'left' },
+  option: { flexDirection: 'row', alignItems: 'center', gap: space.m, padding: space.l, borderRadius: radius.md, borderWidth: 1.5, minHeight: 76 },
+  optionIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  destRow: { flexDirection: 'row', alignItems: 'center', gap: space.m, padding: space.l, borderRadius: radius.md, borderWidth: 1 },
   safety: { borderLeftWidth: 4, borderRadius: radius.sm, padding: space.l, gap: space.xs },
   input: { flexDirection: 'row', alignItems: 'center', gap: space.s, paddingHorizontal: space.l, borderRadius: radius.sm },
   toggle: { flexDirection: 'row', alignItems: 'center', gap: space.m },

@@ -4,6 +4,8 @@
  * Every text/background pair was checked with scripts/contrast.mjs (WCAG): body text ≥ 4.5:1,
  * large text and icons ≥ 3:1, in both themes. One change from the brief: light inkFaint was
  * #68737D (4.07:1 on surfaceSunken), darkened to #5F6A74 (≥ 4.65:1 everywhere).
+ * Oct 23 polish: stronger, more saturated status colors (still AA), plus a solid "band" color per
+ * level for the Status screen's full-width top, with the text color that reads on it ("onBand").
  */
 import type { TextStyle } from 'react-native';
 import type { Level } from '../../../shared/hazards/levels';
@@ -13,6 +15,10 @@ export interface LevelColors {
   fg: string;
   /** Soft background for badges, tiles, the hero card's water line. */
   bg: string;
+  /** Solid, saturated fill for the Status screen's top band. */
+  band: string;
+  /** Text and icon color on the band (white, or ink on the light amber). */
+  onBand: string;
 }
 
 export interface Palette {
@@ -53,10 +59,10 @@ export const light: Palette = {
   simFg: '#FFFFFF',
   shadow: '#0F1A24',
   levels: {
-    0: { fg: '#2B6A5E', bg: '#E3F0EC' }, // Normal
-    1: { fg: '#8A5A00', bg: '#FBEFD3' }, // Watch
-    2: { fg: '#A8420F', bg: '#FBE3D5' }, // Warning
-    3: { fg: '#9A1B30', bg: '#F8DADF' }, // Danger
+    0: { fg: '#17694F', bg: '#D6F0E4', band: '#14775A', onBand: '#FFFFFF' }, // Normal
+    1: { fg: '#7F5100', bg: '#FCE7B0', band: '#F2B41E', onBand: '#0F1A24' }, // Watch
+    2: { fg: '#AE3A00', bg: '#FDD8C2', band: '#C4490A', onBand: '#FFFFFF' }, // Warning
+    3: { fg: '#A30D2A', bg: '#F9D0D8', band: '#B5102F', onBand: '#FFFFFF' }, // Danger
   },
 };
 
@@ -77,10 +83,10 @@ export const dark: Palette = {
   simFg: '#0B1117',
   shadow: '#000000',
   levels: {
-    0: { fg: '#7CCBB8', bg: '#12302A' },
-    1: { fg: '#F2C46B', bg: '#3A2C0C' },
-    2: { fg: '#FF9F6E', bg: '#3E1D0E' },
-    3: { fg: '#FF8A9B', bg: '#42121B' },
+    0: { fg: '#6FD3B4', bg: '#0F3328', band: '#1B7A5F', onBand: '#FFFFFF' },
+    1: { fg: '#F5C55A', bg: '#3D2D08', band: '#E0A41A', onBand: '#0B1117' },
+    2: { fg: '#FF9A63', bg: '#44200C', band: '#C9500F', onBand: '#FFFFFF' },
+    3: { fg: '#FF8296', bg: '#4A1220', band: '#B0182F', onBand: '#FFFFFF' },
   },
 };
 

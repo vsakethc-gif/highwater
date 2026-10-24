@@ -1,8 +1,8 @@
 /**
  * TabBar.tsx — the bottom tab bar (brief section 6, item 21): five tabs, each with an icon AND a label.
- * The selected tab's icon grows to 108% and fills in, its label turns blue, and a short indicator
- * slides to it with a snappy spring. On iPhone the bar uses the system blur like Apple's own apps,
- * unless "Reduce Transparency" is on; on Android it's a solid surface.
+ * It floats as a rounded pill just above the bottom edge. A soft blue pill sits behind the selected
+ * tab and slides to the next one with a snappy spring; the selected icon grows a little and fills in.
+ * On iPhone the bar uses the system blur, unless "Reduce Transparency" is on; on Android it's solid.
  */
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import { BlurView } from 'expo-blur';
@@ -10,7 +10,7 @@ import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Platform, Pressable, StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { font, haptic, space, spring, useTheme } from '../theme';
+import { elevation, font, haptic, radius, space, spring, useTheme } from '../theme';
 import { Icon, type IconName } from './Icon';
 import { Txt } from './ui/Text';
 
@@ -22,8 +22,11 @@ const TABS: Record<string, { label: string; icon: IconName }> = {
   more: { label: 'More', icon: 'Menu' },
 };
 
-/** Height of the bar's content, above the home-indicator area. Screens leave this much room. */
-export const TAB_BAR_HEIGHT = 58;
+/** The pill's own height, and how far it floats above the bottom. */
+const BAR = 62;
+const SIDE = 12;
+/** Room screens leave at the bottom (added to the safe-area inset) so nothing hides under the bar. */
+export const TAB_BAR_HEIGHT = BAR + 14;
 
 function TabButton({ name, focused, onPress }: { name: string; focused: boolean; onPress: () => void }) {
   const { c } = useTheme();
@@ -31,14 +34,14 @@ function TabButton({ name, focused, onPress }: { name: string; focused: boolean;
   useEffect(() => {
     grow.value = withSpring(focused ? 1 : 0, spring.snappy);
   }, [focused, grow]);
-  const iconStyle = useAnimatedStyle(() => ({ transform: [{ scale: 1 + 0.08 * grow.value }] }));
+  const iconStyle = useAnimatedStyle(() => ({ transform: [{ scale: 1 + 0.1 * grow.value }] }));
   const tab = TABS[name];
   if (!tab) return null;
   const tint = focused ? c.accent : c.inkMuted;
   return (
     <Pressable onPress={onPress} accessibilityRole="tab" accessibilityState={{ selected: focused }} accessibilityLabel={tab.label} style={s.tab}>
       <Animated.View style={iconStyle}>
-        <Icon name={tab.icon} size={23} tint={tint} filled={focused} />
+        <Icon name={tab.icon} size={22} tint={tint} filled={focused} />
       </Animated.View>
       <Txt variant="footnote" color={tint} style={{ fontSize: 11, lineHeight: 14, fontFamily: focused ? font.bold : font.medium }}>
         {tab.label}
@@ -69,10 +72,11 @@ export function TabBar({ state, descriptors, navigateToTab }: BottomTabBarProps)
   const indicator = useAnimatedStyle(() => ({ transform: [{ translateX: x.value }] }));
 
   const content = (
-    <View style={{ flexDirection: 'row', height: TAB_BAR_HEIGHT }} onLayout={(e) => setWidth(e.nativeEvent.layout.width)} accessibilityRole="tablist">
+    <View style={{ flexDirection: 'row', height: BAR, paddingHorizontal: 4 }} accessibilityRole="tablist">
+      <View style={StyleSheet.absoluteFill} onLayout={(e) => setWidth(e.nativeEvent.layout.width - 8)} pointerEvents="none" />
       {width > 0 ? (
-        <Animated.View style={[s.indicator, { width: tabWidth }, indicator]}>
-          <View style={[s.indicatorBar, { backgroundColor: c.accent }]} />
+        <Animated.View style={[s.indicator, { width: tabWidth }, indicator]} pointerEvents="none">
+          <View style={[s.indicatorPill, { backgroundColor: c.accentSoft }]} />
         </Animated.View>
       ) : null}
       {visible.map((route) => (
@@ -91,20 +95,23 @@ export function TabBar({ state, descriptors, navigateToTab }: BottomTabBarProps)
     </View>
   );
 
-  const frame = [s.bar, { paddingBottom: Math.max(insets.bottom, space.s), borderTopColor: c.hairline }];
-  if (!solid) {
-    return (
-      <BlurView intensity={85} tint={isDark ? 'dark' : 'light'} style={frame}>
-        {content}
-      </BlurView>
-    );
-  }
-  return <View style={[frame, { backgroundColor: c.surface }]}>{content}</View>;
+  const bottom = insets.bottom > 0 ? insets.bottom - 6 : space.m;
+  const frame = [s.bar, { bottom, borderColor: c.hairline }];
+  return (
+    <View style={[frame, elevation(c, isDark, 2), { backgroundColor: solid ? c.surface : 'transparent' }]}>
+      {solid ? content : (
+        <BlurView intensity={90} tint={isDark ? 'dark' : 'light'} style={s.blur}>
+          {content}
+        </BlurView>
+      )}
+    </View>
+  );
 }
 
 const s = StyleSheet.create({
-  bar: { position: 'absolute', left: 0, right: 0, bottom: 0, borderTopWidth: StyleSheet.hairlineWidth },
-  tab: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 3, paddingTop: space.xs },
-  indicator: { position: 'absolute', top: 0, height: 3, alignItems: 'center' },
-  indicatorBar: { width: 28, height: 3, borderBottomLeftRadius: 3, borderBottomRightRadius: 3 },
+  bar: { position: 'absolute', left: SIDE, right: SIDE, borderRadius: radius.pill, borderWidth: StyleSheet.hairlineWidth },
+  blur: { borderRadius: radius.pill, overflow: 'hidden' },
+  tab: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2 },
+  indicator: { position: 'absolute', top: 5, bottom: 5, left: 4, paddingHorizontal: 3 },
+  indicatorPill: { flex: 1, borderRadius: radius.pill },
 });

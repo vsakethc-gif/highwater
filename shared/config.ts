@@ -9,6 +9,9 @@
 /** The app's display name. Placeholder: change it here and it changes everywhere. */
 export const APP_NAME = 'Highwater';
 
+/** The short motto under the name (phone app intro, About). */
+export const APP_MOTTO = 'Know the water before it rises.';
+
 /** One-sentence description used in page titles and the social preview. */
 export const APP_TAGLINE =
   'Live hazard information, plain-language guidance, and community reports for South Carolina’s 5th District.';

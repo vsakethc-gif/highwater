@@ -14,6 +14,7 @@ import Animated, { interpolate, useAnimatedScrollHandler, useAnimatedStyle, useS
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { APP_NAME } from '../../../shared/config';
+import { Wordmark } from '../components/Logo';
 import { platform } from '../../../shared/platform';
 import { Button, Pressable } from '../components/ui/Button';
 import { Txt } from '../components/ui/Text';
@@ -106,9 +107,7 @@ export default function Onboarding() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }}>
       <View style={s.top}>
-        <Txt variant="title3" style={{ fontFamily: font.serif }}>
-          {APP_NAME}
-        </Txt>
+        <Wordmark size={32} motto />
         {!last ? (
           <Pressable onPress={() => finish()} accessibilityRole="button" accessibilityLabel="Skip introduction" hitSlop={10}>
             <Txt variant="headline" tone="accent" style={{ padding: space.s }}>

@@ -2,9 +2,10 @@
  * Status tab (brief section 8.2) — "What's happening near me, and what do I do?"
  *
  *   header: large "Status" title, the county pill (opens the county picker), and the live indicator
- *   hero:   the status card with the water line, then "Why this status?"
- *   then:   other active hazards, the "Do this now" checklist, official alerts, rivers near you,
- *           the rain forecast, quick actions, and the footer with 911 and sources.
+ *   hero:   the full-width status band with the rising water, then "Why this status?"
+ *   then:   the "Do this now" checklist first (the most useful thing for a worried person), other
+ *           active hazards, official alerts, rivers near you, the rain forecast, quick actions, and
+ *           the footer with 911 and sources.
  *
  * Everything comes from the shared engine through useStatus(). Pull down to refresh.
  */
@@ -28,7 +29,7 @@ import { LargeTitleScroll, Screen } from '../../components/ui/Screen';
 import { Txt } from '../../components/ui/Text';
 import { useStatus, type StatusData } from '../../hooks/useStatus';
 import { useAppState } from '../../state';
-import { easing, fadeIn, haptic, radius, space, useMotionReduced, useTheme } from '../../theme';
+import { easing, fadeIn, haptic, radius, SCREEN_PAD, space, useMotionReduced, useTheme } from '../../theme';
 
 export default function StatusScreen() {
   const { c } = useTheme();
@@ -59,9 +60,10 @@ export default function StatusScreen() {
         {!data ? (
           <Loading />
         ) : (
-          <Animated.View entering={fadeIn} style={{ marginTop: space.l }}>
+          <Animated.View entering={fadeIn} style={{ marginTop: space.m }}>
             <StatusHero overall={data.overall} top={data.blocks[0]} placeName={placeLabel(place)} onPress={() => setWhyOpen(true)} />
             <WhyStatus overall={data.overall} checks={data.checks} open={whyOpen} onToggle={() => setWhyOpen(!whyOpen)} />
+            <DoThisNow data={data} />
 
             {data.overall.active.length > 1 ? (
               <View style={s.section}>
@@ -74,7 +76,6 @@ export default function StatusScreen() {
               </View>
             ) : null}
 
-            <DoThisNow data={data} />
             <Alerts data={data} />
             <Rivers data={data} />
 
@@ -150,7 +151,7 @@ function Loading() {
   // Placeholders shaped like the real content, so nothing jumps when it arrives.
   return (
     <View style={{ marginTop: space.l, gap: space.m }}>
-      <Skeleton height={248} radius={radius.lg} />
+      <Skeleton height={300} radius={0} style={{ marginHorizontal: -SCREEN_PAD }} />
       <Skeleton height={52} />
       <Skeleton height={14} width="30%" style={{ marginTop: space.x3 }} />
       <Skeleton height={60} />

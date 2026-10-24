@@ -6,6 +6,7 @@ import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import { Linking, Pressable, StyleSheet, Switch, View } from 'react-native';
 import { APP_NAME } from '../../../../shared/config';
+import { Wordmark } from '../../components/Logo';
 import { findScenario } from '../../../../shared/scenario/scenario';
 import { SegmentedControl } from '../../components/ui/Chips';
 import { Card, ListRow, SectionHeader } from '../../components/ui/Layout';
@@ -99,6 +100,7 @@ export default function MoreScreen() {
         <View style={s.section}>
           <SectionHeader title="About" />
           <Card style={{ gap: space.m }}>
+            <Wordmark size={44} motto />
             <Txt variant="callout">
               {`${APP_NAME} turns official public data into a clear status for the 8 counties of South Carolina’s 5th District, using fixed, written rules. There’s no AI in the app.`}
             </Txt>

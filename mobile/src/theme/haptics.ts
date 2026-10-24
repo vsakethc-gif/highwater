@@ -24,9 +24,14 @@ export const haptic = {
   /** Report sent, checklist item done. */
   success: () => on() && run(Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)),
   error: () => on() && run(Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)),
-  /** Status changed: a warning buzz for Watch and Warning, an error buzz for Danger. */
+  /**
+   * Status changed. Watch: one warning buzz. Warning: the buzz plus a firm follow-up tap.
+   * Danger: an error buzz and two heavy taps, so it's unmistakable even in a pocket. No sounds.
+   */
   level: (level: Level) => {
     if (!on() || level === 0) return;
     run(Haptics.notificationAsync(level === 3 ? Haptics.NotificationFeedbackType.Error : Haptics.NotificationFeedbackType.Warning));
+    if (level >= 2) setTimeout(() => run(Haptics.impactAsync(level === 3 ? Haptics.ImpactFeedbackStyle.Heavy : Haptics.ImpactFeedbackStyle.Medium)), 260);
+    if (level === 3) setTimeout(() => run(Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)), 480);
   },
 };

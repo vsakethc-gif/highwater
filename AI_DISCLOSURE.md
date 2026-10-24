@@ -1,40 +1,51 @@
 # AI disclosure
 
-_Draft written with Claude from our project records. Before submitting, read it carefully and change anything that doesn't match your memory. It must stay accurate._
+Read this carefully and change anything that doesn't match what really happened. It has to stay accurate. Items marked **[CHECK]** or **[ADD YOURS]** need me.
 
-## Summary
+## Short version (for the form)
 
-I used **Claude** (an AI coding assistant made by Anthropic, running in the Claude Code desktop app) to build Highwater. **Claude wrote nearly all of the code**, the data scripts, the tests, and first drafts of the documentation. It worked from a detailed project brief that I wrote, and it explained its choices as it went. I directed the project, made the product and design decisions, set up and connected every account and service, tested the app myself, and reported the problems I found.
+I used Claude Code, an AI coding assistant made by Anthropic, to build Highwater. It wrote most of the code, the tests, and first drafts of the documents, working from a project brief I wrote and the changes I asked for. It also used add-on design skills: Impeccable, UI UX Pro Max, Expo's official skills, and Emil Kowalski's animation skill. I chose the problem, decided the features and the design direction, set up every account, checked the data, tested the app on my phone, told it what to change, and wrote this submission. The app itself uses no AI: every status comes from written rules.
 
-**The app itself does not use AI.** Nothing in Highwater calls an AI model. Every status, score, piece of advice, and route ranking comes from fixed rules written out in [METHODOLOGY.md](METHODOLOGY.md) and shown on the app's "How it works" page.
+(About 90 words.)
 
-## What I did
+## Full version
 
-- **Chose the problem and wrote the brief.** I picked hazard readiness for SC-5 and wrote `CLAUDE.md`, the project brief: who it's for, which data to use, the four status levels, the safety rules (never call anything "safe," always point to 911 and officials), the design direction, the scope tiers, and the schedule.
-- **Made the decisions.** The scope and the order of features, the build schedule, the rule to stop at each phase and show me, and the name **Highwater**.
-- **Set up every account and service myself:** GitHub (repository and website hosting), a U.S. Census API key, Cloudflare (the Worker and the "I'm human" check), OpenRouteService, and Supabase (the reports database). I approved each login, handled the secret keys so they never went into the code, and ran the database setup.
-- **Tested the app on the live site.** For example, I sent the first real community reports, found that the "Verify you are human" check was failing (red "Troubleshoot" message), and kept testing in different browsers until it was fixed.
-- **Reviewed each phase** at its checkpoint before work moved on.
-- **Will write the submission in my own words**, using the drafts in `SUBMISSION.md` as a starting point, and record the demo video myself.
+### What the AI did
 
-_Add anything else you did yourself (for example, comparing a gauge reading on the app with the USGS website, or checking the app on your own phone)._
+- **Wrote most of the code:** the website, the phone app, the shared rules engine, the Cloudflare Worker, the database setup (SQL), and the scripts that prepare Census, FEMA, and map data.
+- **Wrote the 171 automated tests** and ran checks in a browser: different screen sizes, keyboard use, contrast, and what happens when each data source fails.
+- **Tested each data source** with real requests before building on it, and recorded the results in `DATA_SOURCES.md`.
+- **Drafted the safety guidance text** from official sources (NWS, Ready.gov, the Red Cross, SC Emergency Management Division), with a link to each source.
+- **Drafted the documents:** README, METHODOLOGY, NOTES, LEARNING, FINAL_SUMMARY, the demo script, and the first drafts of these submission answers.
 
-## What Claude did
+### Design skills it used
 
-- Wrote the TypeScript code for the app, the Cloudflare Worker, the database setup (SQL), and the data-building scripts.
-- Tested each data source with real requests and recorded the results in `DATA_SOURCES.md`.
-- Wrote the 159 automated tests and ran browser, keyboard, accessibility, and performance checks.
-- Drafted the safety guidance text from official sources (NWS, Ready.gov, the Red Cross, SC Emergency Management), with a link to each source.
-- Drafted `README.md`, `METHODOLOGY.md`, `NOTES.md`, `LEARNING.md`, this file, `SUBMISSION.md`, and `FINAL_SUMMARY.md`.
+These are add-ons for Claude Code that guide how it designs. They are instructions and checklists, not separate AI services:
+- **Impeccable** (open source, by Paul Bakaus): design critiques and checklists for layout, type, and polish.
+- **UI UX Pro Max** (open source): a searchable database of styles, color palettes, and font pairings. It generated three design options, and I picked "Night Tide."
+- **Expo's official skills:** guidance for building native-feeling screens, animations, and a consistent design system in React Native.
+- **Emil Kowalski's design-engineering skill:** rules for animation timing and easing.
 
-## How I made sure I understand the app
+### What I did
 
-The contest rules say AI can't make up the entire technical development and that I must understand my app. So:
+- **Chose the problem.** I picked hazard readiness for my district after seeing how scattered storm information is. [ADD YOURS: your own reason, for example Hurricane Helene in 2024]
+- **Wrote the project brief** (`CLAUDE.md`): who the app is for, which data to use, the four status levels, the safety rules (never call anything "safe," always point to 911 and officials), the design direction, and the schedule.
+- **Made the decisions:** the features and their order, the name Highwater, the "Living Status" design idea, which of the three design options to use, and what to cut. For example, after testing the phone app's route planner I decided it wasn't useful enough and had it switched off there.
+- **Set up every account and service myself:** GitHub, the Census API key, Cloudflare (Worker and "I'm human" check), OpenRouteService, Supabase, and Expo. I approved each login and kept the secret keys out of the code.
+- **Tested the app on my own phone** through Expo Go and on the live website, and reported what looked wrong or felt slow (for example the screens that "stayed the same," the animations that only played once, and the Expo Go timeouts).
+- **Checked the data:** [ADD YOURS / CHECK: for example comparing a gauge reading in the app with the USGS website, or the alert list with weather.gov]
+- **Directed changes** at each checkpoint and chose what to keep or roll back.
+- **Wrote the final submission** and recorded the demo video myself, using these drafts as a starting point.
 
-- `LEARNING.md` logs what I did in each session and explains each main idea (APIs, JSON, GeoJSON, CORS, Row Level Security, polygons, hashing, and more).
-- `FINAL_SUMMARY.md` walks through the whole app, how every part works, and likely judge questions. I study it and practice with quiz questions on every part. _(Update this line once you've done it.)_
-- `NOTES.md` records each real problem we hit and how it was solved. I can explain these in my own words.
+### How I made sure I understand my app
 
-## Other tools
+The contest rules say AI can't do the entire technical development and that I must understand my app. So:
+- `LEARNING.md` logs what I did in each session and explains the main ideas (APIs, JSON, GeoJSON, CORS, Row Level Security, the UI thread, and more).
+- `FINAL_SUMMARY.md` walks through every part of the app and has practice questions with answers. [CHECK: update this line once you've studied it]
+- `NOTES.md` records every real problem and how it was solved.
 
-All open-source libraries and outside services are listed with what they do in the [README](README.md#libraries-and-services).
+### The app doesn't use AI
+
+Nothing in Highwater calls an AI model. Every status, score, piece of advice, and route ranking comes from fixed rules written out in `METHODOLOGY.md` and shown on the "How it works" page.
+
+All open-source libraries and services are listed in the [README](README.md#libraries-and-services).

@@ -112,6 +112,33 @@ Every section has a designed message for loading (gray placeholder boxes the sam
 
 ---
 
+## 3b. The phone app, screen by screen
+
+The phone app (React Native + Expo, in `/mobile`) uses the same rules and data code as the website. It runs in Expo Go for testing and the demo; it isn't in the app stores. It has four tabs.
+
+### Status (the "living scene")
+- The whole background is the status: deep blue at **Normal**, amber at **Watch**, burnt orange at **Warning**, deep red with a slow glow at **Danger**. A water line rises with the level, and rain falls when 0.25 inches or more is forecast.
+- At the top, the **live ribbon** says how fresh the data is ("LIVE · Updated 3 min ago", "OFFLINE", "MAY BE OUT OF DATE", or violet "SIMULATION"). Tap it to see every source and its time.
+- The big word (Normal, Watch, Warning, Danger), the hazard, a one-line headline, and a context line ("Rain next 24 h: 1.8 in · 3 rivers rising").
+- Cards: **Why this status** (each reason with its source), **What to do now** (a checklist you can tick), **Rivers near you**, **Alerts** (with a bar showing how far through the alert we are), **Rain**, and buttons for Report and the Map. The footer says it's not an official warning system and has a Call 911 button.
+- Scrolling shrinks the big word into a slim top bar. Pulling down lifts the water and refreshes.
+- **Scenario timeline:** in Scenario Mode → Replay a storm, a slider above the tab bar drags a made-up York County storm from calm to a Flash Flood Emergency, and the whole scene follows your finger.
+
+### Map
+A full-screen map with a search pill ("Find a county") and a layers button. A sheet at the bottom never closes: low, it shows a district summary ("No warnings · 4 rivers rising") and layer chips (Alerts, Rivers, Reports, Vulnerable, Flood zones, Priority); tap anything and it rises with details while the map flies there. River gauges are round markers with the water height inside and a ring in the flood color.
+
+### Report
+One step per screen: pick a category (two big columns of tiles), move the map so the pin is on the spot, add an optional note, then send. The main button stays pinned at the bottom. "Downed power line" first shows a full-screen warning to stay 30 feet away and call 911. A checkmark draws itself when the report is sent, followed by the official place to report it. "Near me" lists reports with "Still there" and "Fixed" buttons.
+
+### More
+A "Replay a storm" card, other scenarios (the Helene replays, a tornado, heat, and more), How it works, data sources, settings (Dark / System / Light, vibration on or off), and About.
+
+### Gauge and alert pages
+Tap a river: a big water-height number, a chart you can drag your finger across (the number follows your finger, and the line changes color at each flood stage), and what it means. Tap an alert: a header in the level's colors, a time bar, "In plain words," "What to do," and the official text.
+
+### Route (switched off on the phone)
+I tested the phone version of the route planner and decided it wasn't useful enough on a phone, so it's turned off with a feature flag (`mobile/src/features.ts`). The web app still has the full route planner.
+
 ## 4. Every data source
 
 | Source | What it gives us | How the app gets it |
@@ -235,7 +262,7 @@ These answer: "If a hazard hits, where are the people with the fewest resources 
 | **Lucide icons** | Open-source icon set | One consistent style; only used icons are included |
 | **Public Sans + Source Serif 4** | Fonts | Public Sans is the U.S. government's own typeface: very readable, civic; both self-hosted |
 | **marked** | Markdown → HTML | Shows METHODOLOGY.md as the "How it works" page |
-| **Vitest** | Tests | 159 automated tests for the rules, parsers, routing, reports, and offline logic |
+| **Vitest** | Tests | 171 automated tests for the rules, parsers, routing, reports, and offline logic |
 | **GitHub Pages + GitHub Actions** | Hosting + automatic deploy | Free; every push rebuilds and publishes the site |
 | **Cloudflare Worker** | The one small server | Free; keeps secrets out of the browser |
 | **Supabase** | Postgres database | Free; Row Level Security protects it with a public key |
@@ -244,11 +271,23 @@ These answer: "If a hazard hits, where are the people with the fewest resources 
 
 Languages: **TypeScript, HTML, CSS, SQL**, and JavaScript for scripts.
 
+### The phone app's stack
+
+| Piece | What it does | Why |
+|---|---|---|
+| **React Native + Expo (SDK 58)** | Real native screens written in TypeScript | One language for both apps; Expo Go lets me test on my phone instantly |
+| **Expo Router** | Screens, tabs, and sheets | Screens are just files in a folder |
+| **Reanimated + Gesture Handler** | Animations and drags on the phone's UI thread | Stays smooth while data loads |
+| **react-native-maps, react-native-svg** | The map, the water line, charts, icons | Native maps; drawing in code instead of image files |
+| **expo-haptics, expo-blur, expo-location** | Vibrations, frosted glass, location (with permission) | Native feel |
+| **Atkinson Hyperlegible Next + Newsreader** | Fonts | Atkinson was designed by the Braille Institute for low-vision readers |
+| **The shared engine (`/shared`)** | The same rules and data code as the website | Written once, used by both apps (each app plugs in how it loads files and saves things) |
+
 ---
 
 ## 10. Quality
 
-- **159 automated tests pass.**
+- **171 automated tests pass** (as of October 24, 2026).
 - **Lighthouse (mobile):** accessibility **100** and best practices **100** on every page. Performance: Status 97, Report 100, Get ready 100, How it works 99, About 99, Route 96, District map 50. The route page went from 76 to 96 by loading its map only when needed. The district map page is held back by the map library (about 1 MB), which is an honest limitation.
 - **Accessibility:** WCAG 2.2 AA contrast (checked with a script), full keyboard use (tested: setting a report location with a ZIP and Enter, switching map layers with Space), visible focus rings, a "Skip to main content" link, labeled controls, screen-reader announcements when the status changes, text versions of the maps, tap targets of at least 44 px, and no color-only information.
 - **Screens tested** at 360, 390, 768, 1024, and 1440 px wide with no sideways scrolling.
@@ -275,6 +314,13 @@ Languages: **TypeScript, HTML, CSS, SQL**, and JavaScript for scripts.
 
 ---
 
+### Phone app problems we solved
+- **One engine, two apps.** The phone's bundler (Metro) only looked inside `/mobile` at first, so it couldn't find the shared rules in `/shared`. We added `/shared` to its watch list in `mobile/metro.config.js`, which left the website untouched.
+- **Smooth animations.** The scene, the water line, and the storm timeline run on the UI thread with Reanimated "shared values," so loading data never makes them stutter. Rain is three moving layers instead of 80 separate streaks.
+- **Colors that never flash.** When the level changes, the new colors are drawn on a hidden layer first and then faded in.
+- **No flicker while scrubbing.** Each timeline step loads new simulated data. The screen keeps the old picture until the new one is ready.
+- **A crash we caught.** An animation change made the storm timeline crash when it opened ("Cannot access 'held' before initialization"). I found it while testing in the browser before recording, and it was fixed by creating the value before the code that used it.
+
 ## 12. Known limitations (say these honestly)
 
 - Not an official warning system; it can be late, wrong, or missing alerts.
@@ -285,6 +331,8 @@ Languages: **TypeScript, HTML, CSS, SQL**, and JavaScript for scripts.
 - Shelters are only as current as FEMA/Red Cross data.
 - Community reports are unverified and not sent to any agency.
 - The district map page loads slowly on old phones (Lighthouse performance 50).
+- The phone app isn't in the app stores; it runs in Expo Go for testing and the demo. Its route planner is switched off (the web app has it).
+- Parts of Spartanburg and Sumter counties are in SC-5 but not covered yet.
 
 ---
 
@@ -332,52 +380,52 @@ On Oct 24 the phone app got a design system called **Night Tide**: near-black sc
 | emil-design-eng | Reviewed every animation earlier the same day: stronger easing, faster UI motion, instant emergency info |
 | expo-design-system | Audited for hardcoded colors and turned repeated ones into named tokens |
 
-## 14. Likely judge questions, with answers
+## 14. Fifteen likely judge questions, with short answers to say out loud
 
-**Q: Is this AI? How does it decide the status?**
-No AI runs in the app. It's a set of written rules: an alert table, gauge-vs-flood-stage rules, and a 2-inch rain rule. The highest level wins. Every status lists its reasons under "Why this status?", and every rule is on the "How it works" page.
+**1. What does your app do, in one sentence?**
+It shows people in SC-5 what flood and weather dangers are near them right now and what to do, using live government data and written rules.
 
-**Q: How much did you use AI to build it?**
-I used Claude, an AI coding assistant, and it wrote most of the code. I wrote the project brief, made the product and design decisions, set up every account and service, tested the app on the live site, and found and reported bugs. It's all disclosed in AI_DISCLOSURE.md. _(Answer in your own words and be specific.)_
+**2. Who is it for?**
+Everyone in our eight counties, especially older adults, families without a car, and people with lower incomes, because they have the least time and the fewest options in a storm.
 
-**Q: What happens if the weather service is down?**
-The app won't show "Normal." It shows "We can't confirm conditions" and links official sources. Each section loads separately, so if one agency is down, the others still show. If you're offline, it shows the last saved data with its time, marked incomplete.
+**3. Is this AI? How does it decide the status?**
+No AI runs in the app. It uses written rules: a table of weather alerts, river gauges compared with their official flood stages, and a 2-inch rain rule. The highest level wins, and "Why this status" lists every reason.
 
-**Q: Why no route button during a tornado?**
-Driving during a tornado warning is dangerous; NWS and Ready.gov say to shelter on the lowest floor in an interior room. The route planner only appears for floods, hurricanes, and evacuation orders, where leaving can make sense.
+**4. Give me an example of how a level is decided.**
+If the Catawba River near Rock Hill reads 16.4 feet and its flood stage is 15, that's a Flood Warning for York County. A Flash Flood Warning tagged "catastrophic" is Danger. Two inches of forecast rain in 24 hours is Watch.
 
-**Q: Is the "lower-exposure" route safe?**
-We never call it safe. It avoids the active warning areas we know about, but it can't see every closed or flooded road. The screen says never to drive through water and to follow officials' directions first.
+**5. How much did AI help you build it?**
+I used Claude Code, an AI coding assistant, and it wrote most of the code. I chose the problem, wrote the brief, decided the features and design, set up every account, tested it on my phone, and directed every change. It's all in AI_DISCLOSURE.md. [ADD YOURS: say it in your own words]
 
-**Q: How do you route around a warning area?**
-The routing service accepts "avoid areas," but only up to 20 km across. We cut big warning areas into tiles about 14 km on a side and send the ones near the trip. Then we score each route: minutes plus 30 points per warning area entered, 5 per mile inside one, and 3 per flood zone crossed.
+**6. Where does the data come from?**
+The National Weather Service (alerts and rain), U.S. Geological Survey river gauges, NOAA flood stages, FEMA flood zones and shelters, and the Census. Each number shows its source and time.
 
-**Q: How do you stop spam or abuse on reports without accounts?**
-Layers: Cloudflare's "I'm human" check, server checks on category, location, length, and personal info, a limit of 5 reports per device per hour, and community flags that auto-hide a report after 3. The device is a random ID scrambled with a secret, so we count reports without knowing who anyone is. The database only lets the public read.
+**7. What happens if a data source is down?**
+It never shows "Normal" by mistake. It says "can't confirm" and points to official sources. If you're offline, it shows the last saved info with its time.
 
-**Q: What personal data do you collect?**
-None that identifies anyone. No accounts, names, emails, phone numbers, or IP addresses. Your location stays in your browser and goes only to the services that answer for that spot.
+**8. Why is there no route button during a tornado?**
+Driving during a tornado is dangerous. Official advice is to shelter on the lowest floor in an interior room, so the app says "Stay where you are and take shelter."
 
-**Q: Where do the vulnerability scores come from?**
-Census estimates per neighborhood (tract): % 65+, % without a car, % in poverty, % with a disability. Each is ranked against the other 148 SC-5 tracts, and the four ranks are averaged. Tiny tracts like dorms and prisons are marked "insufficient data."
+**9. Is the route safe?**
+We never call it safe. It's "lower-exposure": it avoids the warning areas we know about, but it can't see every flooded road. It tells you to never drive through water and to follow officials.
 
-**Q: Why does the rain rule use 2 inches?**
-SC averages about 4 inches of rain a month, so 2 inches in a day is half a month at once. It's our own cautious "get ready" signal, labeled that way, and it can only raise flooding to Watch.
+**10. Why does the phone screen change color?**
+That's the "living scene." The whole screen shows the danger level, so you can tell from across the room. The level is always written as a big word too, so it never depends only on color.
 
-**Q: What was your hardest technical challenge?**
-_(Pick one from section 11 and tell it as a story: what went wrong, how you found it, how you fixed it.)_
+**11. Did you think about color-blind users?**
+Yes. Normal is teal instead of green, so nothing relies on red versus green, and the four colors also differ in brightness. Every level has an icon and a word.
 
-**Q: How do you keep it free?**
-GitHub Pages hosts the site, and every data source is free. The Worker, Supabase, and Turnstile use free plans. The limits are listed in DATA_SOURCES.md.
+**12. Why two apps, a website and a phone app?**
+The website works on any phone with no download, so judges and residents can try it instantly. The phone app shows what a native version feels like. Both use the same rules code, so they always agree.
 
-**Q: How do you know the data is right?**
-Every source was tested with real requests before building on it, and saved real responses are used in the tests. Gauge readings are labeled provisional, as USGS says. Each number shows its source and time.
+**13. What was your hardest technical problem?**
+[ADD YOURS: pick one from section 11 and tell it as a story: what went wrong, how you found it, how you fixed it. Good ones: cancelled warnings that still said "Flood Warning," or screens that showed "nothing here" when data hadn't loaded.]
 
-**Q: Is the Helene replay real?**
-Yes. A script downloads the USGS river readings and the NWS alerts that were actually in effect at that minute (from Iowa State's archive of every NWS alert), and the app runs them through the same rules. Only the clock is shifted, so the app treats that moment as "now."
+**14. How do you stop spam on reports without accounts?**
+An "I'm human" check, server checks on the category, location, and text, a limit of 5 reports per device per hour, and auto-hiding after 3 flags. The device ID is scrambled, so we never know who anyone is.
 
-**Q: What would you add next?**
-Ideas: a lighter map so the district map loads faster on old phones, road closures if SC ever publishes a feed, and the parts of Spartanburg and Sumter counties that are in SC-5.
+**15. What would you add next?**
+The parts of Spartanburg and Sumter counties in SC-5, opt-in notifications when the level changes, a Spanish version, and publishing the phone app to the app stores.
 
-**Q: Can people rely on it in an emergency?**
+**Bonus: can people rely on it in an emergency?**
 It's a helper, not an official warning system, and it says so on every screen. Official alerts, local officials, and 911 come first.

@@ -1,75 +1,114 @@
-# Submission drafts
+# Submission answers (drafts)
 
-_These are drafts for you to rewrite in your own words. Judges want to hear **you**. Check the 2026 Congressional App Challenge rules and the exact form questions before submitting (deadline Monday, October 26, 2026; you plan to submit Sunday, October 25)._
+These are drafts for the Congressional App Challenge form. Each answer comes in two lengths: a **short** one (under 100 words) and a **long** one (under 250 words), because I don't know the form's limits yet. Rewrite them in my own words before pasting. Anything marked **[CHECK]** needs checking and anything marked **[ADD YOURS]** needs my own words.
 
-**Live app:** https://vsakethc-gif.github.io/highwater/
-**Source code:** https://github.com/vsakethc-gif/highwater
+- **Web app (works on any phone or computer):** https://vsakethc-gif.github.io/highwater/
+- **Code:** https://github.com/vsakethc-gif/highwater
+- **Demo video:** [ADD VIDEO LINK]
+- **Deadline:** Monday, October 26, 2026 [CHECK the exact time on the official site]. I plan to submit Sunday, October 25.
 
 ---
 
-## App name
+## 1. App name
 
-**Highwater**
+**Short:** Highwater
 
-## One-sentence description
+**Long:** Highwater. The name comes from "high water," the phrase people use when rivers and creeks rise. Flooding is the hazard the app was built around first, and the app's main screen shows a water line that rises as the danger level goes up.
 
-Highwater is a free web app that shows people in South Carolina's 5th District what hazards are near them right now, what to do about them, how to find a lower-exposure way out when leaving makes sense, and how to report broken or dangerous things in their neighborhood.
+---
 
-## Target audience
+## 2. One-sentence purpose
 
-Residents of SC-5's eight counties (Cherokee, Chester, Fairfield, Kershaw, Lancaster, Lee, Union, and York), and especially the people who have the hardest time in a disaster: older adults, households without a car, and families with lower incomes. It is built to work on an old or cracked phone in bright sun, with a weak signal, and with a keyboard or screen reader.
+**Short:** Highwater shows people in South Carolina's 5th District what weather and flood dangers are near them right now and what to do about them, in plain words.
 
-## Why I built it (draft, make it personal)
+**Long:** Highwater is a free app that pulls live data from the National Weather Service, the U.S. Geological Survey, and FEMA into one simple status for your county or your exact location (Normal, Watch, Warning, or Danger), explains why, tells you what to do next, and lets you report problems like flooded roads or downed trees so neighbors can see them.
 
-When a storm hits, the information people need is scattered across a dozen government websites: river gauges at USGS, warnings at the National Weather Service, flood maps at FEMA, shelters on another FEMA map. Most people won't dig through all of that while water is rising. In late September 2024, Hurricane Helene's remnants flooded rivers across the Carolinas. _(Add your own experience or what you saw in York County.)_ I wanted one simple page that pulls it together, tells you in plain words what's happening where you live, and points you to the officials and 911 first.
+---
 
-## How the app works (plain English)
+## 3. Target audience
 
-1. **Data in.** The app reads live, public data from the National Weather Service (every official alert, and the rain forecast), the U.S. Geological Survey (river and stream levels from 39 gauges in SC-5), and FEMA (flood zones and open shelters). Census data on who lives where, and county and neighborhood boundaries, are prepared ahead of time by scripts.
-2. **Rules.** A set of written rules (no AI) turns that data into one of four levels for each hazard: **Normal, Watch, Warning, or Danger**. For example, a Tornado Warning is "Warning," a gauge above its official minor flood stage is "Warning," and 2 inches or more of forecast rain in 24 hours is "Watch." If data fails to load, the app says it **can't confirm** instead of showing an all-clear.
-3. **What you see.** A status card with "Why this status?" (every reason, with its source), plain-language steps for that exact hazard and level, a district map, and a printable "Get ready" checklist.
-4. **Route planner.** During a flood or hurricane warning, it asks a routing service for the fastest route and alternatives that avoid active warning areas, then scores each route (minutes, plus penalties for entering warning areas and crossing FEMA flood zones). During a tornado warning there is **no route button**: the app says to take shelter where you are, because driving into a tornado is dangerous.
-5. **Community reports.** Anyone can report a streetlight out, a flooded road, or a downed tree, without an account or personal information. Reports are public and labeled unverified, expire automatically, and come with the official link to get the problem fixed.
+**Short:** People who live in SC-5's eight counties (Cherokee, Chester, Fairfield, Kershaw, Lancaster, Lee, Union, and York), especially older adults, families without a car, and people with lower incomes, who usually have the least time and the fewest options when a storm hits.
 
-## Tools and languages
+**Long:** Highwater is for everyone who lives in South Carolina's 5th Congressional District: Cherokee, Chester, Fairfield, Kershaw, Lancaster, Lee, Union, and York counties. (Parts of Spartanburg and Sumter counties are also in SC-5, but the app doesn't cover them yet.)
 
-- **Languages:** TypeScript (the app and server code), HTML and CSS (pages and design), SQL (the database and its security rules), JavaScript (data-building scripts).
-- **Main tools:** Vite (builds the site), Vitest (159 automated tests), MapLibre (the map), GitHub Pages (hosting), a Cloudflare Worker (the one small server piece), Supabase (the reports database), Cloudflare Turnstile (spam protection).
-- **AI disclosure:** I used Claude, an AI coding assistant, which wrote most of the code under my direction. My role is described in [AI_DISCLOSURE.md](AI_DISCLOSURE.md). The app itself uses no AI.
+I especially had in mind the people who have the hardest time in a disaster: older adults, households without a car, and families with lower incomes. The district map shows where those people live, using Census data, next to FEMA flood zones, so you can see where help matters most.
 
-## Technical challenges (pick one or two and tell them in your own words)
+Because it's meant for emergencies, it's built to work in rough conditions: on an old or cracked phone, in bright sun, with weak signal (it saves the last status for offline use), with a screen reader, or at large text sizes. It's free, has no ads, and needs no account. [ADD YOURS: a sentence about why this audience matters to you, for example someone you know.]
 
-1. **Avoiding danger areas within a free service's limits.** The free routing service only accepts "avoid areas" up to 20 km across, but flood warning areas are often much bigger. We cut each warning area into tiles about 14 km on a side and send only the tiles near the trip. Then a second problem: if you're standing *inside* the warning area, the router can't avoid where you already are and fails. The fix was to leave out the tiles containing the start and destination and tell the person they're starting inside a warning area. Our first scoring formula also couldn't tell routes apart (they all "passed through" the area you start in), so we changed it to count areas a route *enters* plus miles driven inside them.
-2. **Cancelled warnings that still looked active.** The weather service feed includes messages that *cancel* a warning, and they still carry the event name "Flood Warning." Without care, the app would have warned people about floods that were already over. We read a hidden code in each message (VTEC: NEW, CONTINUED, CANCELLED, EXPIRED...) and ignore cancelled and expired ones. A saved real cancelled warning is in the tests.
-3. **A public form with no accounts, that bots can't flood.** Reports needed no name or email, but still had to stop spam. The solution has layers: Cloudflare's "I'm human" check, a server check of the category, location (must be in SC-5), length, and personal info like phone numbers, and a database limit of 5 reports per device per hour. The "device" is a random ID that is scrambled (hashed) with a secret, so we can count reports without knowing who anyone is. The database itself only lets the public *read* active reports.
-4. **Never showing a false all-clear.** We blocked each data source on purpose in a test browser to see what people would get when it's down. Two screens said "No active reports nearby" and "No active warning areas" when really the data hadn't loaded. Both now say "couldn't load," and the main status says "can't confirm" instead of "Normal."
-5. **Replaying a real disaster from archives.** We rebuilt the morning Helene hit SC-5 from the USGS river archive and Iowa State's archive of every NWS alert. One bug: a single NWS message both cancelled one tornado watch and extended another, and our script read the wrong one, so a real watch went missing. Matching the exact alert number fixed it.
-6. **A government data source retiring during judging.** USGS announced its main river-level service would start shutting down in November 2026, right when judges test the app. We built on the new USGS API and kept the old one only as an automatic backup.
+---
 
-## Demo video outline (target 2:45; never over 3:00; upload as **public** on YouTube or Vimeo)
+## 4. How the app works
 
-Record on your phone screen if you can (it's a phone-first app). Turn on **Scenario Mode** only when you say so out loud, so judges see the "SIMULATION" banner is deliberate.
+**Short:** Highwater reads live data: National Weather Service alerts and rain forecasts, U.S. Geological Survey river levels from 39 gauges, and FEMA flood zones and shelters. Written rules (no AI) turn that into one of four levels: Normal, Watch, Warning, or Danger. The app shows why, gives steps for that exact hazard, maps the district, plans routes away from warning areas, and lets people report problems. Scenario Mode replays storms, including real data from Hurricane Helene, so you can see how it reacts.
 
-| Time | What to show | What to say (in your own words) |
-|---|---|---|
-| 0:00–0:20 | You on camera, or the home screen | Your name, "Highwater," one sentence on what it does, who it's for (SC-5 residents, especially older adults and people without a car), and "built with TypeScript, HTML, CSS, and SQL; I used an AI coding assistant, Claude, and my disclosure is in the repo." |
-| 0:20–0:35 | Weather or river photo, or the district map | The problem: hazard information is scattered across many agencies, and the people with the fewest resources have the least time to find it. |
-| 0:35–0:55 | Status page, York County, live | "This is live data right now." Point out the status, "Why this status?", and a river gauge with its flood stage and sparkline. |
-| 0:55–1:20 | Scenario mode → **"Hurricane Helene arrives (real data, Sept 27, 2024)"** | Say: "this replays the real alerts and river readings from Helene." York jumps to **Danger**; open "Why this status?" to show the real Flash Flood Warning tagged "considerable" and the Tropical Storm Warning. Guidance includes "Turn around, don't drown." Optional: switch to "Helene: rivers crest" and open the District map to show the real warning areas along the rivers. |
-| 1:20–1:40 | Scenario → "Tornado warning in Lancaster County" | No route button. Explain: leaving during a tornado is the wrong advice, so the app says to take shelter on the lowest floor in an interior room. |
-| 1:40–2:05 | Scenario → "Flash flood emergency in Fort Mill and Rock Hill" (status: Danger) → Plan a route out → type ZIP **29715** → "Away from the warning area" → Plan routes | Tested Oct 18: three routes out of the warning area to Van Wyck. Point at "You're starting inside an active warning area," and compare miles inside warning areas (4.4 vs 7.2 vs 8.1) and flood zones crossed. Never say "safe route." (If a real shelter is open that day, you can show "Nearest open shelter" instead.) |
-| 2:05–2:25 | Turn Scenario Mode **off** → Report a problem → Streetlight out | Pick the spot, send (it's real now), then show the "get it fixed" links to Duke Energy / SCDOT. Mention: no name, no email, unverified. |
-| 2:25–2:35 | How it works page | "Every rule is written out here. It's transparent, not a black box." |
-| 2:35–2:50 | You | What you learned (pick one real moment from NOTES.md), and that it's free for anyone in SC-5. |
+**Long:**
+1. **Data in.** The app reads live public data: every National Weather Service alert for South Carolina, the NWS rain forecast, river and stream levels from 39 U.S. Geological Survey gauges in SC-5 (17 of them have official flood stages from NOAA), FEMA flood zones, and FEMA's list of open shelters. Census data and boundaries are prepared ahead of time.
+2. **Rules, not AI.** A rule-based engine turns that into a level for each hazard: Normal, Watch, Warning, or Danger. For example, a Flood Warning is Warning, a Flash Flood Warning tagged "catastrophic" is Danger, a gauge above its official flood stage is Warning, and 2 inches of rain forecast in 24 hours is Watch. The highest level wins. If data doesn't load, it says "can't confirm" instead of showing an all-clear.
+3. **Guidance.** Each hazard and level has steps based on official advice (NWS, Ready.gov, Red Cross, SC Emergency Management).
+4. **Routes.** During floods or hurricanes, the web app plans routes that go around active warning areas. During a tornado it shows "Stay where you are and take shelter" with no route button. [CHECK: the route planner is turned off in the phone app; it's in the web app.]
+5. **Reports.** Anyone can report a flooded road or streetlight out without an account. Reports are public and unverified, with the official place to get each fixed.
+6. **Scenario Mode** replays labeled simulations, including two built from real Hurricane Helene data.
 
-Tips: practice with a timer; cut pauses; keep the screen recording zoomed so text is readable; check the final file is under 3:00 before uploading.
+---
 
-## Before you submit (checklist)
+## 5. Technical challenge and how I solved it
 
-- [ ] Read the 2026 rules and form questions; adjust these drafts to fit.
-- [ ] Rewrite every answer above in your own words.
-- [ ] Re-read [AI_DISCLOSURE.md](AI_DISCLOSURE.md) and correct anything that isn't accurate.
-- [ ] Fill in the "What I did" lines in [LEARNING.md](LEARNING.md).
-- [ ] Open the live app on your phone: Status, District map, Route, Report, Get ready, How it works, About, and Scenario Mode.
-- [ ] Record, trim to under 3:00, upload as **public**, and paste the link into the form.
-- [ ] Optional: set up your admin login (NOTES.md → "Later") so you can hide bad reports during judging.
+**Short:** The hardest part was combining data from different agencies that don't agree on formats, and never showing a false all-clear. The weather service feed includes messages that *cancel* a warning but still say "Flood Warning," so at first the app would have warned about floods that were already over. We read a hidden code in each message to skip cancelled ones. We also blocked each data source on purpose and found two screens that said "nothing here" when really the data hadn't loaded; now they say "couldn't load."
+
+**Long:** [ADD YOURS: pick one or two and use your own words.]
+
+- **Combining agencies.** Weather alerts, river levels, flood stages, and Census data each come from a different agency in a different format. River gauges have USGS ID numbers, but flood stages are listed by NOAA under different IDs, so we had to match them up. The weather feed also includes messages that cancel a warning while still saying "Flood Warning." We read a hidden code in each message (NEW, CONTINUED, CANCELLED, EXPIRED) and skip the cancelled ones. A real cancelled warning is saved in the tests.
+- **Never a false all-clear.** We blocked each data source on purpose to see what people would get. Two screens said "No active warning areas" when the data simply hadn't loaded. Now they say "couldn't load," and the main status says "can't confirm" instead of "Normal."
+- **One engine, two apps.** I built a website and a phone app. Instead of writing the rules twice, both use one shared "brain" folder. Each app only plugs in how it loads files and saves things. When the phone app couldn't find the shared folder, we fixed its settings without touching the website.
+- **Smooth animations.** The phone app's main screen is a moving scene of water and rain. If the animation ran on the same "thread" as loading data, it would stutter. We used Reanimated so animations run on the phone's UI thread and stay smooth even while data loads.
+
+---
+
+## 6. Tools and coding languages
+
+**Short:** TypeScript (almost all of the code), HTML and CSS (the website), SQL (the reports database and its security rules), and JavaScript (data scripts). The website uses Vite and MapLibre. The phone app uses React Native with Expo. Supabase stores community reports, one Cloudflare Worker keeps the routing key secret, and GitHub Pages hosts the site. I used Claude Code, an AI coding assistant, to write most of the code under my direction (see AI disclosure).
+
+**Long:**
+- **Languages:** TypeScript (the website, the phone app, the shared rules engine, and the server function), HTML and CSS (the website's pages and design), SQL (the database tables and security rules), JavaScript (the scripts that prepare Census, FEMA, and boundary data).
+- **Website:** Vite (builds the site), MapLibre GL JS with OpenFreeMap tiles (the map), Lucide icons, Vitest (171 automated tests).
+- **Phone app:** React Native + Expo (SDK 58), Expo Router (screens and tabs), React Native Reanimated and Gesture Handler (animations and gestures on the UI thread), react-native-maps, react-native-svg, expo-haptics (vibration feedback), expo-location, and the fonts Atkinson Hyperlegible Next and Newsreader. It runs in Expo Go for testing and the demo; it isn't in the app stores.
+- **Services (all free):** GitHub Pages (hosting), a Cloudflare Worker (keeps the routing key secret and checks reports), Supabase (the reports database, with Row Level Security), Cloudflare Turnstile (the "I'm human" check), OpenRouteService (directions that can avoid areas), GitHub Actions (automatic deploy).
+- **Data:** National Weather Service, U.S. Geological Survey, NOAA National Water Prediction Service, FEMA, U.S. Census Bureau, and Iowa State's archive of past weather alerts (for the Helene replays).
+- **AI:** I used Claude Code, an AI coding assistant made by Anthropic, plus design skills for it, to write most of the code under my direction. Details are in AI_DISCLOSURE.md. The app itself doesn't use AI.
+
+---
+
+## 7. What I learned
+
+**Short:** [ADD YOURS] Ideas to choose from: how to read government data (APIs and JSON) and that agencies don't agree on formats; that "no data" and "no danger" are different things, and an app should never mix them up; how a phone draws animations on a separate thread; and how to design for people in the worst moment, with big clear words, colors that work for color-blind people, and 911 always one tap away.
+
+**Long:** [ADD YOURS: write this one completely in your own words; judges want to hear you.] Things you can talk about, all real parts of this project:
+- **Reading real data.** What an API is, what JSON looks like, and how different agencies describe the same river differently.
+- **Honesty in design.** The difference between "no alerts" and "the alerts didn't load," and why the app says "can't confirm" instead of guessing. Also why it never says "safe."
+- **Safety advice isn't always "leave."** For a tornado the right advice is to shelter in place, so the app removes the route button.
+- **Accessibility.** Contrast ratios, color-blind-friendly colors, screen readers, Reduce Motion, and why the font was chosen for low-vision readers.
+- **Working with an AI assistant.** Writing a clear brief, checking its work on my own phone, catching mistakes (like a crash it introduced in the storm timeline, which we caught and fixed), and making the final decisions myself.
+
+---
+
+## 8. What I'd do next
+
+**Short:** Add the parts of Spartanburg and Sumter counties that are in SC-5, add road closures if South Carolina publishes a free feed, make the map load faster on old phones, publish the phone app in the App Store and Google Play, and send optional push notifications when the level changes.
+
+**Long:**
+- **Cover all of SC-5.** Add the parts of Spartanburg and Sumter counties that are in the district.
+- **Push notifications.** Let people opt in to a notification when their county's level changes.
+- **Publish the phone app** to the App Store and Google Play so people don't need Expo Go. [CHECK: this costs money (Apple's developer fee), so it would need a sponsor or school support.]
+- **Road closures.** I looked for a free public feed of SC road closures and didn't find one I could use. If one appears, routes could avoid closed roads too.
+- **Faster map on old phones.** The district map is the slowest page (its map library is about 1 MB).
+- **Work with county emergency managers** so they can mark community reports as checked, and so the app links to their latest shelter list.
+- **Spanish.** Add a Spanish version of the guidance.
+
+---
+
+## How judges can try it
+
+- **Web app:** open https://vsakethc-gif.github.io/highwater/ on any phone or computer. No download or account needed. Pick a county at the top.
+- **See it react to a storm:** use **Scenario Mode** (the button in the top corner) and pick "Hurricane Helene arrives (real data, Sept 27, 2024)" or the tornado scenario. Everything in Scenario Mode is labeled SIMULATION, and nothing is sent anywhere.
+- **Phone app:** the native phone app (React Native + Expo) is shown in the demo video. It runs through Expo Go for testing, so judges would need my development server running to open it. The web app has the same rules and data.
+- **How it decides:** every rule, threshold, and data source is on the "How it works" page.

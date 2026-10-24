@@ -15,3 +15,7 @@ Thumbs.db
 *.log
 # Large raw downloads used by scripts (only small processed files get committed)
 scripts/raw/
+
+# impeccable design tool: its 19 MB program stays local (reinstall with: npx impeccable install)
+.claude/skills/impeccable/scripts/bin/
+.github/skills/impeccable/scripts/bin/

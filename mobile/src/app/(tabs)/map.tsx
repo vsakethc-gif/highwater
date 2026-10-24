@@ -14,7 +14,7 @@
  */
 import { router } from 'expo-router';
 import { useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
-import { Platform, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { Dimensions, Platform, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import MapView, { Marker, Polygon, type LatLng, type Region } from 'react-native-maps';
 import Animated, { FadeIn, ReduceMotion, ZoomIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -30,6 +30,7 @@ import { categoryInfo } from '../../../../shared/reports/categories';
 import type { Report } from '../../../../shared/reports/client';
 import { countyName } from '../../../../shared/places';
 import { clockTime, relativeTime } from '../../../../shared/time';
+import { Sparkline } from '../../components/data/Charts';
 import { CATEGORY, stageSentence, TREND } from '../../components/data/Rows';
 import { Icon } from '../../components/Icon';
 import { googleDark, googleLight, RAMP, RAMP_LABELS, RAMP_NONE, rampColor, withAlpha } from '../../components/map/mapStyle';
@@ -512,6 +513,7 @@ function SheetBody({ selection, data, layers, onLayers, score, onScore, onFly }:
   }
   if (selection.kind === 'gauge') {
     const g = selection.gauge;
+    const width = Dimensions.get('window').width;
     const cat = g.flood_category ? CATEGORY[g.flood_category] : null;
     return (
       <View style={{ gap: space.m }}>
@@ -520,6 +522,12 @@ function SheetBody({ selection, data, layers, onLayers, score, onScore, onFly }:
           {cat ? <StatusBadge level={cat.level} size="s" /> : null}
         </View>
         <Txt variant="callout" tone="muted">{stageSentence(g) ?? (g.has_official_stage ? 'No reading in the last 6 hours.' : 'No official flood stage: shown for context only.')}</Txt>
+        {g.recent_series.length > 1 ? (
+          <View style={{ gap: 4 }}>
+            <Sparkline series={g.recent_series} width={width - SCREEN_PAD * 2 - 8} height={64} reference={g.stages?.minor ?? null} />
+            <Txt variant="footnote">{`Last ${Math.max(1, Math.round((Date.parse(g.recent_series[g.recent_series.length - 1].time) - Date.parse(g.recent_series[0].time)) / 3600_000))} hours${g.stages?.minor != null ? ' · dashed line = flood stage (when in range)' : ''}`}</Txt>
+          </View>
+        ) : null}
         <Txt variant="footnote">{`${countyName(g.county_fips)} County${g.latest ? ` · read ${clockTime(g.latest.time)} (${relativeTime(g.latest.time)})` : ''} · provisional USGS data`}</Txt>
         <Button label="Open gauge details" icon="Gauge" onPress={() => router.push({ pathname: '/gauge/[id]', params: { id: g.site_id } })} />
       </View>

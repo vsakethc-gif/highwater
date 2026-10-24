@@ -1,6 +1,7 @@
 /**
- * gauge/[id].tsx — one river gauge up close (brief section 8.3): the big water fill with its
- * labeled flood stages, the current reading, a chart of recent readings, and what it means.
+ * gauge/[id].tsx — one river gauge up close (brief section 8.3): the water tube on top for a quick
+ * read (with its labeled flood stages and the current reading), then a chart of recent readings you
+ * can drag through, then what it means.
  */
 import { router, useLocalSearchParams } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
@@ -8,8 +9,9 @@ import Animated from 'react-native-reanimated';
 import type { Gauge } from '../../../../shared/data/types';
 import { feet, gaugeName } from '../../../../shared/format';
 import { countyName } from '../../../../shared/places';
-import { clockTime, dateTime, relativeTime } from '../../../../shared/time';
-import { Sparkline, WaterFill } from '../../components/data/Charts';
+import { dateTime, relativeTime } from '../../../../shared/time';
+import { WaterFill } from '../../components/data/Charts';
+import { ScrubChart } from '../../components/data/ScrubChart';
 import { CATEGORY, TREND, stageSentence } from '../../components/data/Rows';
 import { Icon } from '../../components/Icon';
 import { IconButton } from '../../components/ui/Button';
@@ -93,10 +95,7 @@ function Detail({ g, source }: { g: Gauge; source: string }) {
       <View style={{ marginTop: space.x3 }}>
         <SectionHeader title={st ? `Last ${st.hours} hours` : 'Recent readings'} />
         <Card>
-          <Sparkline series={g.recent_series} width={300} height={96} reference={g.stages?.minor ?? null} />
-          <Txt variant="footnote" style={{ marginTop: space.s }}>
-            {g.latest ? `Latest reading ${clockTime(g.latest.time)}${g.stages?.minor != null ? ' · dashed line: flood stage' : ''}` : 'No reading in the last 6 hours.'}
-          </Txt>
+          {g.recent_series.length > 1 ? <ScrubChart series={g.recent_series} stages={g.stages} /> : <Txt variant="callout">No readings in the last 6 hours.</Txt>}
         </Card>
       </View>
 

@@ -14,7 +14,7 @@ import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 import Animated, { interpolate, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
-import { duration, elevation, radius, space, spring, useMotionReduced, useTheme } from '../../theme';
+import { duration, elevation, radius, sceneInk, space, spring, useMotionReduced, useTheme } from '../../theme';
 import { Txt } from './Text';
 
 export function Sheet({
@@ -76,7 +76,7 @@ export function Sheet({
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents={open ? 'auto' : 'none'}>
-      <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: '#000' }, backdropStyle]}>
+      <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: sceneInk.shade }, backdropStyle]}>
         <Pressable style={{ flex: 1 }} onPress={onClose} accessibilityRole="button" accessibilityLabel="Close" />
       </Animated.View>
       <Animated.View

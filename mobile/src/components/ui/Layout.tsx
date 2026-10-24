@@ -4,7 +4,7 @@
  */
 import type { ReactNode } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import { elevation, radius, space, useTheme } from '../../theme';
+import { elevation, radius, sceneInk, space, useTheme } from '../../theme';
 import { Icon, type IconName } from '../Icon';
 import { Pressable } from './Button';
 import { Txt } from './Text';
@@ -66,7 +66,7 @@ export function ListRow({
     <View style={[s.row, !last && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.hairline }]}>
       {leading ?? (icon ? (
         <View style={[s.leading, { backgroundColor: tile ?? c.accentSoft }]}>
-          <Icon name={icon} size={18} tint={tile ? '#FFFFFF' : c.accent} />
+          <Icon name={icon} size={18} tint={tile ? sceneInk.primary : c.accent} />
         </View>
       ) : null)}
       <View style={{ flex: 1, gap: 2 }}>
@@ -86,8 +86,8 @@ export function ListRow({
 }
 
 const s = StyleSheet.create({
-  card: { borderRadius: radius.md, padding: space.l },
+  card: { borderRadius: radius.md, padding: space.l, borderCurve: 'continuous' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: space.s, minHeight: 24 },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.m, minHeight: 56, paddingVertical: space.m },
-  leading: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  leading: { width: 32, height: 32, borderRadius: 10, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center' },
 });

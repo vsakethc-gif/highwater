@@ -320,6 +320,18 @@ Languages: **TypeScript, HTML, CSS, SQL**, and JavaScript for scripts.
 
 **Honesty rules kept:** Scenario Mode turns the ribbon violet ("SIMULATION · not live data") with a dashed violet line at the top, and the timeline says "SIMULATED" and "Made-up storm." When some data didn't load, the scene turns a neutral gray and says "Can't confirm," so missing data never looks like a calm all-clear.
 
+## 13c. The "Night Tide" look, and the design skills that shaped it
+
+On Oct 24 the phone app got a design system called **Night Tide**: near-black screens, one cyan accent, and four status colors (teal Normal, yellow Watch, orange Warning, rose Danger) that differ in brightness as well as color, so people with color blindness can tell them apart. Every status also has an icon and a word. Text uses **Atkinson Hyperlegible Next**, a typeface the Braille Institute designed for people with low vision, because the app has to be readable on a cracked phone in a storm. The rules live in `design-system/highwater/MASTER.md` and, in code, in `mobile/src/theme/tokens.ts`, so every screen updates together.
+
+| Skill | What it did for the app |
+|---|---|
+| UI UX Pro Max | Searched its database of styles, palettes and font pairings to produce three options; Night Tide was chosen and saved as MASTER.md |
+| expo-native-ui | Made the new style feel native (iOS-style continuous corners) |
+| impeccable (critique, layout, typeset, adapt, polish, audit) | Found and fixed spacing, label and text-size problems; checked small phones and the largest text size |
+| emil-design-eng | Reviewed every animation earlier the same day: stronger easing, faster UI motion, instant emergency info |
+| expo-design-system | Audited for hardcoded colors and turned repeated ones into named tokens |
+
 ## 14. Likely judge questions, with answers
 
 **Q: Is this AI? How does it decide the status?**

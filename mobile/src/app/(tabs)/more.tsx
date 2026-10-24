@@ -167,7 +167,7 @@ function StormCard({ on, onPress }: { on: boolean; onPress: () => void }) {
     <PressScale onPress={onPress} accessibilityRole="button" accessibilityLabel="Replay a storm" accessibilityHint="Starts a made-up storm on the Status screen, from calm to Danger. Simulated, nothing is sent." scaleTo={0.98}>
       <View style={s.storm}>
         <LinearGradient colors={[scene[2].top, scene[3].bottom]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-        <WaterLine fill={0.14} top={scene[3].water} bottom={scene[3].bottom} amplitude={8} periodMs={7000} style={StyleSheet.absoluteFill} />
+        <WaterLine fill={0.08} top={scene[3].water} bottom={scene[3].bottom} amplitude={8} periodMs={7000} style={StyleSheet.absoluteFill} />
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.s }}>
           <View style={s.simTag}>
             <Icon name="FlaskConical" size={12} tint={sceneInk.sim} />

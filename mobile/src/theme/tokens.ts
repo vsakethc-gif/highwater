@@ -132,7 +132,7 @@ export const type = {
   body: { fontFamily: font.regular, fontSize: 16, lineHeight: 24 },
   callout: { fontFamily: font.medium, fontSize: 15, lineHeight: 22 },
   footnote: { fontFamily: font.medium, fontSize: 13, lineHeight: 18 },
-  caption: { fontFamily: font.semibold, fontSize: 12, lineHeight: 16, letterSpacing: 0.4, textTransform: 'uppercase' },
+  caption: { fontFamily: font.semibold, fontSize: 12, lineHeight: 16, letterSpacing: 0.6, textTransform: 'uppercase' },
   numberXL: { fontFamily: font.semibold, fontSize: 48, lineHeight: 52, fontVariant: ['tabular-nums'], letterSpacing: -1 },
   numberL: { fontFamily: font.semibold, fontSize: 28, lineHeight: 32, fontVariant: ['tabular-nums'], letterSpacing: -0.4 },
   serifTitle: { fontFamily: font.serif, fontSize: 30, lineHeight: 36, letterSpacing: -0.4 },
@@ -190,6 +190,15 @@ export const sceneInk = {
   moduleBorder: 'rgba(255,255,255,0.10)',
   /** Backing for floating chrome (ribbon, timeline) when there's no blur. */
   floating: 'rgba(8,12,16,0.95)',
+  /** Tints laid over a blur: a whisper of white on modules, a dark veil on floating chrome. */
+  glassTint: 'rgba(255,255,255,0.04)',
+  floatingTint: 'rgba(8,12,16,0.35)',
+  /** Empty part of a progress track or time bar on the scene. */
+  track: 'rgba(255,255,255,0.18)',
+  /** A round control's fill on the scene (play button, tab pill). */
+  control: 'rgba(255,255,255,0.12)',
+  /** The glow's transparent end. */
+  glowEnd: 'rgba(255,77,106,0)',
   /** Live dot (teal), out-of-date / offline dot (yellow), simulation (violet). */
   live: '#6FD3C2',
   amber: '#F4D35E',

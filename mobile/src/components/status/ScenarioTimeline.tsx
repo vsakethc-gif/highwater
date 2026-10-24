@@ -163,10 +163,10 @@ export function ScenarioTimeline({
 
 const s = StyleSheet.create({
   bar: { flexDirection: 'row', alignItems: 'center', gap: space.m, paddingLeft: space.s, paddingRight: space.l, paddingVertical: space.s, borderColor: sceneInk.sim },
-  play: { width: tapTarget, height: tapTarget, borderRadius: tapTarget / 2, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.10)' },
+  play: { width: tapTarget, height: tapTarget, borderRadius: tapTarget / 2, alignItems: 'center', justifyContent: 'center', backgroundColor: sceneInk.control },
   labels: { flexDirection: 'row', justifyContent: 'space-between', gap: space.s },
   hit: { height: 32, justifyContent: 'center' },
-  track: { height: 4, borderRadius: radius.pill, backgroundColor: 'rgba(255,255,255,0.18)', overflow: 'hidden' },
+  track: { height: 4, borderRadius: radius.pill, backgroundColor: sceneInk.track, overflow: 'hidden' },
   trackFill: { height: 4, backgroundColor: sceneInk.sim, transformOrigin: 'left center' },
   tick: { position: 'absolute', top: 9, width: 2, height: 14, borderRadius: 1 },
   thumb: { position: 'absolute', top: 5, left: -11, width: 22, height: 22, borderRadius: 11, backgroundColor: sceneInk.primary, borderWidth: 3, borderColor: sceneInk.sim },

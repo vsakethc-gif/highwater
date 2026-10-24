@@ -135,7 +135,7 @@ export function IconButton({ icon, label, onPress, tint, style, filled }: { icon
 }
 
 const s = StyleSheet.create({
-  button: { minHeight: 50, paddingHorizontal: space.xl, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
+  button: { minHeight: 50, paddingHorizontal: space.xl, borderRadius: radius.md, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center' },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.s },
   iconButton: { width: tapTarget, height: tapTarget, borderRadius: tapTarget / 2, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
 });

@@ -36,7 +36,7 @@ import { LargeTitleScroll, Screen } from '../../components/ui/Screen';
 import { Txt } from '../../components/ui/Text';
 import { tabBarClearance } from '../../components/TabBar';
 import { useAppState } from '../../state';
-import { duration, easing, emergencyFade, font, haptic, listItemEntering, radius, SCREEN_PAD, space, spring, tapTarget, type, useTheme } from '../../theme';
+import { duration, easing, emergencyFade, font, haptic, listItemEntering, radius, sceneInk, SCREEN_PAD, space, spring, tapTarget, type, useTheme } from '../../theme';
 import { Platform } from 'react-native';
 
 const TURNSTILE_PAGE = 'https://vsakethc-gif.github.io/highwater/turnstile.html';
@@ -581,7 +581,7 @@ const s = StyleSheet.create({
   pinMap: { height: 340, borderRadius: radius.lg, overflow: 'hidden', borderWidth: 1 },
   placePill: { position: 'absolute', top: space.m, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: space.xs, maxWidth: '88%', paddingHorizontal: space.m, paddingVertical: space.s, borderRadius: radius.pill, borderWidth: 1 },
   pinCenter: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
-  pinShadow: { width: 16, height: 6, borderRadius: 3, backgroundColor: '#000', marginTop: 2 },
+  pinShadow: { width: 16, height: 6, borderRadius: 3, backgroundColor: sceneInk.shade, marginTop: 2 },
   noteBox: { borderWidth: 1, borderRadius: radius.md, padding: space.m },
   check: { borderWidth: 1, borderRadius: radius.md, padding: space.m },
   channel: { paddingVertical: space.m, gap: 2 },

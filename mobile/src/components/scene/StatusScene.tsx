@@ -118,7 +118,7 @@ function RainLayer({ width, height, count, seed, fallMs, opacity, active }: { wi
     <Animated.View style={[{ position: 'absolute', left: 0, top: 0, width, height: height * 2, opacity }, style]}>
       <Svg width={width} height={height * 2}>
         {[0, height].flatMap((offset) =>
-          streaks.map((s, i) => <Line key={`${offset}-${i}`} x1={s.x} y1={s.y + offset} x2={s.x - s.len * 0.21} y2={s.y + offset + s.len} stroke="#FFFFFF" strokeWidth={1.2} strokeLinecap="round" />),
+          streaks.map((s, i) => <Line key={`${offset}-${i}`} x1={s.x} y1={s.y + offset} x2={s.x - s.len * 0.21} y2={s.y + offset + s.len} stroke={sceneInk.primary} strokeWidth={1.2} strokeLinecap="round" />),
         )}
       </Svg>
     </Animated.View>
@@ -225,7 +225,7 @@ export function StatusScene({
       </Animated.View>
 
       <Animated.View style={[{ position: 'absolute', top: 0, left: 0, right: 0, height: H * 0.45 }, glowStyle]}>
-        <LinearGradient colors={[sceneInk.glow, 'rgba(255,77,106,0)']} style={StyleSheet.absoluteFill} />
+        <LinearGradient colors={[sceneInk.glow, sceneInk.glowEnd]} style={StyleSheet.absoluteFill} />
       </Animated.View>
 
       {rainCount > 0 && moving ? (

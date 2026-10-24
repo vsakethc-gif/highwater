@@ -37,7 +37,7 @@ export const tabBarClearance = (bottomInset: number) => barBottom(bottomInset) +
 
 /** Over the Status scene: the scene's accent for the selected tab, soft white for the rest. */
 function sceneTint(key: SceneKey) {
-  return { active: scene[key].accent, idle: sceneInk.secondary, pill: 'rgba(255,255,255,0.12)' };
+  return { active: scene[key].accent, idle: sceneInk.secondary, pill: sceneInk.control };
 }
 
 function TabButton({ name, focused, onPress, onScene }: { name: string; focused: boolean; onPress: () => void; onScene: SceneKey | null }) {
@@ -56,7 +56,7 @@ function TabButton({ name, focused, onPress, onScene }: { name: string; focused:
       <Animated.View style={iconStyle}>
         <Icon name={tab.icon} size={22} tint={tint} filled={focused} />
       </Animated.View>
-      <Txt variant="footnote" color={tint} style={{ fontSize: 11, lineHeight: 14, fontFamily: focused ? font.bold : font.medium }}>
+      <Txt variant="footnote" color={tint} maxFontSizeMultiplier={1.3} style={{ fontSize: 11, lineHeight: 14, fontFamily: focused ? font.bold : font.medium }}>
         {tab.label}
       </Txt>
     </Pressable>

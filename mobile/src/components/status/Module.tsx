@@ -44,7 +44,7 @@ export function Glass({ children, style, rounded = radius.module, floating }: { 
   const frame = [s.glass, { borderRadius: rounded }, solid && { backgroundColor: floating ? sceneInk.floating : sceneInk.module }, style];
   if (solid) return <View style={frame}>{children}</View>;
   return (
-    <BlurView intensity={floating ? 70 : 30} tint="dark" style={[frame, { overflow: 'hidden', backgroundColor: floating ? 'rgba(8,12,16,0.35)' : 'rgba(255,255,255,0.04)' }]}>
+    <BlurView intensity={floating ? 70 : 30} tint="dark" style={[frame, { overflow: 'hidden', backgroundColor: floating ? sceneInk.floatingTint : sceneInk.glassTint }]}>
       {children}
     </BlurView>
   );

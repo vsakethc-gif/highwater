@@ -101,6 +101,16 @@ Evidence of my own work and a study guide for judging. Fill in "What I did" in y
 - A storm timeline in Scenario Mode: drag it and the scene goes Normal → Watch → Warning → Danger.
 - The hero shrinks into a compact bar as you scroll; pulling down lifts the water and refreshes.
 
+### Saturday, October 24, 2026: the rest of the phone redesign
+
+**What I did** *(edit this in your own words)*
+- Asked for real changes on every screen and animations that replay, and for a comparison against the reference apps.
+- _Add: what you noticed testing the map sheet and the gauge chart on your phone._
+
+**What was built**
+- New Map with an always-there sheet, new gauge markers, and the camera flying to what you tap.
+- New Gauge, Alert and More screens; Route and Report upgrades; entrances replay on every visit.
+
 ## Concepts
 
 ### Lighthouse and layout shift

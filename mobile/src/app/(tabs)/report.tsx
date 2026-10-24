@@ -4,6 +4,8 @@
  *
  *   New report: 1. what's the problem  2. where (move the map under the pin)  3. details + the
  *   "I'm human" check, then a success check with the official links.
+ *   The step's main button ("Use this spot", "Send report") is pinned above the tab bar, so it's always
+ *   under your thumb (the Uber pattern), however far the step scrolls.
  *   Downed power line: a full-screen safety notice appears instantly first (30 feet; call 911).
  *   Near me: active reports sorted by distance, with "Still there", "Fixed", and "Flag".
  *
@@ -32,15 +34,21 @@ import { EmptyState, Notice, Skeleton } from '../../components/ui/Feedback';
 import { Card, SectionHeader } from '../../components/ui/Layout';
 import { LargeTitleScroll, Screen } from '../../components/ui/Screen';
 import { Txt } from '../../components/ui/Text';
+import { tabBarClearance } from '../../components/TabBar';
 import { useAppState } from '../../state';
 import { duration, easing, emergencyFade, font, haptic, listItemEntering, radius, SCREEN_PAD, space, spring, tapTarget, type, useTheme } from '../../theme';
 import { Platform } from 'react-native';
 
 const TURNSTILE_PAGE = 'https://vsakethc-gif.github.io/highwater/turnstile.html';
 type Step = 'category' | 'where' | 'details' | 'done';
+/** The step's main action, shown in the pinned bar. */
+type PinnedAction = { label: string; icon?: 'Megaphone' | 'MapPin'; disabled: boolean; loading?: boolean; onPress: () => void };
 
 export default function ReportScreen() {
   const [mode, setMode] = useState<'new' | 'near'>('new');
+  const [pin, setPin] = useState<PinnedAction | null>(null);
+  const insets = useSafeAreaInsets();
+  const { c } = useTheme();
   return (
     <Screen>
       <LargeTitleScroll
@@ -51,15 +59,20 @@ export default function ReportScreen() {
           </View>
         }
       >
-        {mode === 'new' ? <NewReport /> : <NearMe />}
+        {mode === 'new' ? <NewReport onPin={setPin} /> : <NearMe />}
       </LargeTitleScroll>
+      {mode === 'new' && pin ? (
+        <Animated.View entering={FadeIn.duration(duration.fast)} style={[s.pinned, { bottom: tabBarClearance(insets.bottom) + space.s, backgroundColor: c.bg }]}>
+          <Button label={pin.label} icon={pin.icon} kind="primary" disabled={pin.disabled} loading={pin.loading} onPress={pin.onPress} />
+        </Animated.View>
+      ) : null}
     </Screen>
   );
 }
 
 // ---------------------------------------------------------------- new report
 
-function NewReport() {
+function NewReport({ onPin }: { onPin: (p: PinnedAction | null) => void }) {
   const { c } = useTheme();
   const { place, scenario } = useAppState();
   const [step, setStep] = useState<Step>('category');
@@ -113,8 +126,20 @@ function NewReport() {
     }
   }
 
+  // The step's main button lives in the pinned bar (see ReportScreen).
+  const sendRef = useRef(send);
+  useEffect(() => {
+    sendRef.current = send;
+  });
+  useEffect(() => {
+    if (step === 'where') onPin({ label: 'Use this spot', icon: 'MapPin', disabled: !spot, onPress: () => setStep('details') });
+    else if (step === 'details') onPin({ label: 'Send report', icon: 'Megaphone', disabled: !scenario && !token, loading: sending, onPress: () => sendRef.current() });
+    else onPin(null);
+  }, [step, spot, scenario, token, sending, onPin]);
+  useEffect(() => () => onPin(null), [onPin]);
+
   return (
-    <View style={{ marginTop: space.l }}>
+    <View style={{ marginTop: space.l, paddingBottom: step === 'where' || step === 'details' ? 72 : 0 }}>
       <View style={[s.progress, { backgroundColor: c.surfaceSunken }]} accessible accessibilityLabel={`Step ${Math.min(index + 1, 3)} of 3`}>
         <Animated.View style={[s.progressFill, { backgroundColor: c.accent }, bar]} />
       </View>
@@ -160,7 +185,6 @@ function NewReport() {
             start={place.kind === 'point' ? { lat: place.lat, lon: place.lon } : (() => { const seat = COUNTIES.find((k) => k.fips === place.fips)!.seat; return { lat: seat.lat, lon: seat.lon }; })()}
             onSpot={setSpot}
           />
-          <Button label="Use this spot" kind="primary" disabled={!spot} onPress={() => setStep('details')} />
           {!spot ? <Txt variant="footnote">The spot must be inside one of the 8 SC-5 counties.</Txt> : null}
         </Animated.View>
       ) : null}
@@ -197,7 +221,6 @@ function NewReport() {
               <Notice title="Not sent yet" detail={problem} />
             </Animated.View>
           ) : null}
-          <Button label="Send report" icon="Megaphone" kind="primary" loading={sending} disabled={!scenario && !token} onPress={send} />
         </Animated.View>
       ) : null}
 
@@ -547,6 +570,7 @@ function NearMe() {
 }
 
 const s = StyleSheet.create({
+  pinned: { position: 'absolute', left: SCREEN_PAD, right: SCREEN_PAD, paddingTop: space.s, borderRadius: radius.md },
   progress: { height: 4, borderRadius: 2, overflow: 'hidden', marginBottom: space.s },
   progressFill: { height: 4, width: '100%', transformOrigin: 'left' },
   call911: { flexDirection: 'row', alignItems: 'center', gap: space.xs, minHeight: tapTarget },

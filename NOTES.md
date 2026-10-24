@@ -83,6 +83,16 @@ Working log for Highwater (originally called SC-5 Ready). "Problems and fixes" b
 - **Floating chrome is opaque without blur.** On Android (and with Reduce Transparency) there's no blur, so the ribbon and the timeline use a 95% opaque dark backing; otherwise text scrolling underneath showed through.
 - **Impeccable critique findings applied:** at Normal the hero said "Flooding" in the accent color, which read as if flooding was happening; it now says "No active alerts here," and the compact title drops the hazard at Normal. Not applied: impeccable's ban on small uppercase labels above headings, because the brief asks for Weather-style module labels (the brief wins).
 
+### Phone app, round 4 (Oct 24, the other screens)
+- **Animations replay on every visit.** Tabs stay alive in the background, so their entrances only played once. `useFocusReplay` re-creates a screen's content each time you come back, so the modules rise in again and the Status water drains and refills. Tabs crossfade instead of switching instantly.
+- **Map (Apple Maps / Citymapper):** the sheet never closes; it rests at peek (summary line + layer chips), half, or full. Tapping anything raises it to half with a crossfade, and the camera flies there. Gauges are round markers with the height inside and a ring in the flood color; the picked one grows and shows its name while the others dim. Glass search pill on top, round glass buttons on the right.
+- **Gauge page (stock apps):** big number that counts up and follows your finger while you drag the chart; the chart line is colored by flood stage and draws itself in. No 24H/48H/7D selector: the app only loads the last several hours of readings, and a range button with no data behind it would be fake.
+- **Alert page (phone severe-alert style):** a header in the level's colors, a time bar (started → now → ends), plain words first, then what to do, then the folded official text. Says "Simulated" in Scenario Mode.
+- **Route (Citymapper):** compact safety strip, route lines draw in, the chosen route glows, swiping the cards moves the map, and each card has a route-makeup bar (share of miles inside warning areas, plus flood-zone crossing ticks). The bar shows how much, not where; the map shows where.
+- **Report (Uber):** two big columns of category tiles, the place name in a pill on the map, a bigger success check, and the step's main button pinned above the tab bar.
+- **More (Settings app):** colored icon tiles and a "Replay a storm" card with a small living scene that starts the storm timeline.
+- **Comparison pass against the reference apps:** the one clear gap left after this round was Uber's pinned button, which is now done. Not copied on purpose: Apple Maps puts search inside the sheet, but the brief asks for a floating pill on top.
+
 ## Problems and fixes
 
 - **A gray failed the contrast check.** The first "subtle" gray (`#6b7680`) was 4.37:1 on the page background, under the 4.5:1 WCAG AA minimum. I found it with a small script that computes contrast ratios, then darkened it to `#606b75` (5.13:1). The Normal and Watch badge borders were also too faint, so I darkened them past 3:1.

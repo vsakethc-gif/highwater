@@ -13,7 +13,7 @@ import { ONBOARDED_KEY } from '../onboarding';
 export default function TabsLayout() {
   if (platform().storage.getItem(ONBOARDED_KEY) !== '1') return <Redirect href="/onboarding" />;
   return (
-    <Tabs tabBar={(props) => <TabBar {...props} />} screenOptions={{ headerShown: false }}>
+    <Tabs tabBar={(props) => <TabBar {...props} />} screenOptions={{ headerShown: false, animation: 'fade' }}>
       <Tabs.Screen name="index" options={{ title: 'Status' }} />
       {/* href: null hides a tab that's switched off in features.ts */}
       <Tabs.Screen name="map" options={{ title: 'Map', href: TABS_ON.map ? undefined : null }} />

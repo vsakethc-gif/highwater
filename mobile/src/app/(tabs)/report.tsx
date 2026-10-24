@@ -258,11 +258,11 @@ function CategoryTile({ cat, index, selected, onPress }: { cat: CategoryInfo; in
         accessibilityLabel={cat.label}
         scaleTo={0.96}
       >
-        <View style={[s.tile, { backgroundColor: selected ? c.accentSoft : c.surface, borderColor: selected ? c.accent : c.hairline }]}>
-          <Animated.View style={iconStyle}>
-            <Icon name={cat.icon} size={26} tint={danger ? c.levels[3].fg : selected ? c.accent : c.ink} />
+        <View style={[s.tile, { backgroundColor: selected ? c.accentSoft : c.surface, borderColor: selected ? c.accent : danger ? c.levels[3].fg : c.hairline }]}>
+          <Animated.View style={[s.tileIcon, { backgroundColor: danger ? c.levels[3].bg : selected ? c.accent : c.surfaceRaised }, iconStyle]}>
+            <Icon name={cat.icon} size={22} tint={danger ? c.levels[3].fg : selected ? c.onAccent : c.ink} />
           </Animated.View>
-          <Txt variant="footnote" tone="ink" style={{ textAlign: 'center', fontFamily: font.semibold }} numberOfLines={3}>
+          <Txt variant="headline" tone="ink" numberOfLines={2}>
             {cat.label}
           </Txt>
         </View>
@@ -322,6 +322,14 @@ function PinMap({ start, onSpot }: { start: { lat: number; lon: number }; onSpot
           }}
           onRegionChangeComplete={settle}
         />
+        {label ? (
+          <Animated.View key={label} entering={FadeIn.duration(duration.fast)} style={[s.placePill, { backgroundColor: c.surface, borderColor: c.hairline }]} pointerEvents="none">
+            <Icon name="MapPin" size={14} tint={c.accent} />
+            <Txt variant="footnote" color={c.ink} numberOfLines={1} style={{ fontFamily: font.semibold }}>
+              {label}
+            </Txt>
+          </Animated.View>
+        ) : null}
         <View style={s.pinCenter} pointerEvents="none">
           <Animated.View style={[s.pinShadow, shadowStyle]} />
           <Animated.View style={[{ position: 'absolute', bottom: 22 }, pinStyle]}>
@@ -332,7 +340,7 @@ function PinMap({ start, onSpot }: { start: { lat: number; lon: number }; onSpot
           </Animated.View>
         </View>
       </View>
-      <Txt variant="footnote" accessibilityLiveRegion="polite">{label}</Txt>
+      <Txt variant="footnote" accessibilityLiveRegion="polite" style={{ position: 'absolute', opacity: 0 }}>{label}</Txt>
       <Button label="Use my location" icon="LocateFixed" onPress={useMine} compact style={{ alignSelf: 'flex-start' }} />
     </View>
   );
@@ -393,12 +401,12 @@ function Success({ category, fips, simulated, onAnother }: { category: CategoryI
   return (
     <Animated.View entering={FadeIn.duration(duration.base)} style={{ gap: space.l }}>
       <View style={{ alignItems: 'center', marginTop: space.l }}>
-        <Svg width={72} height={72} viewBox="0 0 72 72">
-          <AnimatedCircle cx={36} cy={36} r={30} stroke={c.levels[0].fg} strokeWidth={4} fill="none" strokeDasharray={[CIRC, CIRC]} animatedProps={ringProps} strokeLinecap="round" rotation={-90} origin="36, 36" />
+        <Svg width={120} height={120} viewBox="0 0 72 72">
+          <AnimatedCircle cx={36} cy={36} r={30} stroke={c.levels[0].fg} strokeWidth={3} fill="none" strokeDasharray={[CIRC, CIRC]} animatedProps={ringProps} strokeLinecap="round" rotation={-90} origin="36, 36" />
           <AnimatedPath d="M23 37 l9 9 l17 -19" stroke={c.levels[0].fg} strokeWidth={4.5} fill="none" strokeLinecap="round" strokeLinejoin="round" strokeDasharray={[TICK, TICK]} animatedProps={tickProps} />
         </Svg>
       </View>
-      <Txt variant="title3" style={{ textAlign: 'center' }} accessibilityRole="header">
+      <Txt variant="title2" style={{ textAlign: 'center' }} accessibilityRole="header">
         {simulated ? 'Saved on this phone (simulation).' : 'Thanks. Your report is visible as unverified.'}
       </Txt>
       <Txt variant="callout" tone="muted" style={{ textAlign: 'center' }}>
@@ -543,9 +551,11 @@ const s = StyleSheet.create({
   progressFill: { height: 4, width: '100%', transformOrigin: 'left' },
   call911: { flexDirection: 'row', alignItems: 'center', gap: space.xs, minHeight: tapTarget },
   grid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -space.xs },
-  tileWrap: { width: '33.33%', padding: space.xs },
-  tile: { minHeight: 104, borderRadius: radius.md, borderWidth: 1, alignItems: 'center', justifyContent: 'center', gap: space.s, padding: space.s },
-  pinMap: { height: 300, borderRadius: radius.md, overflow: 'hidden', borderWidth: 1 },
+  tileWrap: { width: '50%', padding: space.xs },
+  tile: { minHeight: 96, borderRadius: radius.lg, borderWidth: 1, justifyContent: 'space-between', gap: space.m, padding: space.l, borderCurve: 'continuous' },
+  tileIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  pinMap: { height: 340, borderRadius: radius.lg, overflow: 'hidden', borderWidth: 1 },
+  placePill: { position: 'absolute', top: space.m, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: space.xs, maxWidth: '88%', paddingHorizontal: space.m, paddingVertical: space.s, borderRadius: radius.pill, borderWidth: 1 },
   pinCenter: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
   pinShadow: { width: 16, height: 6, borderRadius: 3, backgroundColor: '#000', marginTop: 2 },
   noteBox: { borderWidth: 1, borderRadius: radius.md, padding: space.m },

@@ -134,7 +134,8 @@ export function StatusScene({
   onPullThreshold,
 }: {
   sceneKey: SceneKey;
-  /** 0..3, continuous: the screen springs it to the level, the Scenario timeline drags it with a finger. */
+  /** 0..3, continuous: the screen springs it to the level, the Scenario timeline drags it with a finger.
+   *  Below 0 drains toward the floor (used when you come back to the tab and it refills). */
   waterLevel: SharedValue<number>;
   /** Forecast rain in the next 24 hours, in inches (0 when unknown). */
   rainIn: number;
@@ -204,7 +205,7 @@ export function StatusScene({
   // 4. Water: height from the level (interpolated between levels while scrubbing) plus any pull-down.
   const AMP = 14;
   const waterStyle = useAnimatedStyle(() => {
-    const share = interpolate(waterLevel.get(), [0, 1, 2, 3], [SCENE_WATER[0], SCENE_WATER[1], SCENE_WATER[2], SCENE_WATER[3]], 'clamp');
+    const share = interpolate(waterLevel.get(), [-1, 0, 1, 2, 3], [0, SCENE_WATER[0], SCENE_WATER[1], SCENE_WATER[2], SCENE_WATER[3]], 'clamp');
     const pull = Math.min(160, Math.max(0, -scrollY.get()) * 0.7);
     return { transform: [{ translateY: H * (1 - share) - pull }] };
   });

@@ -47,6 +47,7 @@ export function ListRow({
   chevron = !!onPress,
   last,
   hint,
+  tile,
 }: {
   title: string;
   subtitle?: string;
@@ -57,13 +58,15 @@ export function ListRow({
   chevron?: boolean;
   last?: boolean;
   hint?: string;
+  /** A solid color for the icon tile (iOS Settings style), with a white icon. */
+  tile?: string;
 }) {
   const { c } = useTheme();
   const content = (
     <View style={[s.row, !last && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.hairline }]}>
       {leading ?? (icon ? (
-        <View style={[s.leading, { backgroundColor: c.accentSoft }]}>
-          <Icon name={icon} size={18} tint={c.accent} />
+        <View style={[s.leading, { backgroundColor: tile ?? c.accentSoft }]}>
+          <Icon name={icon} size={18} tint={tile ? '#FFFFFF' : c.accent} />
         </View>
       ) : null)}
       <View style={{ flex: 1, gap: 2 }}>

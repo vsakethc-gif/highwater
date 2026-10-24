@@ -42,6 +42,7 @@ import { Notice, Skeleton } from '../../components/ui/Feedback';
 import { ListRow } from '../../components/ui/Layout';
 import { TabErrorBoundary } from '../../components/ui/Screen';
 import { Txt } from '../../components/ui/Text';
+import { useFocusReplay } from '../../hooks/useFocusReplay';
 import { useStatus, type StatusData } from '../../hooks/useStatus';
 import { useAppState } from '../../state';
 import { duration, easing, font, haptic, scene, sceneInk, ScenePaletteProvider, SCREEN_PAD, space, spring, type, useMotionReduced, type SceneKey } from '../../theme';
@@ -83,6 +84,8 @@ export default function StatusScreen() {
   const reduced = useMotionReduced();
   const active = useSceneActive();
   const key = sceneKeyOf(data);
+  // Each time you come back to this tab, the modules rise in again and the water refills.
+  const visit = useFocusReplay();
 
   const scrollY = useSharedValue(0);
   const waterLevel = useSharedValue(0);
@@ -101,6 +104,14 @@ export default function StatusScreen() {
     const target = key === 'unknown' ? 0 : key;
     waterLevel.set(reduced ? target : withSpring(target, spring.gentle));
   }, [key, reduced, waterLevel, dragging]);
+  useEffect(() => {
+    if (visit === 0 || reduced) return;
+    // Coming back: the water drains to the floor and rises again to the current level.
+    const target = key === 'unknown' ? 0 : key;
+    waterLevel.set(-0.6);
+    waterLevel.set(withSpring(target, spring.gentle));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only on a new visit
+  }, [visit]);
 
   const step = timelineIndex(scenario);
   const onStep = useCallback((i: number) => setScenario(STORM_TIMELINE.steps[i].id), [setScenario]);
@@ -135,10 +146,10 @@ export default function StatusScreen() {
             }
           >
             {data ? (
-              <>
+              <View key={visit}>
                 <Hero data={data} sceneKey={key} scrollY={scrollY} />
                 <Modules data={data} />
-              </>
+              </View>
             ) : (
               <Loading />
             )}

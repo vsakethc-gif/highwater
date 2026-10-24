@@ -11,8 +11,14 @@
  *
  * For shelter-in-place hazards (tornado, severe storm, extreme cold) there is no planner at all:
  * leaving is the wrong advice, so the tab shows "stay where you are" guidance instead.
+ *
+ * Results (REDESIGN.md 5.4, the Citymapper pattern): when routes arrive, each line draws itself along
+ * its path. The chosen route glows on the map while the others dim, and swiping the route cards moves
+ * the map to that route. Each card has a "route makeup" bar: how much of the trip is inside an active
+ * warning area (red), with the flood-zone crossings counted beside it.
  */
 import { useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
+import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import { Keyboard, Linking, Platform, ScrollView, Share, StyleSheet, Switch, TextInput, useWindowDimensions, View } from 'react-native';
 import MapView, { Marker, Polygon, Polyline } from 'react-native-maps';
 import Animated, { FadeIn, FadeInRight, ReduceMotion, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
@@ -38,7 +44,8 @@ import { LargeTitleScroll, Screen } from '../../components/ui/Screen';
 import { Txt } from '../../components/ui/Text';
 import { useStatus, type StatusData } from '../../hooks/useStatus';
 import { useAppState } from '../../state';
-import { duration, easing, font, haptic, listItemEntering, radius, SCREEN_PAD, space, tapTarget, type, useTheme } from '../../theme';
+import { duration, easing, font, haptic, listItemEntering, radius, scene, SCREEN_PAD, space, tapTarget, type, useMotionReduced, useTheme } from '../../theme';
+import { withAlpha } from '../../components/map/mapStyle';
 
 type Spot = { point: LonLat; label: string };
 type Choice = 'shelter' | 'away' | 'place';
@@ -60,18 +67,20 @@ export default function RouteScreen() {
   );
 }
 
+/** The safety note: always at the top, compact, never dismissible. */
 function SafetyCard() {
   const { c } = useTheme();
   return (
-    <View style={[s.safety, { backgroundColor: c.levels[1].bg, borderLeftColor: c.levels[1].fg }]}>
-      <Txt variant="callout" color={c.ink}>
+    <View style={[s.safety, { backgroundColor: c.surface, borderColor: c.hairline }]} accessibilityRole="summary">
+      <Icon name="TriangleAlert" size={18} tint={c.levels[1].fg} />
+      <Txt variant="footnote" color={c.inkMuted} style={{ flex: 1 }}>
         {SAFETY}
       </Txt>
-      <Pressable onPress={() => Linking.openURL('tel:911')} accessibilityRole="button" accessibilityLabel="Call 911" style={{ alignSelf: 'flex-start' }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.xs, minHeight: tapTarget }}>
-          <Icon name="Phone" size={16} tint={c.levels[3].fg} />
-          <Txt variant="callout" color={c.levels[3].fg} style={{ fontFamily: font.bold }}>
-            Call 911
+      <Pressable onPress={() => Linking.openURL('tel:911')} accessibilityRole="button" accessibilityLabel="Call 911" hitSlop={6}>
+        <View style={[s.call, { backgroundColor: c.levels[3].bg, borderColor: c.levels[3].fg }]}>
+          <Icon name="Phone" size={14} tint={c.levels[3].fg} />
+          <Txt variant="footnote" color={c.levels[3].fg} style={{ fontFamily: font.bold }}>
+            911
           </Txt>
         </View>
       </Pressable>
@@ -356,11 +365,37 @@ function Results({ plan, start, dest, avoidPolys }: { plan: RoutePlan; start: Sp
   const route = plan.routes[sel];
   const fastest = plan.routes.find((r) => r.isFastest) ?? plan.routes[0];
   const cardW = width - SCREEN_PAD * 2 - 32;
+  const reduced = useMotionReduced();
 
-  const fit = () => {
-    const coords = plan.routes.flatMap((r) => r.geometry.coordinates).filter((_, i) => i % 5 === 0).map(([lon, lat]) => ({ latitude: lat, longitude: lon }));
+  // The lines draw themselves along their paths when the results arrive (about 0.8 s, once).
+  const [drawn, setDrawn] = useState(reduced ? 1 : 0);
+  useEffect(() => {
+    if (reduced) return;
+    const t0 = Date.now();
+    const id = setInterval(() => {
+      const p = Math.min(1, (Date.now() - t0) / 800);
+      setDrawn(1 - (1 - p) ** 3);
+      if (p >= 1) clearInterval(id);
+    }, 32);
+    return () => clearInterval(id);
+  }, [reduced, plan]);
+  const line = (r: RouteResult) => {
+    const all = r.geometry.coordinates.map(([lon, lat]) => ({ latitude: lat, longitude: lon }));
+    return drawn >= 1 ? all : all.slice(0, Math.max(2, Math.round(all.length * drawn)));
+  };
+
+  const fit = (only?: RouteResult) => {
+    const coords = (only ? only.geometry.coordinates : plan.routes.flatMap((r) => r.geometry.coordinates)).filter((_, i) => i % 5 === 0).map(([lon, lat]) => ({ latitude: lat, longitude: lon }));
     map.current?.fitToCoordinates(coords, { edgePadding: { top: 40, bottom: 40, left: 40, right: 40 }, animated: true });
   };
+  const pick = (i: number) => {
+    if (i === sel || i < 0 || i >= plan.routes.length) return;
+    haptic.select();
+    setSel(i);
+    fit(plan.routes[i]);
+  };
+  // Swiping the cards moves the map to the card that settles in view.
+  const onCardsSettle = (e: NativeSyntheticEvent<NativeScrollEvent>) => pick(Math.round((e.nativeEvent.contentOffset.x + SCREEN_PAD) / (cardW + space.m)));
 
   if (!plan.routes.length) return <Notice title="No route found." detail="Try a different destination, or follow officials’ evacuation routes." />;
 
@@ -381,7 +416,7 @@ function Results({ plan, start, dest, avoidPolys }: { plan: RoutePlan; start: Sp
         <MapView
           ref={map}
           style={StyleSheet.absoluteFill}
-          onMapReady={fit}
+          onMapReady={() => fit()}
           mapType={Platform.OS === 'ios' ? 'mutedStandard' : 'standard'}
           customMapStyle={Platform.OS === 'android' ? (isDark ? googleDark : googleLight) : undefined}
           userInterfaceStyle={isDark ? 'dark' : 'light'}
@@ -393,18 +428,20 @@ function Results({ plan, start, dest, avoidPolys }: { plan: RoutePlan; start: Sp
             <Polygon key={`a${i}`} coordinates={poly[0].map(([lon, lat]) => ({ latitude: lat, longitude: lon }))} fillColor={c.levels[3].fg + '22'} strokeColor={c.levels[3].fg} strokeWidth={1.5} />
           ))}
           {plan.routes.map((r, i) =>
-            i === sel ? null : <Polyline key={r.id} coordinates={r.geometry.coordinates.map(([lon, lat]) => ({ latitude: lat, longitude: lon }))} strokeColor={c.inkFaint} strokeWidth={4} tappable onPress={() => setSel(i)} />,
+            i === sel ? null : <Polyline key={r.id} coordinates={line(r)} strokeColor={withAlpha(c.inkFaint, 0.55)} strokeWidth={4} tappable onPress={() => pick(i)} />,
           )}
-          <Polyline key={`sel-${route.id}`} coordinates={route.geometry.coordinates.map(([lon, lat]) => ({ latitude: lat, longitude: lon }))} strokeColor={c.accent} strokeWidth={6} zIndex={10} />
+          {/* The chosen route: a soft wide glow under a crisp line. */}
+          <Polyline key={`glow-${route.id}`} coordinates={line(route)} strokeColor={withAlpha(scene[0].accent, 0.28)} strokeWidth={14} zIndex={9} />
+          <Polyline key={`sel-${route.id}`} coordinates={line(route)} strokeColor={scene[0].accent} strokeWidth={5} zIndex={10} />
           <Marker coordinate={{ latitude: start.point[1], longitude: start.point[0] }} title="Start" pinColor="blue" />
           <Marker coordinate={{ latitude: dest.point[1], longitude: dest.point[0] }} title={dest.label} />
         </MapView>
       </View>
 
-      <ScrollView horizontal snapToInterval={cardW + space.m} decelerationRate="fast" showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.m, paddingRight: space.l }} style={{ marginHorizontal: -SCREEN_PAD }} contentInset={{ left: SCREEN_PAD }} contentOffset={{ x: -SCREEN_PAD, y: 0 }}>
+      <ScrollView horizontal snapToInterval={cardW + space.m} decelerationRate="fast" showsHorizontalScrollIndicator={false} onMomentumScrollEnd={onCardsSettle} contentContainerStyle={{ gap: space.m, paddingRight: space.l }} style={{ marginHorizontal: -SCREEN_PAD }} contentInset={{ left: SCREEN_PAD }} contentOffset={{ x: -SCREEN_PAD, y: 0 }}>
         {Platform.OS === 'android' ? <View style={{ width: SCREEN_PAD - space.m }} /> : null}
         {plan.routes.map((r, i) => (
-          <RouteCard key={r.id} r={r} index={i} width={cardW} selected={i === sel} extra={r.duration_s - fastest.duration_s} onPress={() => { haptic.select(); setSel(i); }} />
+          <RouteCard key={r.id} r={r} index={i} width={cardW} selected={i === sel} extra={r.duration_s - fastest.duration_s} onPress={() => pick(i)} />
         ))}
       </ScrollView>
 
@@ -456,10 +493,13 @@ function RouteCard({ r, index, width, selected, extra, onPress }: { r: RouteResu
             {tag}
           </Txt>
           <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: space.s }}>
-            <Txt variant="numberL">{fmtMin(r.duration_s)}</Txt>
+            <Txt variant="numberXL" style={{ fontSize: 40, lineHeight: 44 }}>{fmtMin(r.duration_s)}</Txt>
             <Txt variant="callout" tone="muted">{fmtMi(r.distance_m)}</Txt>
           </View>
-          <Txt variant="footnote">{extra > 30 ? `${fmtMin(extra)} longer than the fastest` : r.isFastest ? 'Quickest of these routes' : 'About the same time as the fastest'}</Txt>
+          <Txt variant="callout" color={extra > 30 ? c.levels[1].fg : c.inkMuted} style={{ fontFamily: font.semibold }}>
+            {extra > 30 ? `+${fmtMin(extra)} vs fastest` : r.isFastest ? 'Fastest of these routes' : 'About the same as the fastest'}
+          </Txt>
+          <MakeupBar r={r} />
           <View style={{ marginTop: space.s }}>
             {rows.map(([label, value, warn]) => (
               <View key={label} style={[s.row, { borderTopColor: c.hairline }]}>
@@ -482,13 +522,46 @@ function RouteCard({ r, index, width, selected, extra, onPress }: { r: RouteResu
   );
 }
 
+/**
+ * Route makeup: the whole trip as one bar. The red part is the share of miles inside active warning
+ * areas (for a lower-exposure route it should be none); amber ticks count FEMA flood-zone crossings.
+ * It shows how much, not where: the map shows where.
+ */
+function MakeupBar({ r }: { r: RouteResult }) {
+  const { c } = useTheme();
+  const total = r.distance_m / 1609.34 || 1;
+  const warn = Math.min(1, r.miles_in_warning / total);
+  const crossings = r.flood_zone_crossings ?? 0;
+  return (
+    <View style={{ gap: space.xs, marginTop: space.s }} accessible accessibilityLabel={`Route makeup: ${warn > 0 ? `${Math.round(warn * 100)} percent inside warning areas` : 'no miles inside warning areas'}, ${r.flood_zone_crossings === null ? 'flood-zone crossings unknown' : `${crossings} flood-zone crossings`}.`}>
+      <View style={[s.makeup, { backgroundColor: withAlpha(scene[0].accent, 0.5) }]}>
+        {warn > 0 ? <View style={{ width: `${Math.max(4, warn * 100)}%`, backgroundColor: c.levels[3].fg }} /> : null}
+      </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.s, flexWrap: 'wrap' }}>
+        <View style={[s.legendDot, { backgroundColor: warn > 0 ? c.levels[3].fg : scene[0].accent }]} />
+        <Txt variant="footnote">{warn > 0 ? `${r.miles_in_warning.toFixed(1)} mi in warning areas` : 'No miles in warning areas'}</Txt>
+        <View style={{ flexDirection: 'row', gap: 2, marginLeft: space.xs }}>
+          {Array.from({ length: Math.min(crossings, 8) }, (_, i) => (
+            <View key={i} style={[s.tick, { backgroundColor: c.levels[1].fg }]} />
+          ))}
+        </View>
+        <Txt variant="footnote">{r.flood_zone_crossings === null ? 'Flood zones unknown' : `${crossings} flood-zone crossing${crossings === 1 ? '' : 's'}`}</Txt>
+      </View>
+    </View>
+  );
+}
+
 const s = StyleSheet.create({
+  makeup: { height: 8, borderRadius: 4, overflow: 'hidden', flexDirection: 'row' },
+  legendDot: { width: 8, height: 8, borderRadius: 4 },
+  tick: { width: 3, height: 12, borderRadius: 1.5 },
+  call: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: space.m, minHeight: 32, borderRadius: radius.pill, borderWidth: 1 },
   progress: { height: 4, borderRadius: 2, overflow: 'hidden' },
   progressFill: { height: 4, width: '100%', transformOrigin: 'left' },
   option: { flexDirection: 'row', alignItems: 'center', gap: space.m, padding: space.l, borderRadius: radius.md, borderWidth: 1.5, minHeight: 76 },
   optionIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   destRow: { flexDirection: 'row', alignItems: 'center', gap: space.m, padding: space.l, borderRadius: radius.md, borderWidth: 1 },
-  safety: { borderLeftWidth: 4, borderRadius: radius.sm, padding: space.l, gap: space.xs },
+  safety: { flexDirection: 'row', alignItems: 'center', gap: space.m, borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.md, paddingHorizontal: space.l, paddingVertical: space.m },
   input: { flexDirection: 'row', alignItems: 'center', gap: space.s, paddingHorizontal: space.l, borderRadius: radius.sm },
   toggle: { flexDirection: 'row', alignItems: 'center', gap: space.m },
   map: { height: 300, borderRadius: radius.md, overflow: 'hidden', borderWidth: 1 },

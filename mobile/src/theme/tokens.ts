@@ -216,3 +216,13 @@ export function scenePalette(key: SceneKey): Palette {
     onAccent: '#0A0F14',
   };
 }
+
+/** Solid icon-tile colors for grouped lists (iOS Settings style). White icons on each are ≥ 4.5:1. */
+export const tiles = {
+  violet: '#6550C2',
+  blue: '#2A6896',
+  teal: '#1B7A5F',
+  amber: '#9A6510',
+  red: '#B0182F',
+  slate: '#4A5663',
+} as const;

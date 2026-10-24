@@ -4,6 +4,8 @@
  */
 export const TABS_ON = {
   map: true,
-  route: true,
+  // Off since Oct 24: on the phone the route planner wasn't useful enough to keep. The code stays,
+  // so switching this back to true brings the tab (and Status's "Plan a route out") back.
+  route: false,
   report: true,
 };

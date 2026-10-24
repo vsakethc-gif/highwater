@@ -93,6 +93,8 @@ Working log for Highwater (originally called SC-5 Ready). "Problems and fixes" b
 - **More (Settings app):** colored icon tiles and a "Replay a storm" card with a small living scene that starts the storm timeline.
 - **Comparison pass against the reference apps:** the one clear gap left after this round was Uber's pinned button, which is now done. Not copied on purpose: Apple Maps puts search inside the sheet, but the brief asks for a floating pill on top.
 
+- **Route tab switched off on the phone (Oct 24, your call):** after testing it, you found the route planner not useful on the phone, so `TABS_ON.route` is false in `mobile/src/features.ts`. The tab and Status's "Plan a route out" tile are hidden; the code is kept, and setting the flag back to true restores both. The website's route planner is unchanged. The demo script now shows the Map instead.
+
 ## Problems and fixes
 
 - **A gray failed the contrast check.** The first "subtle" gray (`#6b7680`) was 4.37:1 on the page background, under the 4.5:1 WCAG AA minimum. I found it with a small script that computes contrast ratios, then darkened it to `#606b75` (5.13:1). The Normal and Watch badge borders were also too faint, so I darkened them past 3:1.

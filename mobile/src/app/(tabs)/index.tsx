@@ -44,6 +44,7 @@ import { TabErrorBoundary } from '../../components/ui/Screen';
 import { Txt } from '../../components/ui/Text';
 import { useFocusReplay } from '../../hooks/useFocusReplay';
 import { useStatus, type StatusData } from '../../hooks/useStatus';
+import { TABS_ON } from '../../features';
 import { useAppState } from '../../state';
 import { duration, easing, font, haptic, scene, sceneInk, ScenePaletteProvider, SCREEN_PAD, space, spring, type, useMotionReduced, type SceneKey } from '../../theme';
 
@@ -338,7 +339,8 @@ function Loading() {
 
 function Modules({ data }: { data: StatusData }) {
   const urgent = data.overall.level === 3;
-  const canLeave = routeAllowed(data.blocks);
+  // The route tile shows only where leaving makes sense AND the Route tab is switched on.
+  const canLeave = TABS_ON.route && routeAllowed(data.blocks);
   return (
     <View style={{ gap: MODULE_GAP }}>
       <WhyModule data={data} index={0} urgent={urgent} />
